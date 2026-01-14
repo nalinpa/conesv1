@@ -10,6 +10,7 @@ import { auth } from "./src/firebase";
 import LoginScreen from "./src/screens/LoginScreen";
 import ConesStack from "./src/stacks/ConesStack";
 import ProgressScreen from "./src/screens/ProgressScreen";
+import MapScreen from "./src/screens/MapScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -49,6 +50,11 @@ export default function App() {
           name="Cones"
           component={ConesStack}
           options={{ title: "Cones" }}
+        />
+        <Tab.Screen
+          name="Map"
+          component={MapScreen}
+          options={{ title: "Map" }}
         />
         <Tab.Screen
           name="Progress"
