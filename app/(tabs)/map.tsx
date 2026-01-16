@@ -3,11 +3,12 @@ import { View, Text, ActivityIndicator, Pressable, Platform } from "react-native
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import * as Location from "expo-location";
 import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase"; 
 import { haversineMeters } from "../../lib/geo";
-  
+
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
 
@@ -23,6 +24,7 @@ type Cone = {
 };
 
 export default function MapPage() {
+  const insets = useSafeAreaInsets();
   const mapRef = useRef<MapView | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -176,7 +178,10 @@ export default function MapPage() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <View
+        className="absolute left-0 right-0 top-0 z-10 px-4"
+        style={{ paddingTop: insets.top + 16 }}
+      >
         <ActivityIndicator />
         <Text className="mt-2 text-muted-foreground">Loading map…</Text>
       </View>

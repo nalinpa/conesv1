@@ -11,7 +11,8 @@ import {
   where,
 } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase"; 
-import { haversineMeters } from "../../lib/geo"; // adjust if your geo helper moved
+import { haversineMeters } from "../../lib/geo"; 
+import { Screen } from "@/components/screen";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -216,16 +217,16 @@ export default function ProgressScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <Screen>
         <ActivityIndicator />
         <Text className="mt-2 text-muted-foreground">Loading progress…</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (err) {
     return (
-      <View className="flex-1 bg-background p-4">
+      <Screen>
         <Card>
           <CardHeader>
             <CardTitle>Progress</CardTitle>
@@ -237,14 +238,14 @@ export default function ProgressScreen() {
             </Button>
           </CardContent>
         </Card>
-      </View>
+      </Screen>
     );
   }
 
   const allDone = totals.total > 0 && totals.completed === totals.total;
 
   return (
-    <View className="flex-1 bg-background p-4">
+    <Screen>
       {/* Top text */}
       <Text className="text-2xl font-extrabold text-foreground">
         Climb all Auckland volcanic cones 🌋
@@ -349,6 +350,6 @@ export default function ProgressScreen() {
       <Text className="mt-4 text-xs text-muted-foreground">
         Tip: Better GPS accuracy helps when you’re close to the cone.
       </Text>
-    </View>
+    </Screen>
   );
 }

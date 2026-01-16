@@ -18,6 +18,7 @@ import {
 
 import { auth, db } from "../../../lib/firebase"; 
 import { haversineMeters } from "../../../lib/geo"; 
+import { Screen } from "@/components/screen";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -257,17 +258,17 @@ export default function ConeDetailRoute() {
 
   if (coneLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <Screen>
         <Stack.Screen options={{ title: "Loading…" }} />
         <ActivityIndicator />
         <Text className="mt-2 text-muted-foreground">Loading cone…</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (coneErr || !cone) {
     return (
-      <View className="flex-1 bg-background p-4">
+      <Screen>
         <Stack.Screen options={{ title: "Cone" }} />
         <Card>
           <CardHeader>
@@ -277,12 +278,12 @@ export default function ConeDetailRoute() {
             <Text className="text-destructive">{coneErr || "Cone missing."}</Text>
           </CardContent>
         </Card>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View className="flex-1 bg-background p-4">
+    <Screen>
       <Stack.Screen options={{ title: headerTitle }} />
 
       {/* Cone details */}
@@ -387,6 +388,6 @@ export default function ConeDetailRoute() {
           </CardContent>
         </Card>
       )}
-    </View>
+    </Screen>
   );
 }

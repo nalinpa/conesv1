@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { haversineMeters } from "../../../lib/geo"; 
+import { Screen } from "@/components/screen";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -135,16 +136,16 @@ export default function ConeListPage() {
 
   if (loading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
+      <Screen>
         <ActivityIndicator />
         <Text className="mt-2 text-muted-foreground">Loading cones…</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (err) {
     return (
-      <View className="flex-1 bg-background p-4">
+      <Screen>
         <Card>
           <CardContent className="gap-3">
             <Text className="text-destructive">{err}</Text>
@@ -153,12 +154,12 @@ export default function ConeListPage() {
             </Button>
           </CardContent>
         </Card>
-      </View>
+      </Screen>
     );
   }
 
   return (
-    <View className="flex-1 bg-background p-4">
+    <Screen>
       <View className="flex-row items-center justify-between">
         <Text className="text-2xl font-extrabold text-foreground">Cones</Text>
 
@@ -234,6 +235,6 @@ export default function ConeListPage() {
           );
         }}
       />
-    </View>
+    </Screen>
   );
 }
