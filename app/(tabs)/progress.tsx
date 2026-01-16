@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import { View, Text, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
-import Svg, { Circle } from "react-native-svg";
 
 import {
   collection,
@@ -13,6 +12,10 @@ import {
 import { auth, db } from "../../lib/firebase"; 
 import { haversineMeters } from "../../lib/geo"; 
 import { Screen } from "@/components/screen";
+
+import { PieChart } from "@/components/progress/PieChart";
+import { StatRow } from "@/components/progress/StatRow";
+import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -33,56 +36,6 @@ type Completion = {
   coneId: string;
   shareBonus?: boolean;
 };
-
-function PieChart({
-  percent,
-  size = 120,
-  strokeWidth = 14,
-}: {
-  percent: number; // 0..1
-  size?: number;
-  strokeWidth?: number;
-}) {
-  const r = (size - strokeWidth) / 2;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(1, percent));
-  const dash = c * clamped;
-
-  return (
-    <View className="items-center justify-center">
-      <Svg width={size} height={size}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          strokeWidth={strokeWidth}
-          stroke="rgba(148, 163, 184, 0.35)"
-          fill="transparent"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          stroke="hsl(var(--primary))"
-          fill="transparent"
-          strokeDasharray={`${dash} ${c - dash}`}
-          rotation="-90"
-          originX={size / 2}
-          originY={size / 2}
-        />
-      </Svg>
-
-      <View className="absolute items-center justify-center">
-        <Text className="text-2xl font-extrabold text-foreground">
-          {Math.round(clamped * 100)}%
-        </Text>
-        <Text className="text-xs text-muted-foreground">complete</Text>
-      </View>
-    </View>
-  );
-}
 
 export default function ProgressScreen() {
   const [loading, setLoading] = useState(true);
@@ -245,111 +198,64 @@ export default function ProgressScreen() {
   const allDone = totals.total > 0 && totals.completed === totals.total;
 
   return (
-    <Screen>
-      {/* Top text */}
-      <Text className="text-2xl font-extrabold text-foreground">
-        Climb all Auckland volcanic cones 🌋
-      </Text>
-      <Text className="mt-1 text-sm text-muted-foreground">
-        Complete each cone by getting within range and confirming your climb.
-      </Text>
+  <Screen>
+    <Text className="text-2xl font-extrabold text-foreground">
+      Climb all Auckland volcanic cones 🌋
+    </Text>
+    <Text className="mt-1 text-sm text-muted-foreground">
+      Complete each cone by getting within range and confirming your climb.
+    </Text>
 
-      {/* Pie + stats */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Your progress</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-row items-center justify-between">
-          <PieChart percent={totals.percent} />
+    <Card className="mt-4">
+      <CardHeader>
+        <CardTitle>Your progress</CardTitle>
+      </CardHeader>
 
-          <View className="flex-1 pl-4 gap-2">
-            <View className="flex-row items-center gap-2">
-              <Badge>
-                <Text className="text-xs">Completed</Text>
-              </Badge>
-              <Text className="text-base font-bold text-foreground">
-                {totals.completed} / {totals.total}
+      <CardContent className="flex-row items-center justify-between">
+        <PieChart percent={totals.percent} />
+
+        <View className="flex-1 pl-4 gap-2">
+          <StatRow
+            label="Completed"
+            value={`${totals.completed} / ${totals.total}`}
+            variant="default"
+          />
+
+          <StatRow
+            label="Share bonus"
+            value={shareBonusCount}
+            variant="secondary"
+          />
+
+          {allDone ? (
+            <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+              <Text className="font-semibold text-foreground">
+                You’ve completed them all 🎉
               </Text>
             </View>
+          ) : null}
+        </View>
+      </CardContent>
+    </Card>
 
-            <View className="flex-row items-center gap-2">
-              <Badge variant="secondary">
-                <Text className="text-xs">Share bonus</Text>
-              </Badge>
-              <Text className="text-base font-bold text-foreground">
-                {shareBonusCount}
-              </Text>
-            </View>
+    <NearestUnclimbedCard
+      cone={
+        nearestUnclimbed
+          ? {
+              id: nearestUnclimbed.cone.id,
+              name: nearestUnclimbed.cone.name,
+              description: nearestUnclimbed.cone.description,
+            }
+          : null
+      }
+      distanceMeters={nearestUnclimbed?.distance ?? null}
+      locErr={locErr}
+      onOpen={goToCone}
+    />
 
-            {allDone ? (
-              <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                <Text className="font-semibold text-foreground">
-                  You’ve completed them all 🎉
-                </Text>
-              </View>
-            ) : null}
-          </View>
-        </CardContent>
-      </Card>
-
-      {/* Nearest unclimbed */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Nearest unclimbed</CardTitle>
-        </CardHeader>
-        <CardContent className="gap-3">
-          {!nearestUnclimbed ? (
-            <Text className="text-muted-foreground">
-              No cones found — check admin “active” flags.
-            </Text>
-          ) : (
-            <>
-              <Pressable
-                onPress={() => goToCone(nearestUnclimbed.cone.id)}
-                className="rounded-2xl border border-border bg-card p-4"
-              >
-                <Text className="text-lg font-extrabold text-card-foreground">
-                  {nearestUnclimbed.cone.name}
-                </Text>
-
-                <Text className="mt-1 text-sm text-muted-foreground">
-                  {nearestUnclimbed.cone.description || "Tap to view details"}
-                </Text>
-
-                <View className="mt-3 flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-2">
-                    <Badge variant="secondary">
-                      <Text className="text-xs">Distance</Text>
-                    </Badge>
-                    <Text className="font-semibold text-foreground">
-                      {nearestUnclimbed.distance == null
-                        ? locErr
-                          ? "— (no GPS)"
-                          : "—"
-                        : `${Math.round(nearestUnclimbed.distance)} m`}
-                    </Text>
-                  </View>
-
-                  <Text className="text-sm font-semibold text-primary">
-                    Open →
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Button onPress={() => goToCone(nearestUnclimbed.cone.id)}>
-                <Text className="text-primary-foreground font-semibold">
-                  Go to cone
-                </Text>
-              </Button>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Bottom info */}
-      <Text className="mt-4 text-xs text-muted-foreground">
-        Tip: Better GPS accuracy helps when you’re close to the cone.
-      </Text>
-    </Screen>
-  );
+    <Text className="mt-4 text-xs text-muted-foreground">
+      Tip: Better GPS accuracy helps when you’re close to the cone.
+    </Text>
+  </Screen>
+);
 }

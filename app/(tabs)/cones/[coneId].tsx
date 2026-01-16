@@ -20,6 +20,10 @@ import { auth, db } from "../../../lib/firebase";
 import { haversineMeters } from "../../../lib/geo"; 
 import { Screen } from "@/components/screen";
 
+import { ConeInfoCard } from "@/components/cone/ConeInfoCard";
+import { ConeStatusCard } from "@/components/cone/ConeStatusCard";
+import { ConeCompletionCard } from "@/components/cone/ConeCompletionCard";
+
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 import { Badge } from "../../../components/ui/badge";
@@ -283,111 +287,34 @@ export default function ConeDetailRoute() {
   }
 
   return (
-    <Screen>
-      <Stack.Screen options={{ title: headerTitle }} />
+      <Screen>
+        <Stack.Screen options={{ title: headerTitle }} />
 
-      {/* Cone details */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{cone.name}</CardTitle>
-        </CardHeader>
-        <CardContent className="gap-2">
-          <Text className="text-muted-foreground">
-            {cone.description || "No description yet."}
-          </Text>
+        <ConeInfoCard
+        name={cone.name}
+        description={cone.description}
+        slug={cone.slug}
+        radiusMeters={cone.radiusMeters}
+        />
 
-          <View className="flex-row flex-wrap gap-2">
-            <Badge variant="secondary">
-              <Text className="text-xs">Radius {cone.radiusMeters}m</Text>
-            </Badge>
-            <Badge variant="secondary">
-              <Text className="text-xs">Slug {cone.slug}</Text>
-            </Badge>
-          </View>
-        </CardContent>
-      </Card>
+        <ConeStatusCard
+        loadingLocation={!loc}
+        distanceMeters={stats.distance}
+        accuracyMeters={stats.accuracy}
+        inRange={stats.inRange}
+        onRefreshGps={refreshLocation}
+        errorText={err}
+        showDistance={true} 
+        />
 
-      {/* Status */}
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Status</CardTitle>
-        </CardHeader>
-
-        <CardContent className="gap-3">
-          {!loc ? (
-            <View className="items-center justify-center py-2">
-              <ActivityIndicator />
-            </View>
-          ) : (
-            <>
-              <View className="flex-row items-center justify-between">
-                <Text className="text-foreground">Distance</Text>
-                <Text className="font-semibold text-foreground">
-                  {stats.distance == null ? "—" : `${Math.round(stats.distance)} m`}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <Text className="text-foreground">Accuracy</Text>
-                <Text className="font-semibold text-foreground">
-                  {stats.accuracy == null ? "—" : `${Math.round(stats.accuracy)} m`}
-                </Text>
-              </View>
-
-              <View className="flex-row items-center justify-between">
-                <Text className="text-foreground">Range check</Text>
-                <Text className={stats.inRange ? "font-extrabold text-green-700" : "font-extrabold text-red-700"}>
-                  {stats.inRange ? "✅ In range" : "❌ Not in range"}
-                </Text>
-              </View>
-
-              <Button variant="outline" onPress={refreshLocation}>
-                <Text className="font-semibold">Refresh GPS</Text>
-              </Button>
-            </>
-          )}
-
-          {err ? (
-            <View className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
-              <Text className="text-sm text-destructive">{err}</Text>
-            </View>
-          ) : null}
-        </CardContent>
-      </Card>
-
-      {/* Completion */}
-      {!completedId ? (
-        <Button
-          className="mt-4"
-          onPress={completeCone}
-          disabled={saving || !loc}
-        >
-          <Text className="text-primary-foreground font-semibold">
-            {saving ? "Saving…" : "Complete cone"}
-          </Text>
-        </Button>
-      ) : (
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>Completed ✅</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-3">
-            <Text className="text-muted-foreground">
-              Optional: share a pic on socials for bonus credit.
-            </Text>
-
-            <Button
-              variant={shareBonus ? "secondary" : "outline"}
-              onPress={doShareBonus}
-              disabled={shareBonus}
-            >
-              <Text className="font-semibold">
-                {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
-              </Text>
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+        <ConeCompletionCard
+        completed={!!completedId}
+        saving={saving}
+        canComplete={!!loc}
+        onComplete={completeCone}
+        shareBonus={shareBonus}
+        onShareBonus={doShareBonus}
+        />
     </Screen>
   );
 }

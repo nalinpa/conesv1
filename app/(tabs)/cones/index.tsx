@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, Pressable, FlatList } from "react-native";
+import { View, Text, ActivityIndicator,  FlatList } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
@@ -7,6 +7,8 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { haversineMeters } from "../../../lib/geo"; 
 import { Screen } from "@/components/screen";
+
+import { ConeListItem } from "@/components/cone/ConeListItem";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -200,38 +202,16 @@ export default function ConeListPage() {
           const { cone, distance } = item;
 
           return (
-            <Pressable
-              onPress={() => openCone(cone.id)}
-              className="rounded-2xl border border-border bg-card p-4"
-            >
-              <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-1">
-                  <Text className="text-lg font-extrabold text-card-foreground">
-                    {cone.name}
-                  </Text>
-
-                  <Text className="mt-1 text-sm text-muted-foreground" numberOfLines={2}>
-                    {cone.description || "Tap to view details"}
-                  </Text>
-
-                  <View className="mt-3 flex-row flex-wrap gap-2">
-                    <View className="rounded-full border border-border bg-background px-3 py-1">
-                      <Text className="text-xs text-foreground">
-                        Radius {cone.radiusMeters}m
-                      </Text>
-                    </View>
-
-                    <View className="rounded-full border border-border bg-background px-3 py-1">
-                      <Text className="text-xs text-foreground">
-                        {distance == null ? "Distance —" : `${Math.round(distance)} m`}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-
-                <Text className="text-sm font-semibold text-primary">Open →</Text>
-              </View>
-            </Pressable>
+            <ConeListItem
+                cone={{
+                    id: cone.id,
+                    name: cone.name,
+                    description: cone.description,
+                    radiusMeters: cone.radiusMeters,
+                }}
+                distanceMeters={distance}
+                onPress={openCone}
+                />
           );
         }}
       />

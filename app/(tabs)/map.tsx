@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase"; 
 import { haversineMeters } from "../../lib/geo";
+import { MapOverlay } from "@/components/map/MapOverlay";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -212,44 +213,26 @@ export default function MapPage() {
   return (
     <View className="flex-1 bg-background">
       {/* Overlay header */}
-      <View className="absolute left-0 right-0 top-0 z-10 px-4 pt-4">
-        <Card>
-          <CardContent className="gap-2 py-4">
-            <View className="flex-row items-center justify-between">
-              <Text className="text-base font-extrabold text-foreground">Map</Text>
-              <Button variant="outline" onPress={centerOnMe} disabled={!loc}>
-                <Text className="font-semibold">Center</Text>
-              </Button>
-            </View>
-
-            <Text className="text-sm text-muted-foreground">
-              Completed {completedCount} / {totalCount}
-              {locErr ? ` • ${locErr}` : ""}
-            </Text>
-
-            {nearestUnclimbed ? (
-              <Pressable
-                onPress={() => openCone(nearestUnclimbed.cone.id)}
-                className="mt-2 rounded-2xl border border-border bg-card px-3 py-3"
-              >
-                <Text className="font-extrabold text-card-foreground">
-                  Nearest unclimbed: {nearestUnclimbed.cone.name}
-                </Text>
-                <Text className="mt-1 text-sm text-muted-foreground">
-                  {nearestUnclimbed.distance == null
-                    ? "Tap to open"
-                    : `${Math.round(nearestUnclimbed.distance)} m away • tap to open`}
-                </Text>
-              </Pressable>
-            ) : (
-              <View className="mt-2 rounded-2xl border border-border bg-card px-3 py-3">
-                <Text className="font-extrabold text-card-foreground">
-                  All cones completed 🎉
-                </Text>
-              </View>
-            )}
-          </CardContent>
-        </Card>
+      <View
+        className="absolute left-0 right-0 top-0 z-10 px-4"
+        style={{ paddingTop: insets.top + 16 }}
+      >
+        <MapOverlay
+          completedCount={completedCount}
+          totalCount={totalCount}
+          locErr={locErr}
+          nearestUnclimbed={
+            nearestUnclimbed
+              ? {
+                  cone: { id: nearestUnclimbed.cone.id, name: nearestUnclimbed.cone.name },
+                  distanceMeters: nearestUnclimbed.distance,
+                }
+              : null
+          }
+          onOpenCone={openCone}
+          onCenter={centerOnMe}
+          canCenter={!!loc}
+        />
       </View>
 
       {/* Map */}
