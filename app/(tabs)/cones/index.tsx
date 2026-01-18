@@ -1,16 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator,  FlatList } from "react-native";
+import { View, Text, ActivityIndicator, FlatList } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
-import { haversineMeters } from "../../../lib/geo"; 
 import { Screen } from "@/components/screen";
 
 import { ConeListItem } from "@/components/cone/ConeListItem";
+import { nearestCheckpoint } from "../../../lib/checkpoints";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 
 type Cone = {
@@ -20,6 +20,13 @@ type Cone = {
   lat: number;
   lng: number;
   radiusMeters: number;
+  checkpoints?: {
+    id?: string;
+    label?: string;
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+  }[];
   description?: string;
   active: boolean;
 };
@@ -56,12 +63,12 @@ export default function ConeListPage() {
           lat: data.lat,
           lng: data.lng,
           radiusMeters: data.radiusMeters,
+          checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
           description: data.description ?? "",
           active: !!data.active,
         };
       });
 
-      // stable default sort
       list.sort((a, b) => a.name.localeCompare(b.name));
       setCones(list);
     } catch (e: any) {
@@ -110,19 +117,16 @@ export default function ConeListPage() {
   }, []);
 
   const rows: ConeRow[] = useMemo(() => {
-    if (!loc) {
-      return cones.map((c) => ({ cone: c, distance: null }));
-    }
+    if (!loc) return cones.map((c) => ({ cone: c, distance: null }));
 
     const { latitude, longitude } = loc.coords;
 
     const list = cones.map((c) => ({
       cone: c,
-      distance: haversineMeters(latitude, longitude, c.lat, c.lng),
+      distance: nearestCheckpoint(c, latitude, longitude).distanceMeters,
     }));
 
     list.sort((a, b) => {
-      // distance sort (nulls last)
       if (a.distance == null && b.distance == null) return a.cone.name.localeCompare(b.cone.name);
       if (a.distance == null) return 1;
       if (b.distance == null) return -1;
@@ -167,13 +171,14 @@ export default function ConeListPage() {
 
         <Button
           variant="outline"
-          onPress={loc ? refreshLocation : requestAndLoadLocation}
+          onPress={() => {
+            void (loc ? refreshLocation() : requestAndLoadLocation());
+          }}
         >
           <Text className="font-semibold">{loc ? "Refresh GPS" : "Enable GPS"}</Text>
         </Button>
       </View>
 
-      {/* Subheader */}
       <Text className="mt-2 text-sm text-muted-foreground">
         Tap a cone to view details and complete it when you’re in range.
       </Text>
@@ -192,7 +197,6 @@ export default function ConeListPage() {
         </View>
       ) : null}
 
-      {/* List */}
       <FlatList
         data={rows}
         keyExtractor={(item) => item.cone.id}
@@ -203,15 +207,15 @@ export default function ConeListPage() {
 
           return (
             <ConeListItem
-                cone={{
-                    id: cone.id,
-                    name: cone.name,
-                    description: cone.description,
-                    radiusMeters: cone.radiusMeters,
-                }}
-                distanceMeters={distance}
-                onPress={openCone}
-                />
+              cone={{
+                id: cone.id,
+                name: cone.name,
+                description: cone.description,
+                radiusMeters: cone.radiusMeters,
+              }}
+              distanceMeters={distance}
+              onPress={openCone}
+            />
           );
         }}
       />

@@ -3,14 +3,8 @@ import { View, Text, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
-import {
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
-import { auth, db } from "../../lib/firebase"; 
-import { haversineMeters } from "../../lib/geo"; 
+import { collection, getDocs, query, where } from "firebase/firestore";
+import { auth, db } from "../../lib/firebase";
 import { Screen } from "@/components/screen";
 
 import { PieChart } from "@/components/progress/PieChart";
@@ -19,7 +13,8 @@ import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
-import { Badge } from "../../components/ui/badge";
+
+import { nearestCheckpoint } from "../../lib/checkpoints";
 
 type Cone = {
   id: string;
@@ -28,6 +23,13 @@ type Cone = {
   lat: number;
   lng: number;
   radiusMeters: number;
+  checkpoints?: {
+    id?: string;
+    label?: string;
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+  }[];
   description?: string;
   active: boolean;
 };
@@ -48,7 +50,6 @@ export default function ProgressScreen() {
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
   const [locErr, setLocErr] = useState<string>("");
 
-  // Load cones + completions
   useEffect(() => {
     let mounted = true;
 
@@ -60,7 +61,6 @@ export default function ProgressScreen() {
         const user = auth.currentUser;
         if (!user) throw new Error("Not signed in.");
 
-        // Active cones
         const conesQ = query(collection(db, "cones"), where("active", "==", true));
         const conesSnap = await getDocs(conesQ);
 
@@ -73,16 +73,13 @@ export default function ProgressScreen() {
             lat: data.lat,
             lng: data.lng,
             radiusMeters: data.radiusMeters,
+            checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
             description: data.description ?? "",
             active: !!data.active,
           };
         });
 
-        // Completions
-        const compQ = query(
-          collection(db, "coneCompletions"),
-          where("userId", "==", user.uid)
-        );
+        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
         const compSnap = await getDocs(compQ);
 
         const ids = new Set<string>();
@@ -113,7 +110,6 @@ export default function ProgressScreen() {
     };
   }, []);
 
-  // Try to load location (best-effort)
   useEffect(() => {
     (async () => {
       setLocErr("");
@@ -144,17 +140,16 @@ export default function ProgressScreen() {
     const unclimbed = cones.filter((c) => !completedIds.has(c.id));
     if (unclimbed.length === 0) return null;
 
-    // If no location, just return the first unclimbed (stable)
     if (!loc) return { cone: unclimbed[0], distance: null as number | null };
 
     const { latitude, longitude } = loc.coords;
 
     let best = unclimbed[0];
-    let bestDist = haversineMeters(latitude, longitude, best.lat, best.lng);
+    let bestDist = nearestCheckpoint(best, latitude, longitude).distanceMeters;
 
     for (let i = 1; i < unclimbed.length; i++) {
       const c = unclimbed[i];
-      const d = haversineMeters(latitude, longitude, c.lat, c.lng);
+      const d = nearestCheckpoint(c, latitude, longitude).distanceMeters;
       if (d < bestDist) {
         best = c;
         bestDist = d;
@@ -198,64 +193,53 @@ export default function ProgressScreen() {
   const allDone = totals.total > 0 && totals.completed === totals.total;
 
   return (
-  <Screen>
-    <Text className="text-2xl font-extrabold text-foreground">
-      Climb all Auckland volcanic cones 🌋
-    </Text>
-    <Text className="mt-1 text-sm text-muted-foreground">
-      Complete each cone by getting within range and confirming your climb.
-    </Text>
+    <Screen>
+      <Text className="text-2xl font-extrabold text-foreground">
+        Climb all Auckland volcanic cones 🌋
+      </Text>
+      <Text className="mt-1 text-sm text-muted-foreground">
+        Complete each cone by getting within range and confirming your climb.
+      </Text>
 
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Your progress</CardTitle>
-      </CardHeader>
+      <Card className="mt-4">
+        <CardHeader>
+          <CardTitle>Your progress</CardTitle>
+        </CardHeader>
 
-      <CardContent className="flex-row items-center justify-between">
-        <PieChart percent={totals.percent} />
+        <CardContent className="flex-row items-center justify-between">
+          <PieChart percent={totals.percent} />
 
-        <View className="flex-1 pl-4 gap-2">
-          <StatRow
-            label="Completed"
-            value={`${totals.completed} / ${totals.total}`}
-            variant="default"
-          />
+          <View className="flex-1 pl-4 gap-2">
+            <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} variant="default" />
+            <StatRow label="Share bonus" value={shareBonusCount} variant="secondary" />
 
-          <StatRow
-            label="Share bonus"
-            value={shareBonusCount}
-            variant="secondary"
-          />
+            {allDone ? (
+              <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+                <Text className="font-semibold text-foreground">You’ve completed them all 🎉</Text>
+              </View>
+            ) : null}
+          </View>
+        </CardContent>
+      </Card>
 
-          {allDone ? (
-            <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-              <Text className="font-semibold text-foreground">
-                You’ve completed them all 🎉
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </CardContent>
-    </Card>
+      <NearestUnclimbedCard
+        cone={
+          nearestUnclimbed
+            ? {
+                id: nearestUnclimbed.cone.id,
+                name: nearestUnclimbed.cone.name,
+                description: nearestUnclimbed.cone.description,
+              }
+            : null
+        }
+        distanceMeters={nearestUnclimbed?.distance ?? null}
+        locErr={locErr}
+        onOpen={goToCone}
+      />
 
-    <NearestUnclimbedCard
-      cone={
-        nearestUnclimbed
-          ? {
-              id: nearestUnclimbed.cone.id,
-              name: nearestUnclimbed.cone.name,
-              description: nearestUnclimbed.cone.description,
-            }
-          : null
-      }
-      distanceMeters={nearestUnclimbed?.distance ?? null}
-      locErr={locErr}
-      onOpen={goToCone}
-    />
-
-    <Text className="mt-4 text-xs text-muted-foreground">
-      Tip: Better GPS accuracy helps when you’re close to the cone.
-    </Text>
-  </Screen>
-);
+      <Text className="mt-4 text-xs text-muted-foreground">
+        Tip: Better GPS accuracy helps when you’re close to the cone.
+      </Text>
+    </Screen>
+  );
 }

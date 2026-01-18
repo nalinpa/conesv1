@@ -10,6 +10,7 @@ export function ConeStatusCard({
   onRefreshGps,
   errorText,
   showDistance = true,
+  checkpointLabel,
 }: {
   loadingLocation: boolean;
   distanceMeters: number | null;
@@ -18,6 +19,7 @@ export function ConeStatusCard({
   onRefreshGps: () => void;
   errorText?: string;
   showDistance?: boolean;
+  checkpointLabel?: string;
 }) {
   return (
     <Card className="mt-4">
@@ -32,6 +34,13 @@ export function ConeStatusCard({
           </View>
         ) : (
           <>
+            {checkpointLabel ? (
+              <View className="flex-row items-center justify-between">
+                <Text className="text-foreground">Checkpoint</Text>
+                <Text className="font-semibold text-foreground">{checkpointLabel}</Text>
+              </View>
+            ) : null}
+
             {showDistance ? (
               <View className="flex-row items-center justify-between">
                 <Text className="text-foreground">Distance</Text>
@@ -50,7 +59,11 @@ export function ConeStatusCard({
 
             <View className="flex-row items-center justify-between">
               <Text className="text-foreground">Range check</Text>
-              <Text className={inRange ? "font-extrabold text-green-700" : "font-extrabold text-red-700"}>
+              <Text
+                className={
+                  inRange ? "font-extrabold text-green-700" : "font-extrabold text-red-700"
+                }
+              >
                 {inRange ? "✅ In range" : "❌ Not in range"}
               </Text>
             </View>

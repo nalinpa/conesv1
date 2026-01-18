@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, ActivityIndicator, Pressable, Platform } from "react-native";
+import { View, Text, ActivityIndicator, Platform } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db } from "../../lib/firebase"; 
-import { haversineMeters } from "../../lib/geo";
+import { auth, db } from "../../lib/firebase";
 import { MapOverlay } from "@/components/map/MapOverlay";
+import { nearestCheckpoint } from "../../lib/checkpoints";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Button } from "../../components/ui/button";
@@ -20,6 +20,13 @@ type Cone = {
   lat: number;
   lng: number;
   radiusMeters: number;
+  checkpoints?: {
+    id?: string;
+    label?: string;
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+  }[];
   description?: string;
   active: boolean;
 };
@@ -37,7 +44,6 @@ export default function MapPage() {
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
   const [locErr, setLocErr] = useState<string>("");
 
-  // Load cones + completions
   useEffect(() => {
     let mounted = true;
 
@@ -49,7 +55,6 @@ export default function MapPage() {
         const user = auth.currentUser;
         if (!user) throw new Error("Not signed in.");
 
-        // Active cones
         const conesQ = query(collection(db, "cones"), where("active", "==", true));
         const conesSnap = await getDocs(conesQ);
 
@@ -62,16 +67,13 @@ export default function MapPage() {
             lat: data.lat,
             lng: data.lng,
             radiusMeters: data.radiusMeters,
+            checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
             description: data.description ?? "",
             active: !!data.active,
           };
         });
 
-        // Completions for user
-        const compQ = query(
-          collection(db, "coneCompletions"),
-          where("userId", "==", user.uid)
-        );
+        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
         const compSnap = await getDocs(compQ);
 
         const ids = new Set<string>();
@@ -97,7 +99,6 @@ export default function MapPage() {
     };
   }, []);
 
-  // Load location (best effort)
   useEffect(() => {
     (async () => {
       setLocErr("");
@@ -118,7 +119,6 @@ export default function MapPage() {
   }, []);
 
   const initialRegion: Region = useMemo(() => {
-    // Default: Auckland CBD-ish
     const fallback: Region = {
       latitude: -36.8485,
       longitude: 174.7633,
@@ -145,11 +145,11 @@ export default function MapPage() {
     const { latitude, longitude } = loc.coords;
 
     let best = unclimbed[0];
-    let bestDist = haversineMeters(latitude, longitude, best.lat, best.lng);
+    let bestDist = nearestCheckpoint(best, latitude, longitude).distanceMeters;
 
     for (let i = 1; i < unclimbed.length; i++) {
       const c = unclimbed[i];
-      const d = haversineMeters(latitude, longitude, c.lat, c.lng);
+      const d = nearestCheckpoint(c, latitude, longitude).distanceMeters;
       if (d < bestDist) {
         best = c;
         bestDist = d;
@@ -179,10 +179,7 @@ export default function MapPage() {
 
   if (loading) {
     return (
-      <View
-        className="absolute left-0 right-0 top-0 z-10 px-4"
-        style={{ paddingTop: insets.top + 16 }}
-      >
+      <View className="absolute left-0 right-0 top-0 z-10 px-4" style={{ paddingTop: insets.top + 16 }}>
         <ActivityIndicator />
         <Text className="mt-2 text-muted-foreground">Loading map…</Text>
       </View>
@@ -212,11 +209,7 @@ export default function MapPage() {
 
   return (
     <View className="flex-1 bg-background">
-      {/* Overlay header */}
-      <View
-        className="absolute left-0 right-0 top-0 z-10 px-4"
-        style={{ paddingTop: insets.top + 16 }}
-      >
+      <View className="absolute left-0 right-0 top-0 z-10 px-4" style={{ paddingTop: insets.top + 16 }}>
         <MapOverlay
           completedCount={completedCount}
           totalCount={totalCount}
@@ -235,7 +228,6 @@ export default function MapPage() {
         />
       </View>
 
-      {/* Map */}
       <MapView
         ref={(r) => {
           mapRef.current = r;
