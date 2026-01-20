@@ -15,24 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/ca
 import { Button } from "../../components/ui/button";
 
 import { nearestCheckpoint } from "../../lib/checkpoints";
-
-type Cone = {
-  id: string;
-  name: string;
-  slug: string;
-  lat: number;
-  lng: number;
-  radiusMeters: number;
-  checkpoints?: {
-    id?: string;
-    label?: string;
-    lat: number;
-    lng: number;
-    radiusMeters: number;
-  }[];
-  description?: string;
-  active: boolean;
-};
+import type { Cone } from "@/lib/models";
 
 type Completion = {
   coneId: string;

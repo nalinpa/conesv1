@@ -13,23 +13,7 @@ import { nearestCheckpoint } from "../../../lib/checkpoints";
 import { Card, CardContent } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
 
-type Cone = {
-  id: string;
-  name: string;
-  slug: string;
-  lat: number;
-  lng: number;
-  radiusMeters: number;
-  checkpoints?: {
-    id?: string;
-    label?: string;
-    lat: number;
-    lng: number;
-    radiusMeters: number;
-  }[];
-  description?: string;
-  active: boolean;
-};
+import type { Cone } from "@/lib/models";
 
 type ConeRow = {
   cone: Cone;

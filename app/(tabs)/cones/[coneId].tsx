@@ -26,24 +26,7 @@ import { ConeCompletionCard } from "@/components/cone/ConeCompletionCard";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 
 import { nearestCheckpoint } from "../../../lib/checkpoints";
-
-type Cone = {
-  id: string;
-  name: string;
-  slug: string;
-  lat: number;
-  lng: number;
-  radiusMeters: number;
-  checkpoints?: {
-    id?: string;
-    label?: string;
-    lat: number;
-    lng: number;
-    radiusMeters: number;
-  }[];
-  description?: string;
-  active: boolean;
-};
+import type { Cone, ConeCompletionWrite } from "@/lib/models";
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
@@ -154,6 +137,7 @@ export default function ConeDetailRoute() {
         distance: null as number | null,
         accuracy: null as number | null,
         inRange: false,
+        checkpointLabel: null as string | null,
       };
     }
 
@@ -161,9 +145,14 @@ export default function ConeDetailRoute() {
     const nearest = nearestCheckpoint(cone, latitude, longitude);
 
     const acc = accuracy ?? null;
-    const inRange = nearest.distanceMeters <= nearest.radiusMeters && (acc == null || acc <= 50);
+    const inRange = nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
 
-    return { distance: nearest.distanceMeters, accuracy: acc, inRange };
+    return {
+      distance: nearest.distanceMeters,
+      accuracy: acc,
+      inRange,
+      checkpointLabel: nearest.checkpoint.label ?? null,
+    };
   }, [loc, cone]);
 
   async function refreshLocation() {
@@ -196,7 +185,7 @@ export default function ConeDetailRoute() {
     const { latitude, longitude, accuracy } = loc.coords;
     const nearest = nearestCheckpoint(cone, latitude, longitude);
 
-    if (nearest.distanceMeters > nearest.radiusMeters) {
+    if (nearest.distanceMeters > nearest.checkpoint.radiusMeters) {
       setErr(`Not in range yet. You are ~${Math.round(nearest.distanceMeters)}m away.`);
       return;
     }
@@ -205,9 +194,11 @@ export default function ConeDetailRoute() {
       return;
     }
 
+    const cp = nearest.checkpoint;
+
     setSaving(true);
     try {
-      const ref = await addDoc(collection(db, "coneCompletions"), {
+      const payload: ConeCompletionWrite = {
         coneId: cone.id,
         coneSlug: cone.slug,
         coneName: cone.name,
@@ -217,14 +208,24 @@ export default function ConeDetailRoute() {
         deviceLng: longitude,
         accuracyMeters: accuracy ?? null,
 
-        // IMPORTANT: this is now distance to the nearest checkpoint (or fallback)
+        // Back-compat: existing field used around the app
         distanceMeters: nearest.distanceMeters,
+
+        // New: store which checkpoint was used (or fallback)
+        checkpointId: cp?.id ?? null,
+        checkpointLabel: cp?.label ?? null,
+        checkpointLat: cp?.lat ?? null,
+        checkpointLng: cp?.lng ?? null,
+        checkpointRadiusMeters: cp?.radiusMeters ?? null,
+        checkpointDistanceMeters: nearest.distanceMeters,
 
         shareBonus: false,
         shareConfirmed: false,
         sharedAt: null,
         sharedPlatform: null,
-      });
+      };
+
+      const ref = await addDoc(collection(db, "coneCompletions"), payload);
 
       setCompletedId(ref.id);
       setShareBonus(false);
@@ -302,6 +303,7 @@ export default function ConeDetailRoute() {
         distanceMeters={stats.distance}
         accuracyMeters={stats.accuracy}
         inRange={stats.inRange}
+        checkpointLabel={stats.checkpointLabel ?? undefined}
         onRefreshGps={() => {
           void refreshLocation();
         }}
