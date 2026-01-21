@@ -1,21 +1,45 @@
+// app/(tabs)/progress.tsx
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, Text, ActivityIndicator, ScrollView } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
-import { auth, db } from "../../lib/firebase";
+import { auth, db } from "../../../lib/firebase";
 import { Screen } from "@/components/screen";
 
 import { PieChart } from "@/components/progress/PieChart";
 import { StatRow } from "@/components/progress/StatRow";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
+import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
-import { nearestCheckpoint } from "../../lib/checkpoints";
-import type { Cone } from "@/lib/models";
+import { nearestCheckpoint } from "../../../lib/checkpoints";
+import { getBadgeState } from "@/lib/badges";
+
+type Cone = {
+  id: string;
+  name: string;
+  slug: string;
+  lat: number;
+  lng: number;
+  radiusMeters: number;
+  checkpoints?: {
+    id?: string;
+    label?: string;
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+  }[];
+  description?: string;
+  active: boolean;
+
+  // optional metadata (safe if missing)
+  type?: "cone" | "crater";
+  region?: "north" | "central" | "south" | "harbour";
+};
 
 type Completion = {
   coneId: string;
@@ -59,6 +83,14 @@ export default function ProgressScreen() {
             checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
             description: data.description ?? "",
             active: !!data.active,
+            type: data.type === "crater" ? "crater" : data.type === "cone" ? "cone" : undefined,
+            region:
+              data.region === "north" ||
+              data.region === "central" ||
+              data.region === "south" ||
+              data.region === "harbour"
+                ? data.region
+                : undefined,
           };
         });
 
@@ -142,6 +174,19 @@ export default function ProgressScreen() {
     return { cone: best, distance: bestDist };
   }, [cones, completedIds, loc]);
 
+  const badgeState = useMemo(() => {
+    return getBadgeState({
+      cones: cones.map((c) => ({
+        id: c.id,
+        type: c.type,
+        region: c.region,
+        active: c.active,
+      })),
+      completedConeIds: completedIds,
+      shareBonusCount,
+    });
+  }, [cones, completedIds, shareBonusCount]);
+
   function goToCone(coneId: string) {
     router.push(`/(tabs)/cones/${coneId}`);
   }
@@ -176,53 +221,63 @@ export default function ProgressScreen() {
   const allDone = totals.total > 0 && totals.completed === totals.total;
 
   return (
-    <Screen>
-      <Text className="text-2xl font-extrabold text-foreground">
-        Climb all Auckland volcanic cones 🌋
-      </Text>
-      <Text className="mt-1 text-sm text-muted-foreground">
-        Complete each cone by getting within range and confirming your climb.
-      </Text>
+    <Screen padded={false}>
+      <ScrollView
+        className="flex-1 bg-background"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <Text className="text-2xl font-extrabold text-foreground">Progress</Text>
+        <Text className="mt-1 text-sm text-muted-foreground">
+          Your stats + the next badge you’re closest to unlocking.
+        </Text>
 
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>Your progress</CardTitle>
-        </CardHeader>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>Your progress</CardTitle>
+          </CardHeader>
 
-        <CardContent className="flex-row items-center justify-between">
-          <PieChart percent={totals.percent} />
+          <CardContent className="flex-row items-center justify-between">
+            <PieChart percent={totals.percent} />
 
-          <View className="flex-1 pl-4 gap-2">
-            <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} variant="default" />
-            <StatRow label="Share bonus" value={shareBonusCount} variant="secondary" />
+            <View className="flex-1 pl-4 gap-2">
+              <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} />
+              <StatRow label="Share bonus" value={shareBonusCount} variant="secondary" />
 
-            {allDone ? (
-              <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                <Text className="font-semibold text-foreground">You’ve completed them all 🎉</Text>
-              </View>
-            ) : null}
-          </View>
-        </CardContent>
-      </Card>
+              {allDone ? (
+                <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
+                  <Text className="font-semibold text-foreground">You’ve completed them all 🎉</Text>
+                </View>
+              ) : null}
+            </View>
+          </CardContent>
+        </Card>
 
-      <NearestUnclimbedCard
-        cone={
-          nearestUnclimbed
-            ? {
-                id: nearestUnclimbed.cone.id,
-                name: nearestUnclimbed.cone.name,
-                description: nearestUnclimbed.cone.description,
-              }
-            : null
-        }
-        distanceMeters={nearestUnclimbed?.distance ?? null}
-        locErr={locErr}
-        onOpen={goToCone}
-      />
+        <BadgesSummaryCard
+          nextUp={badgeState.nextUp}
+          recentlyUnlocked={badgeState.recentlyUnlocked}
+          onOpenAll={() => router.push("/(tabs)/badges")}
+        />
 
-      <Text className="mt-4 text-xs text-muted-foreground">
-        Tip: Better GPS accuracy helps when you’re close to the cone.
-      </Text>
+        <NearestUnclimbedCard
+          cone={
+            nearestUnclimbed
+              ? {
+                  id: nearestUnclimbed.cone.id,
+                  name: nearestUnclimbed.cone.name,
+                  description: nearestUnclimbed.cone.description,
+                }
+              : null
+          }
+          distanceMeters={nearestUnclimbed?.distance ?? null}
+          locErr={locErr}
+          onOpen={goToCone}
+        />
+
+        <Text className="mt-4 text-xs text-muted-foreground">
+          Tip: Better GPS accuracy helps when you’re close to the cone.
+        </Text>
+      </ScrollView>
     </Screen>
   );
 }
