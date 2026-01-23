@@ -53,6 +53,7 @@ export default function ProgressScreen() {
   const [cones, setCones] = useState<Cone[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [shareBonusCount, setShareBonusCount] = useState(0);
+  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
 
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
   const [locErr, setLocErr] = useState<string>("");
@@ -99,17 +100,31 @@ export default function ProgressScreen() {
 
         const ids = new Set<string>();
         let bonus = 0;
+        const byConeId: Record<string, number> = {};
 
         compSnap.docs.forEach((d) => {
-          const data = d.data() as Completion;
+          const data = d.data() as any;
+
           if (data?.coneId) ids.add(data.coneId);
+
           if (data?.shareBonus) bonus += 1;
+
+          // completedAt is a Firestore Timestamp (usually has .toMillis()).
+          const ms =
+            typeof data?.completedAt?.toMillis === "function"
+              ? data.completedAt.toMillis()
+              : typeof data?.completedAt === "number"
+                ? data.completedAt
+                : null;
+
+          if (data?.coneId && ms != null) byConeId[data.coneId] = ms;
         });
 
         if (!mounted) return;
 
         setCones(conesList);
         setCompletedIds(ids);
+        setCompletedAtByConeId(byConeId);
         setShareBonusCount(bonus);
       } catch (e: any) {
         if (!mounted) return;
@@ -184,8 +199,9 @@ export default function ProgressScreen() {
       })),
       completedConeIds: completedIds,
       shareBonusCount,
+      completedAtByConeId,
     });
-  }, [cones, completedIds, shareBonusCount]);
+  }, [cones, completedIds, shareBonusCount, completedAtByConeId]);
 
   function goToCone(coneId: string) {
     router.push(`/(tabs)/cones/${coneId}`);
@@ -256,7 +272,7 @@ export default function ProgressScreen() {
         <BadgesSummaryCard
           nextUp={badgeState.nextUp}
           recentlyUnlocked={badgeState.recentlyUnlocked}
-          onOpenAll={() => router.push("/(tabs)/badges")}
+          onOpenAll={() => router.push("/(tabs)/progress/badges")}
         />
 
         <NearestUnclimbedCard

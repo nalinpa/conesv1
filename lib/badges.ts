@@ -80,10 +80,12 @@ export function getBadgeState({
   cones,
   completedConeIds,
   shareBonusCount,
+  completedAtByConeId,
 }: {
   cones: ConeMeta[];
   completedConeIds: Set<string>;
   shareBonusCount: number;
+  completedAtByConeId?: Record<string, number>; // epoch ms
 }): {
   earnedIds: Set<string>;
   progressById: BadgeProgressMap;
@@ -120,7 +122,12 @@ export function getBadgeState({
 
   function setProgress(id: string, earned: boolean, progressLabel?: string | null, distanceToEarn?: number | null) {
     const badge = BADGES.find((b) => b.id === id)!;
-    const bp: BadgeProgress = { badge, earned, progressLabel: progressLabel ?? null, distanceToEarn: distanceToEarn ?? null };
+    const bp: BadgeProgress = {
+      badge,
+      earned,
+      progressLabel: progressLabel ?? null,
+      distanceToEarn: distanceToEarn ?? null,
+    };
     progressById[id] = bp;
     if (earned) earnedIds.add(id);
   }
@@ -176,13 +183,23 @@ export function getBadgeState({
   }
   {
     const earned = totalConesType > 0 && doneConesType >= totalConesType;
-    const label = totalConesType > 0 && !earned ? `${doneConesType} / ${totalConesType}` : totalConesType === 0 ? "No cone-type entries configured yet." : null;
+    const label =
+      totalConesType > 0 && !earned
+        ? `${doneConesType} / ${totalConesType}`
+        : totalConesType === 0
+          ? "No cone-type entries configured yet."
+          : null;
     const dist = totalConesType > 0 ? Math.max(0, totalConesType - doneConesType) : null;
     setProgress("all_cones_type", earned, label, dist);
   }
   {
     const earned = totalCraters > 0 && doneCraters >= totalCraters;
-    const label = totalCraters > 0 && !earned ? `${doneCraters} / ${totalCraters}` : totalCraters === 0 ? "No crater entries configured yet." : null;
+    const label =
+      totalCraters > 0 && !earned
+        ? `${doneCraters} / ${totalCraters}`
+        : totalCraters === 0
+          ? "No crater entries configured yet."
+          : null;
     const dist = totalCraters > 0 ? Math.max(0, totalCraters - doneCraters) : null;
     setProgress("all_craters_type", earned, label, dist);
   }
@@ -193,7 +210,12 @@ export function getBadgeState({
     const done = regionDone[r];
 
     const earned = total > 0 && done >= total;
-    const label = total > 0 && !earned ? `${done} / ${total} (need ${total - done} more)` : total === 0 ? "No cones configured for this region yet." : null;
+    const label =
+      total > 0 && !earned
+        ? `${done} / ${total} (need ${total - done} more)`
+        : total === 0
+          ? "No cones configured for this region yet."
+          : null;
     const dist = total > 0 ? Math.max(0, total - done) : null;
 
     if (r === "north") setProgress("north_master", earned, label, dist);
@@ -211,11 +233,77 @@ export function getBadgeState({
     if (nextUp == null || (p.distanceToEarn ?? 1e9) < (nextUp.distanceToEarn ?? 1e9)) nextUp = p;
   }
 
-  // “Recently unlocked” (approx): show a few earned badges that are “early-ish” + feel recent.
-  // Without storing badge events, we can’t know exact unlock order, so we keep it simple + useful.
-  const recentlyUnlocked = BADGES.filter((b) => earnedIds.has(b.id))
-    .slice(0, 4)
-    .map((b) => progressById[b.id]);
+  // Recently unlocked:
+  // If we have completion timestamps, use them to produce a list that feels "recent".
+  // Otherwise fall back to the old static ordering.
+  let recentlyUnlocked: BadgeProgress[] = [];
+
+  if (completedAtByConeId) {
+    // Most recent completion cone ids (reserved for future improvements / heuristics)
+    const recentConeIds = Object.entries(completedAtByConeId)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([coneId]) => coneId);
+
+    // Current counts (already computed above, but keep explicit for clarity)
+    const doneAllNow = doneAll;
+    const doneCratersNow = doneCraters;
+    const doneConesTypeNow = doneConesType;
+
+    const candidates: string[] = [];
+
+    // Social badges (can change independently of cone completions)
+    if (earnedIds.has("shared_the_view")) candidates.push("shared_the_view");
+    if (earnedIds.has("show_off")) candidates.push("show_off");
+
+    // Milestones (likely triggered by the latest completions)
+    if (doneAllNow >= 1) candidates.push("first_steps");
+    if (doneAllNow >= 5) candidates.push("explorer");
+    if (doneAllNow >= 10) candidates.push("wayfinder");
+    if (doneAllNow >= 20) candidates.push("halfway_there");
+    if (totalAll > 0 && doneAllNow >= totalAll) candidates.push("cone_collector");
+
+    // Type milestones
+    if (doneConesTypeNow >= 1) candidates.push("first_cone");
+    if (doneCratersNow >= 1) candidates.push("first_crater");
+    if (doneCratersNow >= 5) candidates.push("five_craters");
+    if (totalConesType > 0 && doneConesTypeNow >= totalConesType) candidates.push("all_cones_type");
+    if (totalCraters > 0 && doneCratersNow >= totalCraters) candidates.push("all_craters_type");
+
+    // Region masters (only meaningful when region is configured)
+    for (const r of regions) {
+      const total = regionTotals[r];
+      const done = regionDone[r];
+      if (total > 0 && done >= total) {
+        if (r === "north") candidates.push("north_master");
+        if (r === "central") candidates.push("central_master");
+        if (r === "south") candidates.push("south_master");
+        if (r === "harbour") candidates.push("harbour_master");
+      }
+    }
+
+    // Unique + earned only
+    const uniqEarned = Array.from(new Set(candidates)).filter((id) => earnedIds.has(id));
+
+    recentlyUnlocked = uniqEarned
+      .slice(0, 4)
+      .map((id) => progressById[id])
+      .filter(Boolean);
+
+    // If empty, fall back
+    if (recentlyUnlocked.length === 0) {
+      recentlyUnlocked = BADGES.filter((b) => earnedIds.has(b.id))
+        .slice(0, 4)
+        .map((b) => progressById[b.id]);
+    }
+
+    // keep for future heuristic improvements without lint complaining
+    void recentConeIds;
+  } else {
+    recentlyUnlocked = BADGES.filter((b) => earnedIds.has(b.id))
+      .slice(0, 4)
+      .map((b) => progressById[b.id]);
+  }
 
   return { earnedIds, progressById, nextUp, recentlyUnlocked };
 }

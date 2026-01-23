@@ -4,16 +4,11 @@ import * as Location from "expo-location";
 import { Stack, useLocalSearchParams } from "expo-router";
 
 import {
-  addDoc,
-  collection,
+  setDoc,
   doc,
   getDoc,
-  getDocs,
-  limit,
-  query,
   serverTimestamp,
-  updateDoc,
-  where,
+  updateDoc
 } from "firebase/firestore";
 
 import { auth, db } from "../../../lib/firebase";
@@ -25,7 +20,7 @@ import { ConeCompletionCard } from "@/components/cone/ConeCompletionCard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 
-import { nearestCheckpoint } from "../../../lib/checkpoints";
+import { nearestCheckpoint, inRange } from "../../../lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
 
 export default function ConeDetailRoute() {
@@ -111,18 +106,12 @@ export default function ConeDetailRoute() {
       const user = auth.currentUser;
       if (!user) return;
 
-      const qy = query(
-        collection(db, "coneCompletions"),
-        where("userId", "==", user.uid),
-        where("coneId", "==", cone.id),
-        limit(1)
-      );
+      const completionId = `${user.uid}_${cone.id}`;
+      const snap = await getDoc(doc(db, "coneCompletions", completionId));
 
-      const snap = await getDocs(qy);
-      if (!snap.empty) {
-        const d = snap.docs[0];
-        const data = d.data() as any;
-        setCompletedId(d.id);
+      if (snap.exists()) {
+        const data = snap.data() as any;
+        setCompletedId(snap.id);
         setShareBonus(!!data.shareBonus);
       } else {
         setCompletedId(null);
@@ -145,12 +134,12 @@ export default function ConeDetailRoute() {
     const nearest = nearestCheckpoint(cone, latitude, longitude);
 
     const acc = accuracy ?? null;
-    const inRange = nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
+    const ok = inRange(nearest.checkpoint, nearest.distanceMeters, acc, 50);
 
     return {
       distance: nearest.distanceMeters,
       accuracy: acc,
-      inRange,
+      inRange: ok,
       checkpointLabel: nearest.checkpoint.label ?? null,
     };
   }, [loc, cone]);
@@ -225,9 +214,10 @@ export default function ConeDetailRoute() {
         sharedPlatform: null,
       };
 
-      const ref = await addDoc(collection(db, "coneCompletions"), payload);
+      const completionId = `${user.uid}_${cone.id}`;
+      await setDoc(doc(db, "coneCompletions", completionId), payload, { merge: true });
 
-      setCompletedId(ref.id);
+      setCompletedId(completionId);
       setShareBonus(false);
     } catch (e: any) {
       console.error(e);

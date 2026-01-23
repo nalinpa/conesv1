@@ -27,6 +27,7 @@ export default function BadgesDetailPage() {
   const [cones, setCones] = useState<ConeMeta[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [shareBonusCount, setShareBonusCount] = useState(0);
+  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
   const [err, setErr] = useState<string>("");
 
   useEffect(() => {
@@ -61,16 +62,28 @@ export default function BadgesDetailPage() {
 
         const ids = new Set<string>();
         let bonus = 0;
+        const byConeId: Record<string, number> = {};
 
         compSnap.docs.forEach((d) => {
-          const data = d.data() as Completion;
+          const data = d.data() as any;
+
           if (data?.coneId) ids.add(data.coneId);
           if (data?.shareBonus) bonus += 1;
+
+          const ms =
+            typeof data?.completedAt?.toMillis === "function"
+              ? data.completedAt.toMillis()
+              : typeof data?.completedAt === "number"
+                ? data.completedAt
+                : null;
+
+          if (data?.coneId && ms != null) byConeId[data.coneId] = ms;
         });
 
         if (!mounted) return;
         setCones(conesList);
         setCompletedIds(ids);
+        setCompletedAtByConeId(byConeId);
         setShareBonusCount(bonus);
       } catch (e: any) {
         if (!mounted) return;
@@ -84,8 +97,13 @@ export default function BadgesDetailPage() {
   }, []);
 
   const state = useMemo(() => {
-    return getBadgeState({ cones, completedConeIds: completedIds, shareBonusCount });
-  }, [cones, completedIds, shareBonusCount]);
+    return getBadgeState({
+      cones,
+      completedConeIds: completedIds,
+      shareBonusCount,
+      completedAtByConeId,
+    });
+  }, [cones, completedIds, shareBonusCount, completedAtByConeId]);
 
   const earnedCount = state.earnedIds.size;
 
@@ -109,7 +127,13 @@ export default function BadgesDetailPage() {
       >
         <View className="flex-row items-center justify-between">
           <Text className="text-2xl font-extrabold text-foreground">Badges</Text>
-          <Button variant="outline" onPress={() => router.back()}>
+          <Button
+            variant="outline"
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace("/(tabs)/progress");
+            }}
+          >
             <Text className="font-semibold">Back</Text>
           </Button>
         </View>

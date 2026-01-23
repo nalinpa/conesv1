@@ -231,19 +231,24 @@ export default function MapPage() {
           />
         ) : null}
 
-        {cones.map((c) => {
-          const done = completedIds.has(c.id);
-          return (
-            <Marker
-              key={c.id}
-              coordinate={{ latitude: c.lat, longitude: c.lng }}
-              title={c.name}
-              description={done ? "Completed" : "Not completed"}
-              pinColor={done ? "#16a34a" : "#dc2626"}
-              onPress={() => openCone(c.id)}
-            />
-          );
-        })}
+      {cones.map((c) => {
+        const done = completedIds.has(c.id);
+
+        const display = c.checkpoints && c.checkpoints.length > 0
+          ? c.checkpoints[0]
+          : { lat: c.lat, lng: c.lng };
+
+        return (
+          <Marker
+            key={c.id}
+            coordinate={{ latitude: display.lat, longitude: display.lng }}
+            title={c.name}
+            description={done ? "Completed" : "Not completed"}
+            pinColor={done ? "#16a34a" : "#dc2626"}
+            onCalloutPress={() => openCone(c.id)}
+          />
+        );
+      })}
       </MapView>
     </View>
   );
