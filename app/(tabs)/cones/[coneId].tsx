@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Text, ActivityIndicator, Share } from "react-native";
+import { Text, ActivityIndicator, Share, View, Modal, TextInput, Pressable } from "react-native";
 import * as Location from "expo-location";
 import { Stack, useLocalSearchParams } from "expo-router";
 
 import {
-  setDoc,
   doc,
   getDoc,
   serverTimestamp,
-  updateDoc
+  setDoc,
+  updateDoc,
 } from "firebase/firestore";
 
 import { auth, db } from "../../../lib/firebase";
@@ -19,8 +19,9 @@ import { ConeStatusCard } from "@/components/cone/ConeStatusCard";
 import { ConeCompletionCard } from "@/components/cone/ConeCompletionCard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
-import { nearestCheckpoint, inRange } from "../../../lib/checkpoints";
+import { nearestCheckpoint } from "../../../lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
 
 export default function ConeDetailRoute() {
@@ -36,6 +37,16 @@ export default function ConeDetailRoute() {
   const [saving, setSaving] = useState(false);
   const [completedId, setCompletedId] = useState<string | null>(null);
   const [shareBonus, setShareBonus] = useState(false);
+
+  // Review (read-only after submit)
+  const [myReviewRating, setMyReviewRating] = useState<number | null>(null);
+  const [myReviewText, setMyReviewText] = useState<string | null>(null);
+
+  // Review modal draft
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [draftRating, setDraftRating] = useState<number | null>(null);
+  const [draftText, setDraftText] = useState("");
+  const [reviewSaving, setReviewSaving] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -99,6 +110,7 @@ export default function ConeDetailRoute() {
     })();
   }, [cone?.id]);
 
+  // Load completion + share bonus + (optional) review from deterministic completion doc
   useEffect(() => {
     if (!cone) return;
 
@@ -111,11 +123,18 @@ export default function ConeDetailRoute() {
 
       if (snap.exists()) {
         const data = snap.data() as any;
+
         setCompletedId(snap.id);
         setShareBonus(!!data.shareBonus);
+
+        setMyReviewRating(typeof data.reviewRating === "number" ? data.reviewRating : null);
+        setMyReviewText(typeof data.reviewText === "string" ? data.reviewText : null);
       } else {
         setCompletedId(null);
         setShareBonus(false);
+
+        setMyReviewRating(null);
+        setMyReviewText(null);
       }
     })();
   }, [cone?.id]);
@@ -134,12 +153,13 @@ export default function ConeDetailRoute() {
     const nearest = nearestCheckpoint(cone, latitude, longitude);
 
     const acc = accuracy ?? null;
-    const ok = inRange(nearest.checkpoint, nearest.distanceMeters, acc, 50);
+    const inRange =
+      nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
 
     return {
       distance: nearest.distanceMeters,
       accuracy: acc,
-      inRange: ok,
+      inRange,
       checkpointLabel: nearest.checkpoint.label ?? null,
     };
   }, [loc, cone]);
@@ -187,6 +207,8 @@ export default function ConeDetailRoute() {
 
     setSaving(true);
     try {
+      const completionId = `${user.uid}_${cone.id}`;
+
       const payload: ConeCompletionWrite = {
         coneId: cone.id,
         coneSlug: cone.slug,
@@ -200,7 +222,7 @@ export default function ConeDetailRoute() {
         // Back-compat: existing field used around the app
         distanceMeters: nearest.distanceMeters,
 
-        // New: store which checkpoint was used (or fallback)
+        // Store which checkpoint was used (or fallback)
         checkpointId: cp?.id ?? null,
         checkpointLabel: cp?.label ?? null,
         checkpointLat: cp?.lat ?? null,
@@ -212,13 +234,20 @@ export default function ConeDetailRoute() {
         shareConfirmed: false,
         sharedAt: null,
         sharedPlatform: null,
+
+        // Review fields (added later; initially unset)
+        reviewRating: null,
+        reviewText: null,
+        reviewCreatedAt: null,
       };
 
-      const completionId = `${user.uid}_${cone.id}`;
-      await setDoc(doc(db, "coneCompletions", completionId), payload, { merge: true });
+      await setDoc(doc(db, "coneCompletions", completionId), payload);
 
       setCompletedId(completionId);
       setShareBonus(false);
+
+      setMyReviewRating(null);
+      setMyReviewText(null);
     } catch (e: any) {
       console.error(e);
       setErr(e?.message ?? "Failed to save completion");
@@ -232,11 +261,16 @@ export default function ConeDetailRoute() {
     if (!completedId) return;
     if (shareBonus) return;
 
+    const user = auth.currentUser;
+    if (!user) return;
+
     try {
       const text = `I just completed ${cone.name} 🌋 #AucklandCones #cones`;
       await Share.share({ message: text });
 
-      await updateDoc(doc(db, "coneCompletions", completedId), {
+      const completionId = `${user.uid}_${cone.id}`;
+
+      await updateDoc(doc(db, "coneCompletions", completionId), {
         shareBonus: true,
         shareConfirmed: true,
         sharedAt: serverTimestamp(),
@@ -246,6 +280,59 @@ export default function ConeDetailRoute() {
       setShareBonus(true);
     } catch {
       // user cancelling share is normal — do nothing
+    }
+  }
+
+  function openReview() {
+    if (!completedId) return;
+    if (myReviewRating != null) return; // one-time only
+    setDraftRating(null);
+    setDraftText("");
+    setReviewOpen(true);
+  }
+
+  async function saveReview() {
+    if (!cone) return;
+
+    const user = auth.currentUser;
+    if (!user) {
+      setErr("Not signed in.");
+      return;
+    }
+
+    if (!completedId) {
+      setErr("Complete the cone first to leave a review.");
+      return;
+    }
+
+    if (myReviewRating != null) return; // one-time only
+
+    if (draftRating == null || draftRating < 1 || draftRating > 5) {
+      setErr("Pick a rating from 1 to 5.");
+      return;
+    }
+
+    setErr("");
+    setReviewSaving(true);
+
+    try {
+      const completionId = `${user.uid}_${cone.id}`;
+
+      await updateDoc(doc(db, "coneCompletions", completionId), {
+        reviewRating: draftRating,
+        reviewText: draftText.trim() ? draftText.trim() : null,
+        reviewCreatedAt: serverTimestamp(),
+      });
+
+      setMyReviewRating(draftRating);
+      setMyReviewText(draftText.trim() ? draftText.trim() : null);
+
+      setReviewOpen(false);
+    } catch (e: any) {
+      console.error(e);
+      setErr(e?.message ?? "Failed to save review");
+    } finally {
+      setReviewSaving(false);
     }
   }
 
@@ -308,7 +395,77 @@ export default function ConeDetailRoute() {
         onComplete={completeCone}
         shareBonus={shareBonus}
         onShareBonus={doShareBonus}
+        myReviewRating={myReviewRating}
+        myReviewText={myReviewText}
+        onLeaveReview={openReview}
       />
+
+      <Modal
+        visible={reviewOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReviewOpen(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/40 px-6">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Leave a review</CardTitle>
+            </CardHeader>
+
+            <CardContent className="gap-4">
+              <Text className="text-sm text-muted-foreground">
+                One-time only. Choose a rating and (optionally) add a short note.
+              </Text>
+
+              <View className="flex-row flex-wrap gap-2">
+                {[1, 2, 3, 4, 5].map((n) => {
+                  const selected = draftRating === n;
+                  return (
+                    <Pressable
+                      key={n}
+                      onPress={() => setDraftRating(n)}
+                      className={[
+                        "rounded-full border px-3 py-2",
+                        selected ? "border-primary/30 bg-primary/10" : "border-border bg-background",
+                      ].join(" ")}
+                    >
+                      <Text className={selected ? "font-semibold text-foreground" : "text-muted-foreground"}>
+                        {"⭐".repeat(n)}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+
+              <View className="rounded-xl border border-border bg-background px-3 py-2">
+                <TextInput
+                  value={draftText}
+                  onChangeText={setDraftText}
+                  placeholder="Optional note (e.g. great views, muddy track)…"
+                  placeholderTextColor="rgba(100,116,139,0.9)"
+                  multiline
+                  className="text-foreground"
+                  style={{ minHeight: 80 }}
+                  maxLength={280}
+                />
+                <Text className="mt-2 text-xs text-muted-foreground">{draftText.length} / 280</Text>
+              </View>
+
+              <View className="flex-row gap-2">
+                <Button variant="outline" onPress={() => setReviewOpen(false)} disabled={reviewSaving}>
+                  <Text className="font-semibold">Cancel</Text>
+                </Button>
+
+                <Button onPress={() => void saveReview()} disabled={reviewSaving || draftRating == null}>
+                  <Text className="text-primary-foreground font-semibold">
+                    {reviewSaving ? "Saving…" : "Save review"}
+                  </Text>
+                </Button>
+              </View>
+            </CardContent>
+          </Card>
+        </View>
+      </Modal>
     </Screen>
   );
 }

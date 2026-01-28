@@ -42,6 +42,10 @@ export type ConeCompletionWrite = {
   checkpointRadiusMeters?: number | null;
   checkpointDistanceMeters?: number | null;
 
+  reviewRating?: number | null;
+  reviewText?: string | null;   
+  reviewCreatedAt?: any; 
+
   shareBonus: boolean;
   shareConfirmed: boolean;
   sharedAt: any;
