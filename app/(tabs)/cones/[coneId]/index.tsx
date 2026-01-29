@@ -1,28 +1,41 @@
-import { useEffect, useMemo, useState } from "react";
-import { Text, ActivityIndicator, Share, View, Modal, TextInput, Pressable } from "react-native";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { Text, ActivityIndicator, Share, View, Modal, TextInput, Pressable, ScrollView } from "react-native";
 import * as Location from "expo-location";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, router, useFocusEffect } from "expo-router";
 
 import {
+  collection,
   doc,
   getDoc,
+  onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
-import { auth, db } from "../../../lib/firebase";
+import { auth, db } from "../../../../lib/firebase";
 import { Screen } from "@/components/screen";
 
 import { ConeInfoCard } from "@/components/cone/ConeInfoCard";
 import { ConeStatusCard } from "@/components/cone/ConeStatusCard";
 import { ConeCompletionCard } from "@/components/cone/ConeCompletionCard";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Button } from "../../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
+import { Button } from "../../../../components/ui/button";
 
-import { nearestCheckpoint } from "../../../lib/checkpoints";
+import { nearestCheckpoint } from "../../../../lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
+
+type PublicReviewDoc = {
+  coneId: string;
+  coneName: string;
+  userId: string;
+  reviewRating: number; // 1..5
+  reviewText: string | null;
+  reviewCreatedAt: any;
+};
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
@@ -38,7 +51,7 @@ export default function ConeDetailRoute() {
   const [completedId, setCompletedId] = useState<string | null>(null);
   const [shareBonus, setShareBonus] = useState(false);
 
-  // Review (read-only after submit)
+  // My review (read-only after submit) — sourced from coneReviews
   const [myReviewRating, setMyReviewRating] = useState<number | null>(null);
   const [myReviewText, setMyReviewText] = useState<string | null>(null);
 
@@ -47,6 +60,10 @@ export default function ConeDetailRoute() {
   const [draftRating, setDraftRating] = useState<number | null>(null);
   const [draftText, setDraftText] = useState("");
   const [reviewSaving, setReviewSaving] = useState(false);
+
+  // Public aggregate (client-side)
+  const [avgRating, setAvgRating] = useState<number | null>(null);
+  const [ratingCount, setRatingCount] = useState<number>(0);
 
   useEffect(() => {
     let mounted = true;
@@ -90,6 +107,7 @@ export default function ConeDetailRoute() {
     };
   }, [coneId]);
 
+  // Location (one-time per cone load)
   useEffect(() => {
     if (!cone) return;
 
@@ -110,7 +128,7 @@ export default function ConeDetailRoute() {
     })();
   }, [cone?.id]);
 
-  // Load completion + share bonus + (optional) review from deterministic completion doc
+  // Load completion doc (deterministic)
   useEffect(() => {
     if (!cone) return;
 
@@ -123,20 +141,63 @@ export default function ConeDetailRoute() {
 
       if (snap.exists()) {
         const data = snap.data() as any;
-
         setCompletedId(snap.id);
         setShareBonus(!!data.shareBonus);
-
-        setMyReviewRating(typeof data.reviewRating === "number" ? data.reviewRating : null);
-        setMyReviewText(typeof data.reviewText === "string" ? data.reviewText : null);
       } else {
         setCompletedId(null);
         setShareBonus(false);
-
-        setMyReviewRating(null);
-        setMyReviewText(null);
       }
     })();
+  }, [cone?.id]);
+
+  // ✅ My review + public aggregate from coneReviews (live)
+  useEffect(() => {
+    if (!cone) return;
+
+    const user = auth.currentUser;
+    const myId = user ? `${user.uid}_${cone.id}` : null;
+
+    // Public aggregate: all reviews for this cone
+    const reviewsQ = query(collection(db, "coneReviews"), where("coneId", "==", cone.id));
+
+    const unsub = onSnapshot(
+      reviewsQ,
+      (snap) => {
+        let sum = 0;
+        let count = 0;
+
+        let mineRating: number | null = null;
+        let mineText: string | null = null;
+
+        snap.docs.forEach((d) => {
+          const data = d.data() as any;
+
+          const r = typeof data?.reviewRating === "number" ? data.reviewRating : null;
+          if (r != null && r >= 1 && r <= 5) {
+            sum += r;
+            count += 1;
+          }
+
+          if (myId && d.id === myId) {
+            mineRating = typeof data?.reviewRating === "number" ? data.reviewRating : null;
+            mineText = typeof data?.reviewText === "string" ? data.reviewText : null;
+          }
+        });
+
+        setRatingCount(count);
+        setAvgRating(count > 0 ? sum / count : null);
+
+        setMyReviewRating(mineRating);
+        setMyReviewText(mineText);
+      },
+      (e) => {
+        console.error(e);
+        setAvgRating(null);
+        setRatingCount(0);
+      }
+    );
+
+    return () => unsub();
   }, [cone?.id]);
 
   const stats = useMemo(() => {
@@ -153,8 +214,7 @@ export default function ConeDetailRoute() {
     const nearest = nearestCheckpoint(cone, latitude, longitude);
 
     const acc = accuracy ?? null;
-    const inRange =
-      nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
+    const inRange = nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
 
     return {
       distance: nearest.distanceMeters,
@@ -164,7 +224,7 @@ export default function ConeDetailRoute() {
     };
   }, [loc, cone]);
 
-  async function refreshLocation() {
+  const refreshLocation = useCallback(async () => {
     setErr("");
     try {
       const cur = await Location.getCurrentPositionAsync({
@@ -174,7 +234,17 @@ export default function ConeDetailRoute() {
     } catch (e: any) {
       setErr(e?.message ?? "Failed to refresh location.");
     }
-  }
+  }, []);
+
+  // ✅ Auto-refresh GPS on focus (but skip if cone already completed)
+  useFocusEffect(
+    useCallback(() => {
+      if (!completedId) {
+        void refreshLocation();
+      }
+      return () => {};
+    }, [completedId, refreshLocation])
+  );
 
   async function completeCone() {
     if (!cone) return;
@@ -219,10 +289,10 @@ export default function ConeDetailRoute() {
         deviceLng: longitude,
         accuracyMeters: accuracy ?? null,
 
-        // Back-compat: existing field used around the app
+        // Back-compat field used around the app
         distanceMeters: nearest.distanceMeters,
 
-        // Store which checkpoint was used (or fallback)
+        // checkpoint details
         checkpointId: cp?.id ?? null,
         checkpointLabel: cp?.label ?? null,
         checkpointLat: cp?.lat ?? null,
@@ -234,20 +304,12 @@ export default function ConeDetailRoute() {
         shareConfirmed: false,
         sharedAt: null,
         sharedPlatform: null,
-
-        // Review fields (added later; initially unset)
-        reviewRating: null,
-        reviewText: null,
-        reviewCreatedAt: null,
       };
 
       await setDoc(doc(db, "coneCompletions", completionId), payload);
 
       setCompletedId(completionId);
       setShareBonus(false);
-
-      setMyReviewRating(null);
-      setMyReviewText(null);
     } catch (e: any) {
       console.error(e);
       setErr(e?.message ?? "Failed to save completion");
@@ -316,13 +378,18 @@ export default function ConeDetailRoute() {
     setReviewSaving(true);
 
     try {
-      const completionId = `${user.uid}_${cone.id}`;
+      const reviewId = `${user.uid}_${cone.id}`;
 
-      await updateDoc(doc(db, "coneCompletions", completionId), {
+      const publicPayload: PublicReviewDoc = {
+        coneId: cone.id,
+        coneName: cone.name,
+        userId: user.uid,
         reviewRating: draftRating,
         reviewText: draftText.trim() ? draftText.trim() : null,
         reviewCreatedAt: serverTimestamp(),
-      });
+      };
+
+      await setDoc(doc(db, "coneReviews", reviewId), publicPayload);
 
       setMyReviewRating(draftRating);
       setMyReviewText(draftText.trim() ? draftText.trim() : null);
@@ -365,47 +432,83 @@ export default function ConeDetailRoute() {
   }
 
   return (
-    <Screen>
+    <Screen padded={false}>
       <Stack.Screen options={{ title: headerTitle }} />
 
-      <ConeInfoCard
-        name={cone.name}
-        description={cone.description}
-        slug={cone.slug}
-        radiusMeters={cone.radiusMeters}
-      />
-
-      <ConeStatusCard
-        loadingLocation={!loc}
-        distanceMeters={stats.distance}
-        accuracyMeters={stats.accuracy}
-        inRange={stats.inRange}
-        checkpointLabel={stats.checkpointLabel ?? undefined}
-        onRefreshGps={() => {
-          void refreshLocation();
-        }}
-        errorText={err}
-        showDistance={true}
-      />
-
-      <ConeCompletionCard
-        completed={!!completedId}
-        saving={saving}
-        canComplete={!!loc}
-        onComplete={completeCone}
-        shareBonus={shareBonus}
-        onShareBonus={doShareBonus}
-        myReviewRating={myReviewRating}
-        myReviewText={myReviewText}
-        onLeaveReview={openReview}
-      />
-
-      <Modal
-        visible={reviewOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setReviewOpen(false)}
+      <ScrollView
+        className="flex-1 bg-background"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
       >
+        <ConeInfoCard
+          name={cone.name}
+          description={cone.description}
+          slug={cone.slug}
+          radiusMeters={cone.radiusMeters}
+        />
+
+        {/* Public rating summary */}
+        <Card className="mt-4">
+          <CardHeader>
+            <View className="flex-row items-center justify-between">
+              <CardTitle>Reviews</CardTitle>
+
+              {ratingCount > 0 ? (
+                <Button
+                  variant="outline"
+                  onPress={() =>
+                    router.push(
+                      `/(tabs)/cones/${cone.id}/reviews?coneName=${encodeURIComponent(cone.name)}`
+                    )
+                  }
+                >
+                  <Text className="font-semibold">View all</Text>
+                </Button>
+              ) : null}
+            </View>
+          </CardHeader>
+          <CardContent className="gap-2">
+            {ratingCount === 0 ? (
+              <Text className="text-sm text-muted-foreground">No reviews yet.</Text>
+            ) : (
+              <Text className="text-sm text-muted-foreground">
+                ⭐ {avgRating?.toFixed(1)} / 5 ({ratingCount} review{ratingCount === 1 ? "" : "s"})
+              </Text>
+            )}
+
+            <Text className="text-xs text-muted-foreground">
+              Reviews are public. You can leave one review per cone after completing it.
+            </Text>
+          </CardContent>
+        </Card>
+
+        <ConeStatusCard
+          loadingLocation={!loc}
+          distanceMeters={stats.distance}
+          accuracyMeters={stats.accuracy}
+          inRange={stats.inRange}
+          checkpointLabel={stats.checkpointLabel ?? undefined}
+          onRefreshGps={() => {
+            void refreshLocation();
+          }}
+          errorText={err}
+          showDistance={true}
+        />
+
+        <ConeCompletionCard
+          completed={!!completedId}
+          saving={saving}
+          canComplete={!!loc}
+          onComplete={completeCone}
+          shareBonus={shareBonus}
+          onShareBonus={doShareBonus}
+          myReviewRating={myReviewRating}
+          myReviewText={myReviewText}
+          onLeaveReview={openReview}
+        />
+      </ScrollView>
+
+      <Modal visible={reviewOpen} transparent animationType="fade" onRequestClose={() => setReviewOpen(false)}>
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
           <Card className="w-full max-w-md">
             <CardHeader>

@@ -1,24 +1,38 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, ActivityIndicator, Platform } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, type Region } from "react-native-maps";
+import { useEffect, useMemo, useState } from "react";
+import { View, Text, ActivityIndicator } from "react-native";
+import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "../../lib/firebase";
-import { MapOverlay } from "@/components/map/MapOverlay";
-import { nearestCheckpoint } from "../../lib/checkpoints";
 
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
-import { Button } from "../../components/ui/button";
+import { Screen } from "@/components/screen";
+import { nearestCheckpoint } from "@/lib/checkpoints";
 
-import type { Cone } from "@/lib/models";
+type Cone = {
+  id: string;
+  name: string;
+  slug: string;
+  lat: number;
+  lng: number;
+  radiusMeters: number;
+  checkpoints?: {
+    id?: string;
+    label?: string;
+    lat: number;
+    lng: number;
+    radiusMeters: number;
+  }[];
+  active: boolean;
+};
 
-export default function MapPage() {
-  const insets = useSafeAreaInsets();
-  const mapRef = useRef<MapView | null>(null);
+function toNum(v: any): number {
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : NaN;
+}
 
+export default function MapScreen() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
 
@@ -28,6 +42,9 @@ export default function MapPage() {
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
   const [locErr, setLocErr] = useState<string>("");
 
+  // -----------------------------
+  // Load cones (one-time)
+  // -----------------------------
   useEffect(() => {
     let mounted = true;
 
@@ -36,42 +53,54 @@ export default function MapPage() {
       setErr("");
 
       try {
-        const user = auth.currentUser;
-        if (!user) throw new Error("Not signed in.");
-
         const conesQ = query(collection(db, "cones"), where("active", "==", true));
-        const conesSnap = await getDocs(conesQ);
+        const snap = await getDocs(conesQ);
 
-        const coneList: Cone[] = conesSnap.docs.map((d) => {
-          const data = d.data() as any;
-          return {
-            id: d.id,
-            name: data.name,
-            slug: data.slug,
-            lat: data.lat,
-            lng: data.lng,
-            radiusMeters: data.radiusMeters,
-            checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
-            description: data.description ?? "",
-            active: !!data.active,
-          };
-        });
+        const list: Cone[] = snap.docs
+          .map((d) => {
+            const data = d.data() as any;
 
-        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
-        const compSnap = await getDocs(compQ);
+            const checkpoints = Array.isArray(data.checkpoints)
+              ? data.checkpoints
+                  .map((cp: any) => ({
+                    id: cp.id,
+                    label: cp.label,
+                    lat: toNum(cp.lat),
+                    lng: toNum(cp.lng),
+                    radiusMeters: toNum(cp.radiusMeters),
+                  }))
+                  .filter(
+                    (cp: any) =>
+                      Number.isFinite(cp.lat) &&
+                      Number.isFinite(cp.lng) &&
+                      Number.isFinite(cp.radiusMeters)
+                  )
+              : undefined;
 
-        const ids = new Set<string>();
-        compSnap.docs.forEach((d) => {
-          const data = d.data() as any;
-          if (data?.coneId) ids.add(String(data.coneId));
-        });
+            return {
+              id: d.id,
+              name: String(data.name ?? ""),
+              slug: String(data.slug ?? ""),
+              lat: toNum(data.lat),
+              lng: toNum(data.lng),
+              radiusMeters: toNum(data.radiusMeters),
+              checkpoints,
+              active: !!data.active,
+            };
+          })
+          .filter(
+            (c) =>
+              c.name &&
+              Number.isFinite(c.lat) &&
+              Number.isFinite(c.lng) &&
+              Number.isFinite(c.radiusMeters)
+          );
 
         if (!mounted) return;
-        setCones(coneList);
-        setCompletedIds(ids);
+        setCones(list);
       } catch (e: any) {
         if (!mounted) return;
-        setErr(e?.message ?? "Failed to load map data");
+        setErr(e?.message ?? "Failed to load map");
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -83,6 +112,36 @@ export default function MapPage() {
     };
   }, []);
 
+  // -----------------------------
+  // ✅ Live completions listener
+  // -----------------------------
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (!user) return;
+
+    const qy = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
+
+    const unsub = onSnapshot(
+      qy,
+      (snap) => {
+        const ids = new Set<string>();
+        snap.docs.forEach((d) => {
+          const data = d.data() as any;
+          if (data?.coneId) ids.add(String(data.coneId));
+        });
+        setCompletedIds(ids);
+      },
+      (e) => {
+        console.error(e);
+      }
+    );
+
+    return () => unsub();
+  }, []);
+
+  // -----------------------------
+  // Location (one-time)
+  // -----------------------------
   useEffect(() => {
     (async () => {
       setLocErr("");
@@ -92,6 +151,7 @@ export default function MapPage() {
           setLocErr("Location permission denied.");
           return;
         }
+
         const cur = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
@@ -102,24 +162,9 @@ export default function MapPage() {
     })();
   }, []);
 
-  const initialRegion: Region = useMemo(() => {
-    const fallback: Region = {
-      latitude: -36.8485,
-      longitude: 174.7633,
-      latitudeDelta: 0.12,
-      longitudeDelta: 0.12,
-    };
-
-    if (!loc) return fallback;
-
-    return {
-      latitude: loc.coords.latitude,
-      longitude: loc.coords.longitude,
-      latitudeDelta: 0.08,
-      longitudeDelta: 0.08,
-    };
-  }, [loc]);
-
+  // -----------------------------
+  // Nearest unclimbed (live)
+  // -----------------------------
   const nearestUnclimbed = useMemo(() => {
     const unclimbed = cones.filter((c) => !completedIds.has(c.id));
     if (unclimbed.length === 0) return null;
@@ -143,113 +188,78 @@ export default function MapPage() {
     return { cone: best, distance: bestDist };
   }, [cones, completedIds, loc]);
 
-  function openCone(coneId: string) {
-    router.push(`/(tabs)/cones/${coneId}`);
-  }
-
-  function centerOnMe() {
-    if (!loc || !mapRef.current) return;
-
-    mapRef.current.animateToRegion(
-      {
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-        latitudeDelta: 0.04,
-        longitudeDelta: 0.04,
-      },
-      400
-    );
-  }
-
+  // -----------------------------
+  // UI states
+  // -----------------------------
   if (loading) {
     return (
-      <View className="absolute left-0 right-0 top-0 z-10 px-4" style={{ paddingTop: insets.top + 16 }}>
+      <Screen>
         <ActivityIndicator />
         <Text className="mt-2 text-muted-foreground">Loading map…</Text>
-      </View>
+      </Screen>
     );
   }
 
   if (err) {
     return (
-      <View className="flex-1 bg-background p-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Map</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-3">
-            <Text className="text-destructive">{err}</Text>
-            <Button onPress={() => router.replace("/(tabs)/map")}>
-              <Text className="text-primary-foreground font-semibold">Retry</Text>
-            </Button>
-          </CardContent>
-        </Card>
-      </View>
+      <Screen>
+        <Text className="text-destructive">{err}</Text>
+      </Screen>
     );
   }
 
-  const completedCount = completedIds.size;
-  const totalCount = cones.length;
-
   return (
-    <View className="flex-1 bg-background">
-      <View className="absolute left-0 right-0 top-0 z-10 px-4" style={{ paddingTop: insets.top + 16 }}>
-        <MapOverlay
-          completedCount={completedCount}
-          totalCount={totalCount}
-          locErr={locErr}
-          nearestUnclimbed={
-            nearestUnclimbed
-              ? {
-                  cone: { id: nearestUnclimbed.cone.id, name: nearestUnclimbed.cone.name },
-                  distanceMeters: nearestUnclimbed.distance,
-                }
-              : null
-          }
-          onOpenCone={openCone}
-          onCenter={centerOnMe}
-          canCenter={!!loc}
-        />
-      </View>
-
+    <Screen padded={false}>
       <MapView
-        ref={(r) => {
-          mapRef.current = r;
-        }}
         style={{ flex: 1 }}
-        initialRegion={initialRegion}
-        provider={Platform.OS === "android" ? PROVIDER_GOOGLE : undefined}
+        showsUserLocation
+        initialRegion={{
+          latitude: loc?.coords.latitude ?? -36.8485,
+          longitude: loc?.coords.longitude ?? 174.7633,
+          latitudeDelta: 0.25,
+          longitudeDelta: 0.25,
+        }}
       >
-        {loc ? (
-          <Marker
-            coordinate={{
-              latitude: loc.coords.latitude,
-              longitude: loc.coords.longitude,
-            }}
-            title="You"
-            pinColor="#2563eb"
-          />
-        ) : null}
+        {cones.map((cone) => {
+          const completed = completedIds.has(cone.id);
 
-      {cones.map((c) => {
-        const done = completedIds.has(c.id);
+          return (
+            <View key={cone.id}>
+              {/* ✅ Circle must be a direct child of MapView (NOT inside Marker) */}
+              <Circle
+                center={{ latitude: cone.lat, longitude: cone.lng }}
+                radius={cone.radiusMeters}
+                strokeColor={completed ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}
+                fillColor={completed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}
+              />
 
-        const display = c.checkpoints && c.checkpoints.length > 0
-          ? c.checkpoints[0]
-          : { lat: c.lat, lng: c.lng };
-
-        return (
-          <Marker
-            key={c.id}
-            coordinate={{ latitude: display.lat, longitude: display.lng }}
-            title={c.name}
-            description={done ? "Completed" : "Not completed"}
-            pinColor={done ? "#16a34a" : "#dc2626"}
-            onCalloutPress={() => openCone(c.id)}
-          />
-        );
-      })}
+              <Marker
+                coordinate={{ latitude: cone.lat, longitude: cone.lng }}
+                pinColor={completed ? "green" : "red"}
+                title={cone.name}
+                onPress={() => router.push(`/(tabs)/cones/${cone.id}`)}
+              />
+            </View>
+          );
+        })}
       </MapView>
-    </View>
+
+      {/* Optional nearest unclimbed overlay */}
+      {nearestUnclimbed ? (
+        <View className="absolute bottom-6 left-4 right-4 rounded-2xl border border-border bg-card px-4 py-3">
+          <Text className="font-semibold text-foreground">Nearest unclimbed</Text>
+          <Text className="mt-1 text-sm text-muted-foreground">
+            {nearestUnclimbed.cone.name}
+            {nearestUnclimbed.distance != null ? ` · ${Math.round(nearestUnclimbed.distance)} m` : ""}
+          </Text>
+        </View>
+      ) : null}
+
+      {locErr ? (
+        <View className="absolute top-6 left-4 right-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
+          <Text className="text-sm text-destructive">{locErr}</Text>
+        </View>
+      ) : null}
+    </Screen>
   );
 }

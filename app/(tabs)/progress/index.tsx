@@ -1,10 +1,9 @@
-// app/(tabs)/progress.tsx
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, ActivityIndicator, ScrollView } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
 import { Screen } from "@/components/screen";
 
@@ -12,6 +11,7 @@ import { PieChart } from "@/components/progress/PieChart";
 import { StatRow } from "@/components/progress/StatRow";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
+import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Button } from "../../../components/ui/button";
@@ -41,25 +41,26 @@ type Cone = {
   region?: "north" | "central" | "south" | "harbour";
 };
 
-type Completion = {
-  coneId: string;
-  shareBonus?: boolean;
-};
-
 export default function ProgressScreen() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
 
   const [cones, setCones] = useState<Cone[]>([]);
+
+  // live user state
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [shareBonusCount, setShareBonusCount] = useState(0);
   const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
+  const [reviewedConeIds, setReviewedConeIds] = useState<Set<string>>(new Set());
 
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
   const [locErr, setLocErr] = useState<string>("");
 
+  // Load cones once + subscribe to user completions/reviews (live)
   useEffect(() => {
     let mounted = true;
+    let unsubCompletions: (() => void) | null = null;
+    let unsubReviews: (() => void) | null = null;
 
     (async () => {
       setLoading(true);
@@ -69,6 +70,7 @@ export default function ProgressScreen() {
         const user = auth.currentUser;
         if (!user) throw new Error("Not signed in.");
 
+        // 1) cones list (static-ish)
         const conesQ = query(collection(db, "cones"), where("active", "==", true));
         const conesSnap = await getDocs(conesQ);
 
@@ -95,37 +97,62 @@ export default function ProgressScreen() {
           };
         });
 
-        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
-        const compSnap = await getDocs(compQ);
-
-        const ids = new Set<string>();
-        let bonus = 0;
-        const byConeId: Record<string, number> = {};
-
-        compSnap.docs.forEach((d) => {
-          const data = d.data() as any;
-
-          if (data?.coneId) ids.add(data.coneId);
-
-          if (data?.shareBonus) bonus += 1;
-
-          // completedAt is a Firestore Timestamp (usually has .toMillis()).
-          const ms =
-            typeof data?.completedAt?.toMillis === "function"
-              ? data.completedAt.toMillis()
-              : typeof data?.completedAt === "number"
-                ? data.completedAt
-                : null;
-
-          if (data?.coneId && ms != null) byConeId[data.coneId] = ms;
-        });
-
         if (!mounted) return;
-
         setCones(conesList);
-        setCompletedIds(ids);
-        setCompletedAtByConeId(byConeId);
-        setShareBonusCount(bonus);
+
+        // 2) user completions (live)
+        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
+        unsubCompletions = onSnapshot(
+          compQ,
+          (snap) => {
+            const ids = new Set<string>();
+            let bonus = 0;
+            const byConeId: Record<string, number> = {};
+
+            snap.docs.forEach((d) => {
+              const data = d.data() as any;
+
+              if (data?.coneId) ids.add(String(data.coneId));
+              if (data?.shareBonus) bonus += 1;
+
+              const ms =
+                typeof data?.completedAt?.toMillis === "function"
+                  ? data.completedAt.toMillis()
+                  : typeof data?.completedAt === "number"
+                    ? data.completedAt
+                    : null;
+
+              if (data?.coneId && ms != null) byConeId[String(data.coneId)] = ms;
+            });
+
+            setCompletedIds(ids);
+            setShareBonusCount(bonus);
+            setCompletedAtByConeId(byConeId);
+          },
+          (e) => {
+            console.error(e);
+            setErr(e?.message ?? "Failed to load completions");
+          }
+        );
+
+        // 3) user reviews (live) — used only for “cones to review”
+        const revQ = query(collection(db, "coneReviews"), where("userId", "==", user.uid));
+        unsubReviews = onSnapshot(
+          revQ,
+          (snap) => {
+            const ids = new Set<string>();
+            snap.docs.forEach((d) => {
+              const data = d.data() as any;
+              if (data?.coneId) ids.add(String(data.coneId));
+            });
+            setReviewedConeIds(ids);
+          },
+          (e) => {
+            console.error(e);
+            // don’t hard-fail progress; just act like no reviews loaded
+            setReviewedConeIds(new Set());
+          }
+        );
       } catch (e: any) {
         if (!mounted) return;
         setErr(e?.message ?? "Failed to load progress");
@@ -137,9 +164,12 @@ export default function ProgressScreen() {
 
     return () => {
       mounted = false;
+      if (unsubCompletions) unsubCompletions();
+      if (unsubReviews) unsubReviews();
     };
   }, []);
 
+  // Location (for nearest unclimbed)
   useEffect(() => {
     (async () => {
       setLocErr("");
@@ -188,6 +218,13 @@ export default function ProgressScreen() {
 
     return { cone: best, distance: bestDist };
   }, [cones, completedIds, loc]);
+
+  const conesToReview = useMemo(() => {
+    // completed but not reviewed by this user
+    return cones
+      .filter((c) => completedIds.has(c.id) && !reviewedConeIds.has(c.id))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [cones, completedIds, reviewedConeIds]);
 
   const badgeState = useMemo(() => {
     return getBadgeState({
@@ -268,6 +305,11 @@ export default function ProgressScreen() {
             </View>
           </CardContent>
         </Card>
+
+        <ConesToReviewCard
+          cones={conesToReview.map((c) => ({ id: c.id, name: c.name, description: c.description }))}
+          onOpen={goToCone}
+        />
 
         <BadgesSummaryCard
           nextUp={badgeState.nextUp}

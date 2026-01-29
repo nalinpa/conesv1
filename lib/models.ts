@@ -30,11 +30,11 @@ export type ConeCompletionWrite = {
   deviceLng: number;
   accuracyMeters: number | null;
 
-  // Legacy / existing field used by the app in multiple places:
-  // distance to nearest checkpoint (or fallback)
+  // Distance to nearest checkpoint (or fallback).
+  // Kept for back-compat because the UI uses it in multiple places.
   distanceMeters: number;
 
-  // New checkpoint details (optional in Firestore, but we write them when completing)
+  // Checkpoint details (optional in Firestore, but we write them when completing)
   checkpointId?: string | null;
   checkpointLabel?: string | null;
   checkpointLat?: number | null;
@@ -42,12 +42,20 @@ export type ConeCompletionWrite = {
   checkpointRadiusMeters?: number | null;
   checkpointDistanceMeters?: number | null;
 
-  reviewRating?: number | null;
-  reviewText?: string | null;   
-  reviewCreatedAt?: any; 
-
+  // Share bonus fields
   shareBonus: boolean;
   shareConfirmed: boolean;
   sharedAt: any;
   sharedPlatform: string | null;
+};
+
+export type ConeReviewWrite = {
+  coneId: string;
+  coneSlug: string;
+  coneName: string;
+  userId: string;
+
+  reviewRating: number; // 1–5
+  reviewText: string | null;
+  reviewCreatedAt: any; // serverTimestamp()
 };

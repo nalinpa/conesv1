@@ -1,4 +1,4 @@
-import { Tabs, Redirect } from "expo-router";
+import { Tabs, Redirect, router } from "expo-router";
 import { useEffect, useState } from "react";
 import { View, Text } from "react-native";
 import { onAuthStateChanged } from "firebase/auth";
@@ -73,19 +73,26 @@ export default function TabsLayout() {
           },
         }}
       >
-        <Tabs.Screen
-          name="cones"
-          options={{
-            title: "Cones",
-            tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons
-                name={focused ? "list" : "list-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
+      <Tabs.Screen
+        name="cones"
+        listeners={{
+          tabPress: (e) => {
+            // Always go to the cones list when the tab is pressed
+            e.preventDefault();
+            router.replace("/(tabs)/cones");
+          },
+        }}
+        options={{
+          title: "Cones",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "list" : "list-outline"}
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
 
         <Tabs.Screen
           name="progress"
