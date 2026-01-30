@@ -1,70 +1,42 @@
-import { Pressable, View, Text } from "react-native";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { View } from "react-native";
+import { Card, Text, Button } from "@ui-kitten/components";
 
-type Cone = {
-  id: string;
-  name: string;
-};
-
-export function MapOverlay({
-  completedCount,
-  totalCount,
-  locErr,
-  nearestUnclimbed,
-  onOpenCone,
-  onCenter,
-  canCenter,
+export function MapOverlayCard({
+  title,
+  subtitle,
+  distanceMeters,
+  onOpen,
 }: {
-  completedCount: number;
-  totalCount: number;
-  locErr?: string;
-
-  nearestUnclimbed: { cone: Cone; distanceMeters: number | null } | null;
-
-  onOpenCone: (coneId: string) => void;
-  onCenter: () => void;
-  canCenter: boolean;
+  title: string;
+  subtitle?: string;
+  distanceMeters: number | null;
+  onOpen: () => void;
 }) {
+  const distanceLabel =
+    distanceMeters == null
+      ? "Distance —"
+      : distanceMeters < 1000
+      ? `${Math.round(distanceMeters)} m away`
+      : `${(distanceMeters / 1000).toFixed(1)} km away`;
+
   return (
     <Card>
-      <CardContent className="gap-2 py-4">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-base font-extrabold text-foreground">Map</Text>
+      <View style={{ gap: 8 }}>
+        <Text category="s1">{title}</Text>
 
-          <Button variant="outline" onPress={onCenter} disabled={!canCenter}>
-            <Text className="font-semibold">Center</Text>
-          </Button>
-        </View>
+        {subtitle ? (
+          <Text appearance="hint" numberOfLines={2}>
+            {subtitle}
+          </Text>
+        ) : null}
 
-        <Text className="text-sm text-muted-foreground">
-          Completed {completedCount} / {totalCount}
-          {locErr ? ` • ${locErr}` : ""}
-        </Text>
+        <Text appearance="hint">{distanceLabel}</Text>
 
-        {nearestUnclimbed ? (
-          <Pressable
-            onPress={() => onOpenCone(nearestUnclimbed.cone.id)}
-            className="mt-2 rounded-2xl border border-border bg-card px-3 py-3"
-          >
-            <Text className="font-extrabold text-card-foreground">
-              Nearest unclimbed: {nearestUnclimbed.cone.name}
-            </Text>
-
-            <Text className="mt-1 text-sm text-muted-foreground">
-              {nearestUnclimbed.distanceMeters == null
-                ? "Tap to open"
-                : `${Math.round(nearestUnclimbed.distanceMeters)} m away • tap to open`}
-            </Text>
-          </Pressable>
-        ) : (
-          <View className="mt-2 rounded-2xl border border-border bg-card px-3 py-3">
-            <Text className="font-extrabold text-card-foreground">
-              All cones completed 🎉
-            </Text>
-          </View>
-        )}
-      </CardContent>
+        <Button appearance="outline" onPress={onOpen}>
+          View cone
+        </Button>
+      </View>
     </Card>
   );
 }

@@ -1,5 +1,6 @@
-import { Pressable, View, Text } from "react-native";
-import { Badge } from "@/components/ui/badge";
+import React from "react";
+import { Pressable, View } from "react-native";
+import { Card, Text } from "@ui-kitten/components";
 
 type Cone = {
   id: string;
@@ -17,45 +18,55 @@ export function ConeListItem({
   distanceMeters: number | null;
   onPress: (coneId: string) => void;
 }) {
+  const distanceLabel =
+    distanceMeters == null ? "Distance —" : `${Math.round(distanceMeters)} m`;
+
   return (
-    <Pressable
-      onPress={() => onPress(cone.id)}
-      className="rounded-2xl border border-border bg-card p-4"
-    >
-      <View className="flex-row items-start justify-between gap-3">
-        <View className="flex-1">
-          <Text className="text-lg font-extrabold text-card-foreground">
+    <Pressable onPress={() => onPress(cone.id)}>
+      <Card>
+        <View style={{ gap: 8 }}>
+          {/* Title */}
+          <Text category="h6">
             {cone.name}
           </Text>
 
-          <Text
-            className="mt-1 text-sm text-muted-foreground"
-            numberOfLines={2}
-          >
-            {cone.description || "Tap to view details"}
+          {/* Description */}
+          <Text appearance="hint" numberOfLines={2}>
+            {cone.description?.trim()
+              ? cone.description.trim()
+              : "Tap to view details"}
           </Text>
 
-          <View className="mt-3 flex-row flex-wrap gap-2">
+          {/* Meta row */}
+          <View
+            style={{
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: 8,
+              marginTop: 4,
+            }}
+          >
             {cone.radiusMeters != null ? (
-              <View className="rounded-full border border-border bg-background px-3 py-1">
-                <Text className="text-xs text-foreground">
-                  Radius {cone.radiusMeters}m
-                </Text>
-              </View>
+              <Card appearance="outline">
+                <Text category="c2">Radius {cone.radiusMeters}m</Text>
+              </Card>
             ) : null}
 
-            <View className="rounded-full border border-border bg-background px-3 py-1">
-              <Text className="text-xs text-foreground">
-                {distanceMeters == null
-                  ? "Distance —"
-                  : `${Math.round(distanceMeters)} m`}
-              </Text>
-            </View>
+            <Card appearance="outline">
+              <Text category="c2">{distanceLabel}</Text>
+            </Card>
           </View>
-        </View>
 
-        <Text className="text-sm font-semibold text-primary">Open →</Text>
-      </View>
+          {/* Action hint */}
+          <Text
+            status="primary"
+            category="c1"
+            style={{ marginTop: 4 }}
+          >
+            Open →
+          </Text>
+        </View>
+      </Card>
     </Pressable>
   );
 }

@@ -1,84 +1,73 @@
-import { View, Text, Pressable } from "react-native";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import type { BadgeProgress } from "@/lib/badges";
+import React from "react";
+import { View } from "react-native";
+import { Card, Text, Button } from "@ui-kitten/components";
 
-function SmallBadgePill({
-  name,
-  earned,
-}: {
-  name: string;
-  earned: boolean;
-}) {
-  return (
-    <View
-      className={[
-        "rounded-full border px-3 py-1",
-        earned ? "border-primary/30 bg-primary/10" : "border-border bg-background",
-      ].join(" ")}
-    >
-      <Text className={earned ? "text-xs font-semibold text-foreground" : "text-xs text-muted-foreground"}>
-        {name}
-      </Text>
-    </View>
-  );
-}
+import type { BadgeDefinition, BadgeProgress } from "@/lib/badges";
 
 export function BadgesSummaryCard({
   nextUp,
   recentlyUnlocked,
-  onOpenAll,
+  onViewAll,
 }: {
-  nextUp: BadgeProgress | null;
-  recentlyUnlocked: BadgeProgress[];
-  onOpenAll: () => void;
+  nextUp: {
+    badge: BadgeDefinition;
+    progressLabel?: string | null;
+  } | null;
+
+  recentlyUnlocked: {
+    badge: BadgeDefinition;
+  }[];
+
+  onViewAll: () => void;
 }) {
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <View className="flex-row items-center justify-between">
-          <CardTitle>Badges</CardTitle>
-          <Button variant="outline" onPress={onOpenAll}>
-            <Text className="font-semibold">View all</Text>
+    <Card>
+      <View style={{ gap: 12 }}>
+        {/* Header */}
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text category="h6">Badges</Text>
+          <Button size="small" appearance="outline" onPress={onViewAll}>
+            View all
           </Button>
         </View>
-      </CardHeader>
 
-      <CardContent className="gap-4">
-        <View>
-          <Text className="text-sm font-semibold text-foreground">Next up</Text>
+        {/* Next up */}
+        <View style={{ gap: 6 }}>
+          <Text category="s1">Next up</Text>
+
           {!nextUp ? (
-            <Text className="mt-1 text-sm text-muted-foreground">
-              Nothing queued — you might already have everything that’s configured.
+            <Text appearance="hint">
+              You’re all caught up — more badges coming soon.
             </Text>
           ) : (
-            <View className="mt-2 rounded-2xl border border-border bg-card px-3 py-3">
-              <Text className="font-extrabold text-card-foreground">{nextUp.badge.name}</Text>
-              <Text className="mt-1 text-sm text-muted-foreground">{nextUp.badge.unlockText}</Text>
+            <View style={{ gap: 4 }}>
+              <Text category="s1">{nextUp.badge.name}</Text>
+              <Text appearance="hint">{nextUp.badge.unlockText}</Text>
+
               {nextUp.progressLabel ? (
-                <Text className="mt-2 text-xs text-muted-foreground">{nextUp.progressLabel}</Text>
+                <Text appearance="hint" category="c1">
+                  {nextUp.progressLabel}
+                </Text>
               ) : null}
             </View>
           )}
         </View>
 
-        <View>
-          <Text className="text-sm font-semibold text-foreground">Recently unlocked</Text>
-          {recentlyUnlocked.length === 0 ? (
-            <Text className="mt-1 text-sm text-muted-foreground">No badges yet — go get one 😈</Text>
-          ) : (
-            <View className="mt-2 flex-row flex-wrap gap-2">
-              {recentlyUnlocked.slice(0, 4).map((b) => (
-                <SmallBadgePill key={b.badge.id} name={b.badge.name} earned />
+        {/* Recently unlocked */}
+        {recentlyUnlocked.length > 0 ? (
+          <View style={{ gap: 6 }}>
+            <Text category="s1">Recently unlocked</Text>
+
+            <View style={{ gap: 2 }}>
+              {recentlyUnlocked.slice(0, 3).map((u) => (
+                <Text key={u.badge.id} appearance="hint">
+                  • {u.badge.name}
+                </Text>
               ))}
             </View>
-          )}
-        </View>
-
-        <Pressable onPress={onOpenAll}>
-          <Text className="text-sm font-semibold text-primary">Open badge list →</Text>
-        </Pressable>
-      </CardContent>
+          </View>
+        ) : null}
+      </View>
     </Card>
   );
 }

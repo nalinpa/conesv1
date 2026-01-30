@@ -1,20 +1,23 @@
-import { useState } from "react";
-import { View, Text } from "react-native";
+import { useMemo, useState } from "react";
+import { KeyboardAvoidingView, Platform, View } from "react-native";
 import { router } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { auth } from "../lib/firebase";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Layout, Card, Text, Input, Button } from "@ui-kitten/components";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [err, setErr] = useState<string>("");
   const [loading, setLoading] = useState(false);
+
+  const canSubmit = useMemo(
+    () => email.trim().length > 0 && password.length > 0,
+    [email, password]
+  );
 
   async function login() {
     setErr("");
@@ -30,65 +33,85 @@ export default function LoginPage() {
   }
 
   return (
-    <View className="flex-1 items-center justify-center bg-background px-6">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl">Cones</CardTitle>
-        </CardHeader>
-
-        <CardContent className="gap-4">
-          <Text className="text-sm text-muted-foreground">
+    <Layout style={{ flex: 1 }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}>
+          {/* Brand header */}
+          <Text category="h1" style={{ marginBottom: 6 }}>
+            Cones
+          </Text>
+          <Text appearance="hint" style={{ marginBottom: 18 }}>
             Sign in to track your Auckland volcanic cone progress.
           </Text>
 
+          {/* Error */}
           {err ? (
-            <View className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
-              <Text className="text-sm text-destructive">{err}</Text>
-            </View>
+            <Card
+              status="danger"
+              style={{
+                marginBottom: 12,
+                borderRadius: 16,
+              }}
+            >
+              <Text status="danger">{err}</Text>
+            </Card>
           ) : null}
 
-          <View className="gap-2">
-            <Label nativeID="email">Email</Label>
+          {/* Form */}
+          <Card
+            style={{
+              padding: 16,
+              borderRadius: 18,
+              // subtle “Surf Green” accent (optional but feels premium)
+              borderColor: "#5FB3A2",
+              borderWidth: 1,
+            }}
+          >
             <Input
-              aria-labelledby="email"
+              label="Email"
+              placeholder="you@example.com"
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="email-address"
               value={email}
               onChangeText={setEmail}
-              placeholder="you@example.com"
+              disabled={loading}
+              style={{ marginBottom: 14 }}
               returnKeyType="next"
             />
-          </View>
 
-          <View className="gap-2">
-            <Label nativeID="password">Password</Label>
             <Input
-              aria-labelledby="password"
+              label="Password"
+              placeholder="••••••••"
               secureTextEntry
               value={password}
               onChangeText={setPassword}
-              placeholder="••••••••"
+              disabled={loading}
+              style={{ marginBottom: 14 }}
               returnKeyType="done"
-              onSubmitEditing={login}
+              onSubmitEditing={() => {
+                if (!loading && canSubmit) void login();
+              }}
             />
-          </View>
 
-          <Button
-            onPress={login}
-            disabled={loading || !email.trim() || !password}
-            className="mt-2"
-          >
-            <Text className="text-primary-foreground font-semibold">
+            <Button
+              onPress={() => void login()}
+              disabled={loading || !canSubmit}
+              size="giant"
+              style={{ borderRadius: 14 }}
+            >
               {loading ? "Signing in…" : "Sign in"}
-            </Text>
-          </Button>
+            </Button>
 
-          <Text className="text-xs text-muted-foreground">
-            Tip: turn on location permissions so we can validate your climbs.
-          </Text>
-        </CardContent>
-      </Card>
-    </View>
+            <Text appearance="hint" style={{ marginTop: 14 }}>
+              Tip: turn on location permissions so we can validate your climbs.
+            </Text>
+          </Card>
+        </View>
+      </KeyboardAvoidingView>
+    </Layout>
   );
 }

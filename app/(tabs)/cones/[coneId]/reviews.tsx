@@ -1,16 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, FlatList } from "react-native";
+import { View, ActivityIndicator, ListRenderItemInfo } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
+import { db } from "@/lib/firebase";
 
 import { Screen } from "@/components/screen";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Layout, Card, Text, Button, List } from "@ui-kitten/components";
 
 type PublicReview = {
-  id: string; // doc id, expected {uid}_{coneId}
+  id: string;
   userId: string;
   coneId: string;
   coneName?: string;
@@ -35,6 +34,12 @@ function formatDateMaybe(ts: any): string | null {
   }
 }
 
+function clampRating(n: any): number {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return 0;
+  return Math.max(0, Math.min(5, v));
+}
+
 export default function ConeReviewsPage() {
   const { coneId, coneName } = useLocalSearchParams<{ coneId: string; coneName?: string }>();
 
@@ -53,8 +58,6 @@ export default function ConeReviewsPage() {
       try {
         if (!coneId) throw new Error("Missing coneId.");
 
-        // Public reviews are in coneReviews
-        // Note: orderBy requires a createdAt field present in docs (we write reviewCreatedAt)
         const qy = query(
           collection(db, "coneReviews"),
           where("coneId", "==", String(coneId)),
@@ -70,7 +73,7 @@ export default function ConeReviewsPage() {
             userId: String(data.userId ?? ""),
             coneId: String(data.coneId ?? ""),
             coneName: typeof data.coneName === "string" ? data.coneName : undefined,
-            reviewRating: Number(data.reviewRating ?? 0),
+            reviewRating: clampRating(data.reviewRating),
             reviewText: typeof data.reviewText === "string" ? data.reviewText : null,
             reviewCreatedAt: data.reviewCreatedAt ?? null,
           };
@@ -94,96 +97,109 @@ export default function ConeReviewsPage() {
 
   const summary = useMemo(() => {
     if (reviews.length === 0) return { avg: null as number | null, count: 0 };
+
     let sum = 0;
     let count = 0;
+
     for (const r of reviews) {
-      if (typeof r.reviewRating === "number" && r.reviewRating >= 1 && r.reviewRating <= 5) {
-        sum += r.reviewRating;
+      const v = clampRating(r.reviewRating);
+      if (v >= 1 && v <= 5) {
+        sum += v;
         count += 1;
       }
     }
+
     return { avg: count > 0 ? sum / count : null, count };
   }, [reviews]);
 
-  const title = (typeof coneName === "string" && coneName.trim()) ? coneName.trim() : "Cone";
+  const title =
+    typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
+
+  function goBack() {
+    if (router.canGoBack()) router.back();
+    else router.replace(`/(tabs)/cones/${String(coneId)}`);
+  }
+
+  const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {
+    const rating = clampRating(item.reviewRating);
+    const stars = "★".repeat(Math.max(0, Math.min(5, Math.round(rating))));
+    const when = formatDateMaybe(item.reviewCreatedAt);
+
+    return (
+      <Card style={{ marginBottom: 12, padding: 14 }}>
+        <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+          <Text category="s1" style={{ fontWeight: "800" }}>
+            {stars || "—"}
+          </Text>
+          <Text appearance="hint" category="c1">
+            {rating ? `${rating}/5` : ""}
+          </Text>
+        </View>
+
+        {when ? (
+          <Text appearance="hint" category="c1" style={{ marginTop: 6 }}>
+            {when}
+          </Text>
+        ) : null}
+
+        <Text appearance="hint" style={{ marginTop: 10 }}>
+          {item.reviewText?.trim() ? item.reviewText.trim() : "No comment."}
+        </Text>
+      </Card>
+    );
+  };
 
   return (
-    <Screen padded={false}>
+    <Screen>
       <Stack.Screen options={{ title: `${title} Reviews` }} />
 
-      <View className="flex-1 bg-background">
-        <View className="px-4" style={{ paddingTop: 16, paddingBottom: 8 }}>
-          <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-extrabold text-foreground">Reviews</Text>
-            <Button
-              variant="outline"
-              onPress={() => {
-                if (router.canGoBack()) router.back();
-                else router.replace(`/(tabs)/cones/${String(coneId)}`);
-              }}
-            >
-              <Text className="font-semibold">Back</Text>
+      <Layout style={{ flex: 1 }}>
+        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+            <View>
+              <Text category="h4" style={{ fontWeight: "900" }}>
+                Reviews
+              </Text>
+              <Text appearance="hint" style={{ marginTop: 4 }}>
+                {summary.count === 0
+                  ? "No reviews yet."
+                  : `★ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${summary.count === 1 ? "" : "s"})`}
+              </Text>
+            </View>
+
+            <Button size="small" appearance="outline" onPress={goBack}>
+              Back
             </Button>
           </View>
 
-          <Text className="mt-1 text-sm text-muted-foreground">
-            {summary.count === 0
-              ? "No reviews yet."
-              : `⭐ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${summary.count === 1 ? "" : "s"})`}
-          </Text>
-
           {err ? (
-            <View className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
-              <Text className="text-sm text-destructive">{err}</Text>
-            </View>
+            <Card status="danger" style={{ marginTop: 12, padding: 12 }}>
+              <Text status="danger">{err}</Text>
+            </Card>
           ) : null}
         </View>
 
         {loading ? (
-          <View className="flex-1 items-center justify-center">
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
             <ActivityIndicator />
-            <Text className="mt-2 text-muted-foreground">Loading reviews…</Text>
+            <Text appearance="hint" style={{ marginTop: 10 }}>
+              Loading reviews…
+            </Text>
           </View>
         ) : (
-          <FlatList
+          <List
             data={reviews}
             keyExtractor={(item) => item.id}
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
-            ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+            renderItem={renderItem}
             ListEmptyComponent={
-              <Card>
-                <CardContent className="py-4">
-                  <Text className="text-muted-foreground">No reviews yet — be the first 😈</Text>
-                </CardContent>
+              <Card style={{ padding: 14, marginHorizontal: 16 }}>
+                <Text appearance="hint">No reviews yet — be the first 😈</Text>
               </Card>
             }
-            renderItem={({ item }) => {
-              const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(item.reviewRating))));
-              const when = formatDateMaybe(item.reviewCreatedAt);
-
-              return (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>
-                      {stars}{" "}
-                      <Text className="text-sm font-semibold text-muted-foreground">
-                        ({item.reviewRating}/5)
-                      </Text>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="gap-2">
-                    {when ? <Text className="text-xs text-muted-foreground">{when}</Text> : null}
-
-                    <Text className="text-sm text-muted-foreground">
-                      {item.reviewText?.trim() ? item.reviewText.trim() : "No comment."}
-                    </Text>
-                  </CardContent>
-                </Card>
-              );
-            }}
           />
         )}
-      </View>
+      </Layout>
     </Screen>
   );
 }

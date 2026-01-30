@@ -10,7 +10,7 @@ export function Screen({ className, padded = true, style, ...props }: ScreenProp
   const insets = useSafeAreaInsets();
 
   const basePadding = padded ? 16 : 0;
-  const extraPaddingTop = padded ? 12 : 8;
+  const extraPaddingTop = padded ? 10 : 8;
 
   return (
     <View

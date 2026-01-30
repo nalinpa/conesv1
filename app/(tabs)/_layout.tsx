@@ -1,127 +1,87 @@
-import { Tabs, Redirect, router } from "expo-router";
-import { useEffect, useState } from "react";
-import { View, Text } from "react-native";
-import { onAuthStateChanged } from "firebase/auth";
+import React from "react";
+import { Tabs } from "expo-router";
+import { BottomNavigation, BottomNavigationTab } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { auth } from "../../lib/firebase";
+function Ionicon({
+  name,
+  color,
+  size = 22,
+}: {
+  name: keyof typeof Ionicons.glyphMap;
+  color?: string;
+  size?: number;
+}) {
+  return <Ionicons name={name} size={size} color={color} />;
+}
 
-export default function TabsLayout() {
+function KittenTabBar({
+  state,
+  navigation,
+}: {
+  state: any;
+  navigation: any;
+}) {
   const insets = useSafeAreaInsets();
 
-  const [ready, setReady] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const onSelect = (index: number) => {
+    const route = state.routes[index];
+    if (!route) return;
 
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setLoggedIn(!!user);
-      setReady(true);
+    // Let React Navigation handle tab semantics properly.
+    const event = navigation.emit({
+      type: "tabPress",
+      target: route.key,
+      canPreventDefault: true,
     });
-    return () => unsub();
-  }, []);
 
-  if (!ready) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text>Loading…</Text>
-      </View>
-    );
-  }
-
-  if (!loggedIn) {
-    return <Redirect href="/login" />;
-  }
-
-  /**
-   * DESIGN CONSTANTS
-   */
-  const TAB_BAR_BASE_HEIGHT = 56; // visual bar height (icons + labels)
-  const EXTRA_BOTTOM_SPACE = 12;  // breathing room below bar
+    if (!event.defaultPrevented) {
+      navigation.navigate(route.name);
+    }
+  };
 
   return (
-    <View className="flex-1 bg-background">
-      <Tabs
-        initialRouteName="progress"
-        screenOptions={{
-          headerShown: false,
-
-          tabBarActiveTintColor: "#4f46e5",
-          tabBarInactiveTintColor: "#64748b",
-
-          tabBarLabelStyle: {
-            fontSize: 12,
-            fontWeight: "600",
-          },
-
-          tabBarStyle: {
-            backgroundColor: "white",
-            borderTopWidth: 1,
-            borderTopColor: "#e2e8f0",
-
-            // ✅ space INSIDE the bar (icons/labels)
-            paddingTop: 8,
-
-            // ✅ space BELOW the bar (home indicator / gesture area)
-            paddingBottom: insets.bottom + EXTRA_BOTTOM_SPACE,
-
-            // ✅ total bar height accounts for safe area
-            height:
-              TAB_BAR_BASE_HEIGHT +
-              insets.bottom +
-              EXTRA_BOTTOM_SPACE,
-          },
-        }}
-      >
-      <Tabs.Screen
-        name="cones"
-        listeners={{
-          tabPress: (e) => {
-            // Always go to the cones list when the tab is pressed
-            e.preventDefault();
-            router.replace("/(tabs)/cones");
-          },
-        }}
-        options={{
-          title: "Cones",
-          tabBarIcon: ({ color, size, focused }) => (
-            <Ionicons
-              name={focused ? "list" : "list-outline"}
-              size={size}
-              color={color}
-            />
-          ),
-        }}
+    <BottomNavigation
+      selectedIndex={state.index}
+      onSelect={onSelect}
+      appearance="noIndicator"
+      style={{
+        paddingTop: 10,
+        paddingBottom: Math.max(12, insets.bottom),
+      }}
+    >
+      <BottomNavigationTab
+        title="Cones"
+        icon={({ style }) => (
+          <Ionicon name="triangle-outline" color={style?.tintColor} size={22} />
+        )}
       />
+      <BottomNavigationTab
+        title="Progress"
+        icon={({ style }) => (
+          <Ionicon name="stats-chart-outline" color={style?.tintColor} size={22} />
+        )}
+      />
+      <BottomNavigationTab
+        title="Map"
+        icon={({ style }) => (
+          <Ionicon name="map-outline" color={style?.tintColor} size={22} />
+        )}
+      />
+    </BottomNavigation>
+  );
+}
 
-        <Tabs.Screen
-          name="progress"
-          options={{
-            title: "Progress",
-            tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons
-                name={focused ? "trophy" : "trophy-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
-
-        <Tabs.Screen
-          name="map"
-          options={{
-            title: "Map",
-            tabBarIcon: ({ color, size, focused }) => (
-              <Ionicons
-                name={focused ? "map" : "map-outline"}
-                size={size}
-                color={color}
-              />
-            ),
-          }}
-        />
-      </Tabs>
-    </View>
+export default function TabsLayout() {
+  return (
+    <Tabs
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <KittenTabBar {...props} />}
+    >
+      <Tabs.Screen name="cones" />
+      <Tabs.Screen name="progress" />
+      <Tabs.Screen name="map" />
+    </Tabs>
   );
 }

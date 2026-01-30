@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
-import { View, Text, Pressable, Modal } from "react-native";
-import type { BadgeDefinition } from "@/lib/badges";
-import type { BadgeProgressMap } from "@/lib/badges";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React, { useMemo, useState } from "react";
+import { View } from "react-native";
+import { Card, Text, Button, Modal } from "@ui-kitten/components";
+
+import type { BadgeDefinition, BadgeProgressMap } from "@/lib/badges";
 
 function BadgeTile({
   badge,
@@ -17,21 +16,25 @@ function BadgeTile({
   onPress: () => void;
 }) {
   return (
-    <Pressable
+    <Button
       onPress={onPress}
-      className={[
-        "rounded-2xl border p-3",
-        earned ? "border-primary/30 bg-primary/10" : "border-border bg-card",
-      ].join(" ")}
+      appearance={earned ? "filled" : "outline"}
+      status={earned ? "primary" : "basic"}
+      style={{ width: "100%" }}
     >
-      <Text className="font-extrabold text-card-foreground">{badge.name}</Text>
-      <Text className="mt-1 text-xs text-muted-foreground">
-        {earned ? "Unlocked ✅" : "Locked"}
-      </Text>
-      {!earned && progressLabel ? (
-        <Text className="mt-2 text-xs text-muted-foreground">{progressLabel}</Text>
-      ) : null}
-    </Pressable>
+      <View style={{ gap: 4 }}>
+        <Text category="s2">{badge.name}</Text>
+        <Text appearance="hint" category="c1">
+          {earned ? "Unlocked ✅" : "Locked"}
+        </Text>
+
+        {!earned && progressLabel ? (
+          <Text appearance="hint" category="c2">
+            {progressLabel}
+          </Text>
+        ) : null}
+      </View>
+    </Button>
   );
 }
 
@@ -52,17 +55,18 @@ export function BadgesGrid({
   }, [openId, badges]);
 
   const openProgress = openId ? progressById[openId] : null;
+  const openEarned = openBadge ? earnedIds.has(openBadge.id) : false;
 
   return (
     <>
-      {/* Native-safe 2-column grid */}
-      <View className="mt-1 flex-row flex-wrap -m-1.5">
+      {/* 2-column grid without CSS tricks */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", margin: -6 }}>
         {badges.map((b) => {
           const earned = earnedIds.has(b.id);
           const progressLabel = progressById[b.id]?.progressLabel ?? null;
 
           return (
-            <View key={b.id} className="w-1/2 p-1.5">
+            <View key={b.id} style={{ width: "50%", padding: 6 }}>
               <BadgeTile
                 badge={b}
                 earned={earned}
@@ -76,36 +80,30 @@ export function BadgesGrid({
 
       <Modal
         visible={!!openBadge}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setOpenId(null)}
+        backdropStyle={{ backgroundColor: "rgba(0,0,0,0.35)" }}
+        onBackdropPress={() => setOpenId(null)}
       >
-        <View className="flex-1 items-center justify-center bg-black/40 px-6">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>{openBadge?.name ?? "Badge"}</CardTitle>
-            </CardHeader>
-            <CardContent className="gap-3">
-              <Text className="text-sm text-muted-foreground">
-                {openBadge?.unlockText}
-              </Text>
+        <Card disabled>
+          <View style={{ gap: 12 }}>
+            <Text category="h6">{openBadge?.name ?? "Badge"}</Text>
 
-              {openBadge &&
-              !earnedIds.has(openBadge.id) &&
-              openProgress?.progressLabel ? (
-                <View className="rounded-xl border border-border bg-background px-3 py-2">
-                  <Text className="text-xs text-muted-foreground">
-                    {openProgress.progressLabel}
-                  </Text>
-                </View>
-              ) : null}
+            <Text appearance="hint">
+              {openBadge?.unlockText ?? ""}
+            </Text>
 
-              <Button variant="outline" onPress={() => setOpenId(null)}>
-                <Text className="font-semibold">Close</Text>
-              </Button>
-            </CardContent>
-          </Card>
-        </View>
+            {!openEarned && openProgress?.progressLabel ? (
+              <Card appearance="outline" disabled>
+                <Text appearance="hint" category="c1">
+                  {openProgress.progressLabel}
+                </Text>
+              </Card>
+            ) : null}
+
+            <Button appearance="outline" onPress={() => setOpenId(null)}>
+              Close
+            </Button>
+          </View>
+        </Card>
       </Modal>
     </>
   );

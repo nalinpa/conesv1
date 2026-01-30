@@ -1,5 +1,6 @@
-import { Pressable, View, Text } from "react-native";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { View } from "react-native";
+import { Card, Text, Button } from "@ui-kitten/components";
 
 type ConeLite = {
   id: string;
@@ -9,46 +10,50 @@ type ConeLite = {
 
 export function ConesToReviewCard({
   cones,
-  onOpen,
+  onOpenCone,
 }: {
   cones: ConeLite[];
-  onOpen: (coneId: string) => void;
+  onOpenCone: (coneId: string) => void;
 }) {
   if (!cones || cones.length === 0) return null;
 
-  const top = cones.slice(0, 3);
-  const extra = cones.length - top.length;
+  const visible = cones.slice(0, 3);
+  const remaining = cones.length - visible.length;
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Cones to review</CardTitle>
-      </CardHeader>
+    <Card>
+      <View style={{ gap: 12 }}>
+        {/* Header */}
+        <Text category="h6">Cones to review</Text>
 
-      <CardContent className="gap-3">
-        <Text className="text-sm text-muted-foreground">
-          You’ve completed these — leave a quick public review ✍️
+        <Text appearance="hint">
+          You’ve completed these — leave a quick public review.
         </Text>
 
-        {top.map((cone) => (
-          <Pressable
-            key={cone.id}
-            onPress={() => onOpen(cone.id)}
-            className="rounded-xl border border-border bg-background px-3 py-3"
-          >
-            <Text className="font-semibold text-foreground">{cone.name}</Text>
-            <Text className="mt-1 text-xs text-muted-foreground" numberOfLines={2}>
-              {cone.description?.trim() ? cone.description.trim() : "Tap to leave a review"}
-            </Text>
-          </Pressable>
-        ))}
+        {/* List */}
+        <View style={{ gap: 8 }}>
+          {visible.map((cone) => (
+            <View key={cone.id} style={{ gap: 4 }}>
+              <Text category="s1">{cone.name}</Text>
 
-        {extra > 0 ? (
-          <View className="rounded-xl border border-border bg-background px-3 py-2">
-            <Text className="text-xs text-muted-foreground">+ {extra} more completed cones to review</Text>
-          </View>
+              <Button
+                size="small"
+                appearance="outline"
+                onPress={() => onOpenCone(cone.id)}
+              >
+                Leave review
+              </Button>
+            </View>
+          ))}
+        </View>
+
+        {/* Overflow hint */}
+        {remaining > 0 ? (
+          <Text appearance="hint" category="c1">
+            + {remaining} more completed cones
+          </Text>
         ) : null}
-      </CardContent>
+      </View>
     </Card>
   );
 }

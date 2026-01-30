@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Text, ActivityIndicator, Share, View, Modal, TextInput, Pressable, ScrollView } from "react-native";
+import { View, ScrollView, Modal, TextInput, Pressable, Share } from "react-native";
 import * as Location from "expo-location";
 import { Stack, useLocalSearchParams, router, useFocusEffect } from "expo-router";
 
@@ -17,16 +17,11 @@ import {
 
 import { auth, db } from "../../../../lib/firebase";
 import { Screen } from "@/components/screen";
-
-import { ConeInfoCard } from "@/components/cone/ConeInfoCard";
-import { ConeStatusCard } from "@/components/cone/ConeStatusCard";
-import { ConeCompletionCard } from "@/components/cone/ConeCompletionCard";
-
-import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
-import { Button } from "../../../../components/ui/button";
-
 import { nearestCheckpoint } from "../../../../lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
+
+// UI Kitten
+import { Layout, Card, Text, Button, Spinner, Divider } from "@ui-kitten/components";
 
 type PublicReviewDoc = {
   coneId: string;
@@ -36,6 +31,16 @@ type PublicReviewDoc = {
   reviewText: string | null;
   reviewCreatedAt: any;
 };
+
+function surfGreen(active: boolean) {
+  return active ? "#2a9d8f" : "#64748b";
+}
+
+function formatMeters(m: number | null) {
+  if (m == null) return "—";
+  if (m < 1000) return `${Math.round(m)} m`;
+  return `${(m / 1000).toFixed(1)} km`;
+}
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
@@ -65,6 +70,9 @@ export default function ConeDetailRoute() {
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [ratingCount, setRatingCount] = useState<number>(0);
 
+  // -----------------------------
+  // Load cone
+  // -----------------------------
   useEffect(() => {
     let mounted = true;
 
@@ -107,7 +115,9 @@ export default function ConeDetailRoute() {
     };
   }, [coneId]);
 
+  // -----------------------------
   // Location (one-time per cone load)
+  // -----------------------------
   useEffect(() => {
     if (!cone) return;
 
@@ -128,7 +138,9 @@ export default function ConeDetailRoute() {
     })();
   }, [cone?.id]);
 
+  // -----------------------------
   // Load completion doc (deterministic)
+  // -----------------------------
   useEffect(() => {
     if (!cone) return;
 
@@ -150,14 +162,15 @@ export default function ConeDetailRoute() {
     })();
   }, [cone?.id]);
 
+  // -----------------------------
   // ✅ My review + public aggregate from coneReviews (live)
+  // -----------------------------
   useEffect(() => {
     if (!cone) return;
 
     const user = auth.currentUser;
     const myId = user ? `${user.uid}_${cone.id}` : null;
 
-    // Public aggregate: all reviews for this cone
     const reviewsQ = query(collection(db, "coneReviews"), where("coneId", "==", cone.id));
 
     const unsub = onSnapshot(
@@ -200,6 +213,9 @@ export default function ConeDetailRoute() {
     return () => unsub();
   }, [cone?.id]);
 
+  // -----------------------------
+  // Derived status (nearest checkpoint)
+  // -----------------------------
   const stats = useMemo(() => {
     if (!loc || !cone) {
       return {
@@ -207,6 +223,7 @@ export default function ConeDetailRoute() {
         accuracy: null as number | null,
         inRange: false,
         checkpointLabel: null as string | null,
+        checkpointRadius: null as number | null,
       };
     }
 
@@ -221,6 +238,7 @@ export default function ConeDetailRoute() {
       accuracy: acc,
       inRange,
       checkpointLabel: nearest.checkpoint.label ?? null,
+      checkpointRadius: nearest.checkpoint.radiusMeters ?? null,
     };
   }, [loc, cone]);
 
@@ -239,13 +257,14 @@ export default function ConeDetailRoute() {
   // ✅ Auto-refresh GPS on focus (but skip if cone already completed)
   useFocusEffect(
     useCallback(() => {
-      if (!completedId) {
-        void refreshLocation();
-      }
+      if (!completedId) void refreshLocation();
       return () => {};
     }, [completedId, refreshLocation])
   );
 
+  // -----------------------------
+  // Actions
+  // -----------------------------
   async function completeCone() {
     if (!cone) return;
     if (completedId) return;
@@ -289,10 +308,8 @@ export default function ConeDetailRoute() {
         deviceLng: longitude,
         accuracyMeters: accuracy ?? null,
 
-        // Back-compat field used around the app
         distanceMeters: nearest.distanceMeters,
 
-        // checkpoint details
         checkpointId: cp?.id ?? null,
         checkpointLabel: cp?.label ?? null,
         checkpointLat: cp?.lat ?? null,
@@ -341,13 +358,13 @@ export default function ConeDetailRoute() {
 
       setShareBonus(true);
     } catch {
-      // user cancelling share is normal — do nothing
+      // cancel is normal
     }
   }
 
   function openReview() {
     if (!completedId) return;
-    if (myReviewRating != null) return; // one-time only
+    if (myReviewRating != null) return;
     setDraftRating(null);
     setDraftText("");
     setReviewOpen(true);
@@ -367,7 +384,7 @@ export default function ConeDetailRoute() {
       return;
     }
 
-    if (myReviewRating != null) return; // one-time only
+    if (myReviewRating != null) return;
 
     if (draftRating == null || draftRating < 1 || draftRating > 5) {
       setErr("Pick a rating from 1 to 5.");
@@ -405,12 +422,17 @@ export default function ConeDetailRoute() {
 
   const headerTitle = cone?.name ?? "Cone";
 
+  // -----------------------------
+  // Loading / error states
+  // -----------------------------
   if (coneLoading) {
     return (
       <Screen>
         <Stack.Screen options={{ title: "Loading…" }} />
-        <ActivityIndicator />
-        <Text className="mt-2 text-muted-foreground">Loading cone…</Text>
+        <Layout style={{ gap: 12 }}>
+          <Spinner />
+          <Text appearance="hint">Loading cone…</Text>
+        </Layout>
       </Screen>
     );
   }
@@ -420,153 +442,328 @@ export default function ConeDetailRoute() {
       <Screen>
         <Stack.Screen options={{ title: "Cone" }} />
         <Card>
-          <CardHeader>
-            <CardTitle>Couldn’t load cone</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-2">
-            <Text className="text-destructive">{coneErr || "Cone missing."}</Text>
-          </CardContent>
+          <Text category="h6" style={{ marginBottom: 8 }}>
+            Couldn’t load cone
+          </Text>
+          <Text status="danger">{coneErr || "Cone missing."}</Text>
+
+          <View style={{ height: 12 }} />
+          <Button appearance="outline" onPress={() => router.replace("/(tabs)/cones")}>
+            Back to list
+          </Button>
         </Card>
       </Screen>
     );
   }
+
+  // -----------------------------
+  // Main UI
+  // -----------------------------
+  const completed = !!completedId;
+  const hasReview = myReviewRating != null;
+  const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
 
   return (
     <Screen padded={false}>
       <Stack.Screen options={{ title: headerTitle }} />
 
       <ScrollView
-        className="flex-1 bg-background"
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        <ConeInfoCard
-          name={cone.name}
-          description={cone.description}
-          slug={cone.slug}
-          radiusMeters={cone.radiusMeters}
-        />
+        {/* HERO */}
+        <Layout style={{ gap: 10 }}>
+          <Text category="h4">{cone.name}</Text>
+          <Text appearance="hint">
+            {cone.description?.trim() ? cone.description.trim() : "No description yet."}
+          </Text>
 
-        {/* Public rating summary */}
-        <Card className="mt-4">
-          <CardHeader>
-            <View className="flex-row items-center justify-between">
-              <CardTitle>Reviews</CardTitle>
-
-              {ratingCount > 0 ? (
-                <Button
-                  variant="outline"
-                  onPress={() =>
-                    router.push(
-                      `/(tabs)/cones/${cone.id}/reviews?coneName=${encodeURIComponent(cone.name)}`
-                    )
-                  }
-                >
-                  <Text className="font-semibold">View all</Text>
-                </Button>
-              ) : null}
-            </View>
-          </CardHeader>
-          <CardContent className="gap-2">
-            {ratingCount === 0 ? (
-              <Text className="text-sm text-muted-foreground">No reviews yet.</Text>
-            ) : (
-              <Text className="text-sm text-muted-foreground">
-                ⭐ {avgRating?.toFixed(1)} / 5 ({ratingCount} review{ratingCount === 1 ? "" : "s"})
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <View
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: "rgba(100,116,139,0.25)",
+              }}
+            >
+              <Text style={{ fontWeight: "700", color: surfGreen(true) }}>
+                Radius {cone.radiusMeters}m
               </Text>
-            )}
+            </View>
 
-            <Text className="text-xs text-muted-foreground">
-              Reviews are public. You can leave one review per cone after completing it.
+            {cone.slug ? (
+              <View
+                style={{
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 999,
+                  borderWidth: 1,
+                  borderColor: "rgba(100,116,139,0.25)",
+                }}
+              >
+                <Text appearance="hint" style={{ fontWeight: "700" }}>
+                  {cone.slug}
+                </Text>
+              </View>
+            ) : null}
+
+            <View
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 6,
+                borderRadius: 999,
+                borderWidth: 1,
+                borderColor: completed ? "rgba(42,157,143,0.35)" : "rgba(239,68,68,0.25)",
+                backgroundColor: completed ? "rgba(42,157,143,0.10)" : "rgba(239,68,68,0.08)",
+              }}
+            >
+              <Text style={{ fontWeight: "800", color: completed ? surfGreen(true) : "#ef4444" }}>
+                {completed ? "Completed" : "Not completed"}
+              </Text>
+            </View>
+          </View>
+        </Layout>
+
+        <View style={{ height: 14 }} />
+
+        {/* REVIEWS SUMMARY */}
+        <Card>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text category="h6">Reviews</Text>
+
+            {ratingCount > 0 ? (
+              <Button
+                size="small"
+                appearance="outline"
+                onPress={() =>
+                  router.push(`/(tabs)/cones/${cone.id}/reviews?coneName=${encodeURIComponent(cone.name)}`)
+                }
+              >
+                View all
+              </Button>
+            ) : (
+              <View />
+            )}
+          </View>
+
+          <View style={{ height: 10 }} />
+          {ratingCount === 0 ? (
+            <Text appearance="hint">No reviews yet.</Text>
+          ) : (
+            <Text appearance="hint">
+              ⭐ {avgRating?.toFixed(1)} / 5 ({ratingCount} review{ratingCount === 1 ? "" : "s"})
             </Text>
-          </CardContent>
+          )}
+
+          <View style={{ height: 8 }} />
+          <Text appearance="hint" style={{ fontSize: 12 }}>
+            Reviews are public. You can leave one review per cone after completing it.
+          </Text>
         </Card>
 
-        <ConeStatusCard
-          loadingLocation={!loc}
-          distanceMeters={stats.distance}
-          accuracyMeters={stats.accuracy}
-          inRange={stats.inRange}
-          checkpointLabel={stats.checkpointLabel ?? undefined}
-          onRefreshGps={() => {
-            void refreshLocation();
-          }}
-          errorText={err}
-          showDistance={true}
-        />
+        <View style={{ height: 14 }} />
 
-        <ConeCompletionCard
-          completed={!!completedId}
-          saving={saving}
-          canComplete={!!loc}
-          onComplete={completeCone}
-          shareBonus={shareBonus}
-          onShareBonus={doShareBonus}
-          myReviewRating={myReviewRating}
-          myReviewText={myReviewText}
-          onLeaveReview={openReview}
-        />
+        {/* STATUS */}
+        <Card>
+          <Text category="h6">Status</Text>
+          <View style={{ height: 10 }} />
+
+          {!loc ? (
+            <View style={{ alignItems: "center", paddingVertical: 10, gap: 10 }}>
+              <Spinner />
+              <Text appearance="hint">Getting your GPS…</Text>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {stats.checkpointLabel ? (
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text appearance="hint">Checkpoint</Text>
+                  <Text style={{ fontWeight: "800" }}>{stats.checkpointLabel}</Text>
+                </View>
+              ) : null}
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text appearance="hint">Distance</Text>
+                <Text style={{ fontWeight: "800" }}>{formatMeters(stats.distance)}</Text>
+              </View>
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                <Text appearance="hint">Accuracy</Text>
+                <Text style={{ fontWeight: "800" }}>
+                  {stats.accuracy == null ? "—" : `${Math.round(stats.accuracy)} m`}
+                </Text>
+              </View>
+
+              <Divider />
+
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                <Text appearance="hint">Range check</Text>
+                <Text style={{ fontWeight: "900", color: stats.inRange ? surfGreen(true) : "#ef4444" }}>
+                  {stats.inRange ? "✅ In range" : "❌ Not in range"}
+                </Text>
+              </View>
+
+              <Button appearance="outline" onPress={() => void refreshLocation()}>
+                Refresh GPS
+              </Button>
+            </View>
+          )}
+
+          {err ? (
+            <View style={{ marginTop: 12, padding: 10, borderRadius: 12, backgroundColor: "rgba(239,68,68,0.10)" }}>
+              <Text status="danger">{err}</Text>
+            </View>
+          ) : null}
+        </Card>
+
+        <View style={{ height: 14 }} />
+
+        {/* ACTIONS */}
+        {!completed ? (
+          <Button
+            size="giant"
+            onPress={() => void completeCone()}
+            disabled={saving || !loc}
+            style={{ borderRadius: 14 }}
+          >
+            {saving ? "Saving…" : "Complete cone"}
+          </Button>
+        ) : (
+          <Card>
+            <Text category="h6">Completed ✅</Text>
+
+            <View style={{ height: 12 }} />
+            <Text style={{ fontWeight: "800" }}>Your review</Text>
+            <View style={{ height: 8 }} />
+
+            {!hasReview ? (
+              <View style={{ gap: 10 }}>
+                <Text appearance="hint">Leave a quick rating (once only) after you’ve done the cone.</Text>
+                <Button appearance="outline" onPress={openReview}>
+                  Leave a review
+                </Button>
+              </View>
+            ) : (
+              <View
+                style={{
+                  padding: 12,
+                  borderRadius: 16,
+                  borderWidth: 1,
+                  borderColor: "rgba(100,116,139,0.25)",
+                }}
+              >
+                <Text style={{ fontWeight: "900" }}>
+                  {stars}{" "}
+                  <Text appearance="hint" style={{ fontWeight: "700" }}>
+                    ({myReviewRating}/5)
+                  </Text>
+                </Text>
+
+                <View style={{ height: 6 }} />
+                <Text appearance="hint">
+                  {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
+                </Text>
+              </View>
+            )}
+
+            <View style={{ height: 16 }} />
+            <Text appearance="hint">Optional: share a pic on socials for bonus credit.</Text>
+            <View style={{ height: 10 }} />
+
+            <Button
+              appearance={shareBonus ? "filled" : "outline"}
+              status={shareBonus ? "success" : "basic"}
+              onPress={() => void doShareBonus()}
+              disabled={shareBonus}
+            >
+              {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
+            </Button>
+          </Card>
+        )}
       </ScrollView>
 
+      {/* REVIEW MODAL */}
       <Modal visible={reviewOpen} transparent animationType="fade" onRequestClose={() => setReviewOpen(false)}>
-        <View className="flex-1 items-center justify-center bg-black/40 px-6">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Leave a review</CardTitle>
-            </CardHeader>
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 18 }}>
+          <Layout style={{ borderRadius: 18, padding: 16 }}>
+            <Text category="h6">Leave a review</Text>
+            <View style={{ height: 8 }} />
+            <Text appearance="hint">One-time only. Choose a rating and (optionally) add a short note.</Text>
 
-            <CardContent className="gap-4">
-              <Text className="text-sm text-muted-foreground">
-                One-time only. Choose a rating and (optionally) add a short note.
+            <View style={{ height: 14 }} />
+
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              {[1, 2, 3, 4, 5].map((n) => {
+                const selected = draftRating === n;
+                return (
+                  <Pressable
+                    key={n}
+                    onPress={() => setDraftRating(n)}
+                    style={{
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: selected ? "rgba(42,157,143,0.45)" : "rgba(100,116,139,0.25)",
+                      backgroundColor: selected ? "rgba(42,157,143,0.12)" : "transparent",
+                    }}
+                  >
+                    <Text style={{ fontWeight: "900", color: selected ? surfGreen(true) : "#64748b" }}>
+                      {"⭐".repeat(n)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <View style={{ height: 14 }} />
+
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: "rgba(100,116,139,0.25)",
+                borderRadius: 14,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              }}
+            >
+              <TextInput
+                value={draftText}
+                onChangeText={setDraftText}
+                placeholder="Optional note (e.g. great views, muddy track)…"
+                placeholderTextColor="rgba(100,116,139,0.9)"
+                multiline
+                style={{ minHeight: 84, color: "#0f172a" }}
+                maxLength={280}
+              />
+              <Text appearance="hint" style={{ fontSize: 12 }}>
+                {draftText.length} / 280
               </Text>
+            </View>
 
-              <View className="flex-row flex-wrap gap-2">
-                {[1, 2, 3, 4, 5].map((n) => {
-                  const selected = draftRating === n;
-                  return (
-                    <Pressable
-                      key={n}
-                      onPress={() => setDraftRating(n)}
-                      className={[
-                        "rounded-full border px-3 py-2",
-                        selected ? "border-primary/30 bg-primary/10" : "border-border bg-background",
-                      ].join(" ")}
-                    >
-                      <Text className={selected ? "font-semibold text-foreground" : "text-muted-foreground"}>
-                        {"⭐".repeat(n)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+            <View style={{ height: 14 }} />
 
-              <View className="rounded-xl border border-border bg-background px-3 py-2">
-                <TextInput
-                  value={draftText}
-                  onChangeText={setDraftText}
-                  placeholder="Optional note (e.g. great views, muddy track)…"
-                  placeholderTextColor="rgba(100,116,139,0.9)"
-                  multiline
-                  className="text-foreground"
-                  style={{ minHeight: 80 }}
-                  maxLength={280}
-                />
-                <Text className="mt-2 text-xs text-muted-foreground">{draftText.length} / 280</Text>
-              </View>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <Button
+                appearance="outline"
+                style={{ flex: 1 }}
+                disabled={reviewSaving}
+                onPress={() => setReviewOpen(false)}
+              >
+                Cancel
+              </Button>
 
-              <View className="flex-row gap-2">
-                <Button variant="outline" onPress={() => setReviewOpen(false)} disabled={reviewSaving}>
-                  <Text className="font-semibold">Cancel</Text>
-                </Button>
-
-                <Button onPress={() => void saveReview()} disabled={reviewSaving || draftRating == null}>
-                  <Text className="text-primary-foreground font-semibold">
-                    {reviewSaving ? "Saving…" : "Save review"}
-                  </Text>
-                </Button>
-              </View>
-            </CardContent>
-          </Card>
+              <Button
+                style={{ flex: 1 }}
+                disabled={reviewSaving || draftRating == null}
+                onPress={() => void saveReview()}
+              >
+                {reviewSaving ? "Saving…" : "Save review"}
+              </Button>
+            </View>
+          </Layout>
         </View>
       </Modal>
     </Screen>

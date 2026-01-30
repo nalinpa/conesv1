@@ -1,6 +1,6 @@
-import { View, Text } from "react-native";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { View } from "react-native";
+import { Card, Text, Button } from "@ui-kitten/components";
 
 export function ConeCompletionCard({
   completed,
@@ -27,73 +27,77 @@ export function ConeCompletionCard({
 }) {
   if (!completed) {
     return (
-      <Button className="mt-4" onPress={onComplete} disabled={saving || !canComplete}>
-        <Text className="text-primary-foreground font-semibold">
-          {saving ? "Saving…" : "Complete cone"}
-        </Text>
+      <Button
+        status="primary"
+        size="large"
+        disabled={saving || !canComplete}
+        onPress={onComplete}
+      >
+        {saving ? "Saving…" : "Complete cone"}
       </Button>
     );
   }
 
   const hasReview = myReviewRating != null;
-  const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
-
+  const stars =
+    myReviewRating != null
+      ? "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating))))
+      : "";
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Completed ✅</CardTitle>
-      </CardHeader>
+    <Card>
+      <View style={{ gap: 14 }}>
+        <Text category="h6">Completed ✅</Text>
 
-      <CardContent className="gap-4">
         {/* Review block */}
-        <View className="gap-2">
-          <Text className="font-semibold text-foreground">Your review</Text>
+        <View style={{ gap: 8 }}>
+          <Text category="s1">Your review</Text>
 
           {!hasReview ? (
-            <View className="gap-2">
-              <Text className="text-muted-foreground">
+            <View style={{ gap: 10 }}>
+              <Text appearance="hint">
                 Leave a quick rating (once only) after you’ve done the cone.
               </Text>
-              <Button variant="outline" onPress={onLeaveReview}>
-                <Text className="font-semibold">Leave a review</Text>
+
+              <Button appearance="outline" size="large" onPress={onLeaveReview}>
+                Leave a review
               </Button>
             </View>
           ) : (
-            <View className="rounded-2xl border border-border bg-card px-3 py-3">
-              <Text className="font-extrabold text-card-foreground">
-                {stars}{" "}
-                <Text className="text-sm font-semibold text-muted-foreground">
-                  ({myReviewRating}/5)
+            <Card appearance="outline">
+              <View style={{ gap: 6 }}>
+                <Text category="s1">
+                  {stars}{" "}
+                  <Text appearance="hint" category="c1">
+                    ({myReviewRating}/5)
+                  </Text>
                 </Text>
-              </Text>
 
-              {myReviewText?.trim() ? (
-                <Text className="mt-2 text-sm text-muted-foreground">{myReviewText.trim()}</Text>
-              ) : (
-                <Text className="mt-2 text-sm text-muted-foreground">No comment.</Text>
-              )}
-            </View>
+                <Text appearance="hint">
+                  {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
+                </Text>
+              </View>
+            </Card>
           )}
         </View>
 
         {/* Share bonus block */}
-        <View className="gap-2">
-          <Text className="text-muted-foreground">
+        <View style={{ gap: 8 }}>
+          <Text appearance="hint">
             Optional: share a pic on socials for bonus credit.
           </Text>
 
           <Button
-            variant={shareBonus ? "secondary" : "outline"}
-            onPress={onShareBonus}
+            appearance={shareBonus ? "filled" : "outline"}
+            status={shareBonus ? "success" : "basic"}
+            size="large"
             disabled={shareBonus}
+            onPress={onShareBonus}
           >
-            <Text className="font-semibold">
-              {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
-            </Text>
+            {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
           </Button>
         </View>
-      </CardContent>
+      </View>
     </Card>
   );
 }

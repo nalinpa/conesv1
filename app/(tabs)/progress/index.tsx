@@ -1,23 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator, ScrollView } from "react-native";
+import { View, ScrollView, ActivityIndicator, Pressable } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "../../../lib/firebase";
-import { Screen } from "@/components/screen";
-
-import { PieChart } from "@/components/progress/PieChart";
-import { StatRow } from "@/components/progress/StatRow";
-import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
-import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
-import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
-
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
-import { Button } from "../../../components/ui/button";
 
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import { getBadgeState } from "@/lib/badges";
+
+import { Layout, Card, Text, Button } from "@ui-kitten/components";
+
+import { Screen } from "@/components/screen";
+import { PieChart } from "@/components/progress/PieChart";
+import { StatRow } from "@/components/progress/StatRow";
+import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
+import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
+import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 
 type Cone = {
   id: string;
@@ -109,8 +108,8 @@ export default function ProgressScreen() {
             let bonus = 0;
             const byConeId: Record<string, number> = {};
 
-            snap.docs.forEach((d) => {
-              const data = d.data() as any;
+            snap.docs.forEach((dd) => {
+              const data = dd.data() as any;
 
               if (data?.coneId) ids.add(String(data.coneId));
               if (data?.shareBonus) bonus += 1;
@@ -141,15 +140,14 @@ export default function ProgressScreen() {
           revQ,
           (snap) => {
             const ids = new Set<string>();
-            snap.docs.forEach((d) => {
-              const data = d.data() as any;
+            snap.docs.forEach((dd) => {
+              const data = dd.data() as any;
               if (data?.coneId) ids.add(String(data.coneId));
             });
             setReviewedConeIds(ids);
           },
           (e) => {
             console.error(e);
-            // don’t hard-fail progress; just act like no reviews loaded
             setReviewedConeIds(new Set());
           }
         );
@@ -220,7 +218,6 @@ export default function ProgressScreen() {
   }, [cones, completedIds, loc]);
 
   const conesToReview = useMemo(() => {
-    // completed but not reviewed by this user
     return cones
       .filter((c) => completedIds.has(c.id) && !reviewedConeIds.has(c.id))
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -247,8 +244,12 @@ export default function ProgressScreen() {
   if (loading) {
     return (
       <Screen>
-        <ActivityIndicator />
-        <Text className="mt-2 text-muted-foreground">Loading progress…</Text>
+        <Layout style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+          <ActivityIndicator />
+          <Text appearance="hint" style={{ marginTop: 10 }}>
+            Loading progress…
+          </Text>
+        </Layout>
       </Screen>
     );
   }
@@ -256,17 +257,17 @@ export default function ProgressScreen() {
   if (err) {
     return (
       <Screen>
-        <Card>
-          <CardHeader>
-            <CardTitle>Progress</CardTitle>
-          </CardHeader>
-          <CardContent className="gap-2">
-            <Text className="text-destructive">{err}</Text>
-            <Button onPress={() => router.replace("/(tabs)/progress")}>
-              <Text className="text-primary-foreground font-semibold">Retry</Text>
+        <Layout style={{ flex: 1, justifyContent: "center" }}>
+          <Card status="danger">
+            <Text category="h6" style={{ marginBottom: 6 }}>
+              Progress
+            </Text>
+            <Text status="danger">{err}</Text>
+            <Button style={{ marginTop: 12 }} onPress={() => router.replace("/(tabs)/progress")}>
+              Retry
             </Button>
-          </CardContent>
-        </Card>
+          </Card>
+        </Layout>
       </Screen>
     );
   }
@@ -274,68 +275,72 @@ export default function ProgressScreen() {
   const allDone = totals.total > 0 && totals.completed === totals.total;
 
   return (
-    <Screen padded={false}>
-      <ScrollView
-        className="flex-1 bg-background"
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <Text className="text-2xl font-extrabold text-foreground">Progress</Text>
-        <Text className="mt-1 text-sm text-muted-foreground">
-          Your stats + the next badge you’re closest to unlocking.
-        </Text>
+    <Screen>
+      <Layout style={{ flex: 1 }}>
+        <ScrollView
+          contentContainerStyle={{
+            paddingTop: 16,
+            paddingBottom: 24,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text category="h1" style={{ marginBottom: 4 }}>
+            Progress
+          </Text>
+          <Text appearance="hint" style={{ marginBottom: 12 }}>
+            Your stats + the next badge you’re closest to unlocking.
+          </Text>
 
-        <Card className="mt-4">
-          <CardHeader>
-            <CardTitle>Your progress</CardTitle>
-          </CardHeader>
+          {/* One place to control spacing */}
+          <View style={{ gap: 14 }}>
+            {/* Your progress */}
+            <Card style={{ padding: 16 }}>
+              <Text category="h6" style={{ marginBottom: 12 }}>
+                Your progress
+              </Text>
 
-          <CardContent className="flex-row items-center justify-between">
-            <PieChart percent={totals.percent} />
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <PieChart percent={totals.percent} />
 
-            <View className="flex-1 pl-4 gap-2">
-              <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} />
-              <StatRow label="Share bonus" value={shareBonusCount} variant="secondary" />
+                <View style={{ flex: 1, marginLeft: 16, gap: 10 }}>
+                  <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} />
+                  <StatRow label="Share bonus" value={shareBonusCount} />
 
-              {allDone ? (
-                <View className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2">
-                  <Text className="font-semibold text-foreground">You’ve completed them all 🎉</Text>
+                  {allDone ? (
+                    <Card style={{ marginTop: 10, padding: 12 }}>
+                      <Text category="s1" style={{ fontWeight: "800" }}>
+                        You’ve completed them all 🎉
+                      </Text>
+                    </Card>
+                  ) : null}
                 </View>
-              ) : null}
-            </View>
-          </CardContent>
-        </Card>
+              </View>
+            </Card>
 
-        <ConesToReviewCard
-          cones={conesToReview.map((c) => ({ id: c.id, name: c.name, description: c.description }))}
-          onOpen={goToCone}
-        />
+            {/* Cones to review */}
+            {conesToReview.length > 0 ? (
+              <ConesToReviewCard cones={conesToReview} onOpenCone={goToCone} />
+            ) : null}
 
-        <BadgesSummaryCard
-          nextUp={badgeState.nextUp}
-          recentlyUnlocked={badgeState.recentlyUnlocked}
-          onOpenAll={() => router.push("/(tabs)/progress/badges")}
-        />
+            {/* Badges */}
+            <BadgesSummaryCard
+              nextUp={badgeState.nextUp}
+              recentlyUnlocked={badgeState.recentlyUnlocked}
+              onViewAll={() => router.push("/(tabs)/progress/badges")}
+            />
 
-        <NearestUnclimbedCard
-          cone={
-            nearestUnclimbed
-              ? {
-                  id: nearestUnclimbed.cone.id,
-                  name: nearestUnclimbed.cone.name,
-                  description: nearestUnclimbed.cone.description,
-                }
-              : null
-          }
-          distanceMeters={nearestUnclimbed?.distance ?? null}
-          locErr={locErr}
-          onOpen={goToCone}
-        />
+            {/* Nearest unclimbed */}
+            <NearestUnclimbedCard
+              cone={nearestUnclimbed?.cone ?? null}
+              locErr={locErr}
+              distanceMeters={nearestUnclimbed?.distance ?? null}
+              onOpenCone={(coneId) => goToCone(coneId)}
+            />
 
-        <Text className="mt-4 text-xs text-muted-foreground">
-          Tip: Better GPS accuracy helps when you’re close to the cone.
-        </Text>
-      </ScrollView>
+            <Text appearance="hint">Tip: Better GPS accuracy helps when you’re close to the cone.</Text>
+          </View>
+        </ScrollView>
+      </Layout>
     </Screen>
   );
 }

@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@eva-design/eva": "^2.2.0",
     "@expo/vector-icons": "^15.0.3",
     "@react-navigation/bottom-tabs": "^7.9.1",
     "@react-navigation/native": "^7.1.27",
@@ -16,6 +17,8 @@
     "@rn-primitives/label": "^1.2.0",
     "@rn-primitives/portal": "^1.3.0",
     "@rn-primitives/slot": "^1.2.0",
+    "@ui-kitten/components": "^5.3.1",
+    "@ui-kitten/eva-icons": "^5.3.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "expo": "~54.0.31",

@@ -1,52 +1,36 @@
-import { Text, TextClassContext } from '@/components/ui/text';
-import { cn } from '@/lib/utils';
-import { View, type ViewProps } from 'react-native';
+import React from "react";
+import { View, ViewProps, StyleProp, ViewStyle } from "react-native";
+import { Card as KCard } from "@ui-kitten/components";
 
-function Card({ className, ...props }: ViewProps & React.RefAttributes<View>) {
+export function Card({
+  style,
+  children,
+  ...props
+}: ViewProps & { style?: StyleProp<ViewStyle> }) {
   return (
-    <TextClassContext.Provider value="text-card-foreground">
-      <View
-        className={cn(
-          'bg-card border-border flex flex-col gap-6 rounded-xl border py-6 shadow-sm shadow-black/5',
-          className
-        )}
-        {...props}
-      />
-    </TextClassContext.Provider>
+    <KCard style={[{ borderRadius: 18 }, style]} {...(props as any)}>
+      {children}
+    </KCard>
   );
 }
 
-function CardHeader({ className, ...props }: ViewProps & React.RefAttributes<View>) {
-  return <View className={cn('flex flex-col gap-1.5 px-6', className)} {...props} />;
+export function CardHeader({ style, ...props }: ViewProps) {
+  return <View style={[{ marginBottom: 10 }, style]} {...props} />;
 }
 
-function CardTitle({
-  className,
+export function CardTitle({
+  children,
+  style,
   ...props
-}: React.ComponentProps<typeof Text> & React.RefAttributes<Text>) {
+}: React.ComponentProps<typeof View> & { children: any }) {
+  // Keep as View wrapper; actual title text uses your Text component
   return (
-    <Text
-      role="heading"
-      aria-level={3}
-      className={cn('font-semibold leading-none', className)}
-      {...props}
-    />
+    <View style={[{ marginBottom: 2 }, style]} {...props}>
+      {children}
+    </View>
   );
 }
 
-function CardDescription({
-  className,
-  ...props
-}: React.ComponentProps<typeof Text> & React.RefAttributes<Text>) {
-  return <Text className={cn('text-muted-foreground text-sm', className)} {...props} />;
+export function CardContent({ style, ...props }: ViewProps) {
+  return <View style={[{ gap: 10 }, style]} {...props} />;
 }
-
-function CardContent({ className, ...props }: ViewProps & React.RefAttributes<View>) {
-  return <View className={cn('px-6', className)} {...props} />;
-}
-
-function CardFooter({ className, ...props }: ViewProps & React.RefAttributes<View>) {
-  return <View className={cn('flex flex-row items-center px-6', className)} {...props} />;
-}
-
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle };
