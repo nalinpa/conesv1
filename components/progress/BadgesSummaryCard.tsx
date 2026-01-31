@@ -66,12 +66,16 @@ export function BadgesSummaryCard({
 
           <View style={{ gap: 8 }}>
             {recentlyUnlocked.slice(0, 3).map((u, idx) => {
-              const id = u?.badge?.id ? String(u.badge.id) : `recent_${idx}`;
+              // ✅ Keys must be unique and stable enough. We suffix with idx to avoid collisions.
+              const baseId =
+                u?.badge?.id != null ? String(u.badge.id) : "recent";
+              const key = `${baseId}_${idx}`;
+
               const name = u?.badge?.name ?? "Badge";
 
               return (
                 <View
-                  key={id}
+                  key={key}
                   style={{
                     flexDirection: "row",
                     alignItems: "center",

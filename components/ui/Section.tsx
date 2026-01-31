@@ -1,6 +1,7 @@
 import React from "react";
 import { View, type ViewProps } from "react-native";
-import { Card, Text, Button } from "@ui-kitten/components";
+import { Text, Button } from "@ui-kitten/components";
+import { CardShell } from "@/components/ui/CardShell";
 
 type SectionAction =
   | {
@@ -14,6 +15,19 @@ type SectionAction =
   | null
   | undefined;
 
+type Props = ViewProps & {
+  title: string;
+  subtitle?: string | null;
+  action?: SectionAction;
+  children: React.ReactNode;
+
+  /** Wrap content in a CardShell (default true) */
+  card?: boolean;
+
+  /** Styles for the inner content container */
+  contentStyle?: ViewProps["style"];
+};
+
 export function Section({
   title,
   subtitle,
@@ -22,20 +36,16 @@ export function Section({
   style,
   contentStyle,
   card = true,
-}: ViewProps & {
-  title: string;
-  subtitle?: string | null;
-  action?: SectionAction;
-  children: React.ReactNode;
-
-  /** Wrap content in a Kitten Card (default true) */
-  card?: boolean;
-
-  /** Styles for the inner content container */
-  contentStyle?: ViewProps["style"];
-}) {
+}: Props) {
   const Header = (
-    <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
       <View style={{ flex: 1 }}>
         <Text category="h6" style={{ fontWeight: "900" }}>
           {title}
@@ -72,9 +82,9 @@ export function Section({
   }
 
   return (
-    <Card style={[{ borderRadius: 18, padding: 16 }, style]}>
+    <CardShell style={style}>
       {Header}
       <View style={[{ marginTop: 12 }, contentStyle]}>{children}</View>
-    </Card>
+    </CardShell>
   );
 }

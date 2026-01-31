@@ -41,3 +41,7 @@ export function goBadges() {
 export function goMapHome() {
   router.replace("/(tabs)/map");
 }
+
+export function goLogin(router: { replace: (path: string) => void }) {
+  router.replace("login");
+}

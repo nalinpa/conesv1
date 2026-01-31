@@ -69,6 +69,7 @@ export function CardShell({
 }: Props) {
   const theme = useTheme();
   const { borderColor, backgroundColor } = getStatusColors(theme, status);
+  const baseStyle: ViewStyle = { borderRadius: 18, overflow: "hidden" };
 
   const Wrapper: React.ElementType = onPress ? Pressable : View;
 
@@ -93,7 +94,7 @@ export function CardShell({
     <Wrapper
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
-      style={onPress ? wrapperStyle : ([{ borderRadius: 18, overflow: "hidden" }, style] as any)}
+      style={onPress ? wrapperStyle : [baseStyle, style]}
     >
       <Layout
         // Critical: don't let Layout eat touches when wrapped by Pressable

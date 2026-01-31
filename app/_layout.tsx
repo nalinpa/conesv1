@@ -11,6 +11,8 @@ import { ApplicationProvider, IconRegistry } from "@ui-kitten/components";
 import { EvaIconsPack } from "@ui-kitten/eva-icons";
 import { surfGreenTheme } from "@/lib/kitten-theme";
 
+import { goLogin, goProgressHome } from "@/lib/routes";
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
@@ -41,18 +43,18 @@ function AuthGate() {
   useEffect(() => {
     if (!ready) return;
 
-    const inAuthGroup = segments[0] === "(auth)";
+    const inAuthGroup = segments[0] === "login";
     const inTabsGroup = segments[0] === "(tabs)";
 
-    // Not logged in -> must be in (auth)
+    // Not logged in -> must be at login
     if (!loggedIn && !inAuthGroup) {
-      router.replace("/login");
+      goLogin(router);
       return;
     }
 
-    // Logged in -> must be in (tabs)
+    // Logged in -> must be in tabs (default to progress)
     if (loggedIn && !inTabsGroup) {
-      router.replace("/(tabs)/progress");
+      goProgressHome();
       return;
     }
   }, [ready, loggedIn, segments, router]);

@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { auth } from "../lib/firebase";
+import { goProgressHome } from "../lib/routes";
 
 import { Layout, Card, Text, Input, Button } from "@ui-kitten/components";
 
@@ -24,7 +25,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      router.replace("/(tabs)/progress");
+      goProgressHome();
     } catch (e: any) {
       setErr(e?.message ?? "Login failed");
     } finally {

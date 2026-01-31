@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, ScrollView } from "react-native";
 import * as Location from "expo-location";
 
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
@@ -291,7 +291,13 @@ export default function ProgressScreen() {
   return (
     <Screen>
       <Layout style={{ flex: 1 }}>
-        <View style={{ gap: 12 }}>
+        <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          gap: 12,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
           {/* Header */}
           <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
@@ -360,7 +366,7 @@ export default function ProgressScreen() {
             recentlyUnlocked={badgeState.recentlyUnlocked}
             onViewAll={goBadges}
           />
-        </View>
+        </ScrollView>
       </Layout>
     </Screen>
   );

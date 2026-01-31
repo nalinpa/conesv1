@@ -4,6 +4,8 @@ import { BottomNavigation, BottomNavigationTab } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { goProgressHome, goConesHome, goMapHome } from "@/lib/routes";
+
 function Ionicon({
   name,
   color,
@@ -41,18 +43,18 @@ function KittenTabBar({
     // Force these tabs to always land on their index route
     // (prevents being "stuck" on nested screens like /progress/badges)
     if (route.name === "cones") {
-      router.replace("/(tabs)/cones");
+      goConesHome();
       return;
     }
 
     if (route.name === "progress") {
-      router.replace("/(tabs)/progress");
+      goProgressHome();
       return;
     }
 
     // Map can behave normally (or force it too if you want)
     if (route.name === "map") {
-      router.replace("/(tabs)/map");
+      goMapHome();
       return;
     }
 

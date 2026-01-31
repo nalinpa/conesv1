@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
-import { router } from "expo-router";
 
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -14,7 +13,8 @@ import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 
 // UI Kitten
-import { Card, Text } from "@ui-kitten/components";
+import { Text } from "@ui-kitten/components";
+import { CardShell } from "@/components/ui/CardShell";
 
 type Cone = {
   id: string;
@@ -211,12 +211,12 @@ export default function MapScreen() {
   if (err) {
     return (
       <Screen>
-        <Card status="danger" style={{ padding: 14 }}>
+        <CardShell status="danger">
           <Text category="s1" style={{ fontWeight: "800", marginBottom: 6 }}>
             Map error
           </Text>
           <Text status="danger">{err}</Text>
-        </Card>
+        </CardShell>
       </Screen>
     );
   }
@@ -238,8 +238,8 @@ export default function MapScreen() {
             const completed = completedIds.has(cone.id);
 
             return (
-              <View key={cone.id}>
-                {/* Circle must be a direct child of MapView (NOT inside Marker) */}
+              <React.Fragment key={cone.id}>
+                {/* Circle must be a direct child of MapView */}
                 <Circle
                   center={{ latitude: cone.lat, longitude: cone.lng }}
                   radius={cone.radiusMeters}
@@ -253,22 +253,15 @@ export default function MapScreen() {
                   title={cone.name}
                   onPress={() => goCone(cone.id)}
                 />
-              </View>
+              </React.Fragment>
             );
           })}
         </MapView>
 
         {/* Nearest unclimbed overlay */}
         {nearestUnclimbed ? (
-          <View
-            style={{
-              position: "absolute",
-              left: 16,
-              right: 16,
-              bottom: 16,
-            }}
-          >
-            <Card style={{ borderRadius: 18, padding: 14 }}>
+          <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
+            <CardShell style={{ borderRadius: 18 }}>
               <Text category="s1" style={{ fontWeight: "800" }}>
                 Nearest unclimbed
               </Text>
@@ -286,23 +279,16 @@ export default function MapScreen() {
               <Text appearance="hint" category="c1">
                 Tap the marker to open the cone.
               </Text>
-            </Card>
+            </CardShell>
           </View>
         ) : null}
 
         {/* Location error toast */}
         {locErr ? (
-          <View
-            style={{
-              position: "absolute",
-              left: 16,
-              right: 16,
-              top: 16,
-            }}
-          >
-            <Card status="warning" style={{ borderRadius: 16, padding: 12 }}>
+          <View style={{ position: "absolute", left: 16, right: 16, top: 16 }}>
+            <CardShell status="warning" style={{ borderRadius: 16 }}>
               <Text status="warning">{locErr}</Text>
-            </Card>
+            </CardShell>
           </View>
         ) : null}
       </View>

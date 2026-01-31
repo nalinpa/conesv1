@@ -4,18 +4,13 @@ import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+import { formatDistanceMeters } from "@/lib/formatters";
 
 type ConeLite = {
   id: string;
   name: string;
   description?: string;
 };
-
-function formatDistance(distanceMeters: number | null): string {
-  if (distanceMeters == null) return "Distance —";
-  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} m away`;
-  return `${(distanceMeters / 1000).toFixed(1)} km away`;
-}
 
 export function NearestUnclimbedCard({
   cone,
@@ -29,7 +24,7 @@ export function NearestUnclimbedCard({
   onOpenCone: (coneId: string) => void;
 }) {
   const distanceLabel =
-    distanceMeters == null && locErr ? "Distance — (no GPS)" : formatDistance(distanceMeters);
+    distanceMeters == null && locErr ? "Distance — (no GPS)" : formatDistanceMeters(distanceMeters);
 
   return (
     <CardShell>

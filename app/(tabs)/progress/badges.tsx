@@ -9,14 +9,8 @@ import { auth, db } from "@/lib/firebase";
 import { Screen } from "@/components/screen";
 import { BADGES, getBadgeState } from "@/lib/badges";
 import { CardShell } from "@/components/ui/CardShell";
-import { goProgressHome } from "@/lib/routes";
-
-type Cone = {
-  id: string;
-  active: boolean;
-  type?: "cone" | "crater";
-  region?: "north" | "central" | "south" | "harbour";
-};
+import { goProgressHome, goBadges } from "@/lib/routes";
+import { ConeMeta } from "@/lib/badges";
 
 function BadgeTile({
   name,
@@ -71,7 +65,7 @@ export default function BadgesScreen() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const [cones, setCones] = useState<Cone[]>([]);
+  const [cones, setCones] = useState<ConeMeta[]>([]);
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [shareBonusCount, setShareBonusCount] = useState(0);
   const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
@@ -92,7 +86,7 @@ export default function BadgesScreen() {
         const conesQ = query(collection(db, COL.cones), where("active", "==", true));
         const conesSnap = await getDocs(conesQ);
 
-        const conesList: Cone[] = conesSnap.docs.map((d) => {
+        const conesList: ConeMeta[] = conesSnap.docs.map((d) => {
           const data = d.data() as any;
           return {
             id: d.id,
@@ -162,12 +156,7 @@ export default function BadgesScreen() {
 
   const badgeState = useMemo(() => {
     return getBadgeState({
-      cones: cones.map((c) => ({
-        id: c.id,
-        type: c.type,
-        region: c.region,
-        active: c.active,
-      })),
+      cones,
       completedConeIds: completedIds,
       shareBonusCount,
       completedAtByConeId,
@@ -214,7 +203,7 @@ export default function BadgesScreen() {
               Badges
             </Text>
             <Text status="danger">{err}</Text>
-            <Button style={{ marginTop: 12 }} onPress={() => router.replace("/(tabs)/progress/badges")}>
+            <Button style={{ marginTop: 12 }} onPress={() => goBadges()}>
               Retry
             </Button>
           </CardShell>

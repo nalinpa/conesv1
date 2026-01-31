@@ -4,6 +4,7 @@ import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+import { formatDistanceMeters } from "@/lib/formatters";
 
 type ConeListItemProps = {
   id: string;
@@ -14,12 +15,6 @@ type ConeListItemProps = {
   distanceMeters?: number | null;
   onPress: (coneId: string) => void;
 };
-
-function formatDistance(distanceMeters?: number | null) {
-  if (distanceMeters == null) return null;
-  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} m`;
-  return `${(distanceMeters / 1000).toFixed(1)} km`;
-}
 
 export function ConeListItem({
   id,
@@ -33,8 +28,6 @@ export function ConeListItem({
   return (
     <CardShell
       onPress={() => onPress(id)}
-      // UI Kitten Card supports this; gives nice feedback
-      activeOpacity={0.92}
     >
       <View style={{ gap: 10 }}>
         {/* Header */}
@@ -65,7 +58,7 @@ export function ConeListItem({
         {/* Meta row */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
           {radiusMeters != null ? <Pill>Radius {radiusMeters}m</Pill> : null}
-          {distanceMeters != null ? <Pill>{formatDistance(distanceMeters)}</Pill> : null}
+          {distanceMeters != null ? <Pill>{formatDistanceMeters(distanceMeters)}</Pill> : null}
         </View>
       </View>
     </CardShell>
