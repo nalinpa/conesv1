@@ -19,6 +19,7 @@ import { COL } from "@/lib/constants/firestore";
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
+import { formatMeters } from "@/lib/formatters";
 
 // UI Kitten
 import { Layout, Text, Button, Spinner, Divider } from "@ui-kitten/components";
@@ -35,12 +36,6 @@ type PublicReviewDoc = {
   reviewText: string | null;
   reviewCreatedAt: any;
 };
-
-function formatMeters(m: number | null) {
-  if (m == null) return "—";
-  if (m < 1000) return `${Math.round(m)} m`;
-  return `${(m / 1000).toFixed(1)} km`;
-}
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();

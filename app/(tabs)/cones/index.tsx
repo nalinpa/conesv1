@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { COL } from "@/lib/constants/firestore";
+import { formatDistanceMeters } from "@/lib/formatters";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
@@ -19,12 +20,6 @@ type ConeRow = {
   cone: Cone;
   distance: number | null;
 };
-
-function formatDistance(distance: number | null) {
-  if (distance == null) return "Distance —";
-  if (distance < 1000) return `${Math.round(distance)} m`;
-  return `${(distance / 1000).toFixed(1)} km`;
-}
 
 export default function ConeListPage() {
   const [loading, setLoading] = useState(true);
@@ -229,7 +224,7 @@ export default function ConeListPage() {
                     <Pill status="basic">Radius {cone.radiusMeters}m</Pill>
                   ) : null}
 
-                  <Pill status="basic">{formatDistance(distance)}</Pill>
+                  <Pill status="basic">{formatDistanceMeters(distance, "label")}</Pill>
                 </View>
 
                 <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>

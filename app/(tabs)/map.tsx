@@ -7,6 +7,7 @@ import { router } from "expo-router";
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
+import { formatDistanceMeters } from "@/lib/formatters";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
@@ -34,12 +35,6 @@ type Cone = {
 function toNum(v: any): number {
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : NaN;
-}
-
-function formatDistance(distanceMeters: number | null): string {
-  if (distanceMeters == null) return "Distance —";
-  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} m`;
-  return `${(distanceMeters / 1000).toFixed(1)} km`;
 }
 
 export default function MapScreen() {
@@ -282,7 +277,7 @@ export default function MapScreen() {
               <Text appearance="hint">
                 {nearestUnclimbed.cone.name}
                 {nearestUnclimbed.distance != null
-                  ? ` · ${formatDistance(nearestUnclimbed.distance)}`
+                  ? ` · ${formatDistanceMeters(nearestUnclimbed.distance)}`
                   : ""}
               </Text>
 
