@@ -4,9 +4,12 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 
 import { Screen } from "@/components/screen";
-import { Layout, Card, Text, Button, List } from "@ui-kitten/components";
+import { Layout, Text, Button, List } from "@ui-kitten/components";
+
+import { CardShell } from "@/components/ui/CardShell";
 
 type PublicReview = {
   id: string;
@@ -59,7 +62,7 @@ export default function ConeReviewsPage() {
         if (!coneId) throw new Error("Missing coneId.");
 
         const qy = query(
-          collection(db, "coneReviews"),
+          collection(db, COL.coneReviews),
           where("coneId", "==", String(coneId)),
           orderBy("reviewCreatedAt", "desc")
         );
@@ -112,8 +115,7 @@ export default function ConeReviewsPage() {
     return { avg: count > 0 ? sum / count : null, count };
   }, [reviews]);
 
-  const title =
-    typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
+  const title = typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
 
   function goBack() {
     if (router.canGoBack()) router.back();
@@ -122,14 +124,14 @@ export default function ConeReviewsPage() {
 
   const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {
     const rating = clampRating(item.reviewRating);
-    const stars = "★".repeat(Math.max(0, Math.min(5, Math.round(rating))));
+    const stars = rating ? "★".repeat(Math.max(1, Math.min(5, Math.round(rating)))) : "—";
     const when = formatDateMaybe(item.reviewCreatedAt);
 
     return (
-      <Card style={{ marginBottom: 12, padding: 14 }}>
+      <CardShell style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
           <Text category="s1" style={{ fontWeight: "800" }}>
-            {stars || "—"}
+            {stars}
           </Text>
           <Text appearance="hint" category="c1">
             {rating ? `${rating}/5` : ""}
@@ -145,7 +147,7 @@ export default function ConeReviewsPage() {
         <Text appearance="hint" style={{ marginTop: 10 }}>
           {item.reviewText?.trim() ? item.reviewText.trim() : "No comment."}
         </Text>
-      </Card>
+      </CardShell>
     );
   };
 
@@ -163,7 +165,9 @@ export default function ConeReviewsPage() {
               <Text appearance="hint" style={{ marginTop: 4 }}>
                 {summary.count === 0
                   ? "No reviews yet."
-                  : `★ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${summary.count === 1 ? "" : "s"})`}
+                  : `★ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${
+                      summary.count === 1 ? "" : "s"
+                    })`}
               </Text>
             </View>
 
@@ -173,9 +177,11 @@ export default function ConeReviewsPage() {
           </View>
 
           {err ? (
-            <Card status="danger" style={{ marginTop: 12, padding: 12 }}>
-              <Text status="danger">{err}</Text>
-            </Card>
+            <View style={{ marginTop: 12 }}>
+              <CardShell status="danger">
+                <Text status="danger">{err}</Text>
+              </CardShell>
+            </View>
           ) : null}
         </View>
 
@@ -193,9 +199,11 @@ export default function ConeReviewsPage() {
             contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
             renderItem={renderItem}
             ListEmptyComponent={
-              <Card style={{ padding: 14, marginHorizontal: 16 }}>
-                <Text appearance="hint">No reviews yet — be the first 😈</Text>
-              </Card>
+              <View style={{ marginHorizontal: 16 }}>
+                <CardShell>
+                  <Text appearance="hint">No reviews yet — be the first 😈</Text>
+                </CardShell>
+              </View>
             }
           />
         )}

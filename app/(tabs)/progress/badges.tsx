@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { Layout, Text, Button } from "@ui-kitten/components";
 
+import { COL } from "@/lib/constants/firestore";
 import { auth, db } from "@/lib/firebase";
 import { Screen } from "@/components/screen";
 import { BADGES, getBadgeState } from "@/lib/badges";
@@ -87,7 +88,7 @@ export default function BadgesScreen() {
         if (!user) throw new Error("Not signed in.");
 
         // cones
-        const conesQ = query(collection(db, "cones"), where("active", "==", true));
+        const conesQ = query(collection(db, COL.cones), where("active", "==", true));
         const conesSnap = await getDocs(conesQ);
 
         const conesList: Cone[] = conesSnap.docs.map((d) => {
@@ -110,7 +111,7 @@ export default function BadgesScreen() {
         setCones(conesList);
 
         // completions (live)
-        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
+        const compQ = query(collection(db, COL.coneCompletions), where("userId", "==", user.uid));
         unsubCompletions = onSnapshot(
           compQ,
           (snap) => {

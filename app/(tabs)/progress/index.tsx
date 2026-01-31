@@ -9,7 +9,7 @@ import { auth, db } from "../../../lib/firebase";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import { getBadgeState } from "@/lib/badges";
 
-import { Layout, Card, Text, Button } from "@ui-kitten/components";
+import { Layout, Text, Button } from "@ui-kitten/components";
 
 import { Screen } from "@/components/screen";
 import { PieChart } from "@/components/progress/PieChart";
@@ -18,7 +18,7 @@ import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 
-// ✅ New: shared padded card wrapper
+// ✅ Shared padded card wrapper
 import { CardShell } from "@/components/ui/CardShell";
 
 type Cone = {
@@ -261,92 +261,20 @@ export default function ProgressScreen() {
     return (
       <Screen>
         <Layout style={{ flex: 1, justifyContent: "center" }}>
-          <Card status="danger">
-            <Text category="h6" style={{ marginBottom: 6 }}>
+          <CardShell status="danger">
+            <Text category="h6" style={{ marginBottom: 6, fontWeight: "900" }}>
               Progress
             </Text>
             <Text status="danger">{err}</Text>
-            <Button style={{ marginTop: 12 }} onPress={() => router.replace("/(tabs)/progress")}>
+
+            <View style={{ height: 12 }} />
+            <Button appearance="outline" onPress={() => router.replace("/(tabs)/progress")}>
               Retry
             </Button>
-          </Card>
+          </CardShell>
         </Layout>
       </Screen>
     );
   }
 
-  const allDone = totals.total > 0 && totals.completed === totals.total;
-
-  return (
-    <Screen>
-      <Layout style={{ flex: 1 }}>
-        <ScrollView
-          contentContainerStyle={{
-            paddingTop: 16,
-            paddingBottom: 24,
-          }}
-          showsVerticalScrollIndicator={false}
-        >
-          <Text category="h1" style={{ marginBottom: 4 }}>
-            Progress
-          </Text>
-          <Text appearance="hint" style={{ marginBottom: 12 }}>
-            Your stats + the next badge you’re closest to unlocking.
-          </Text>
-
-          {/* One place to control spacing */}
-          <View style={{ gap: 14 }}>
-            {/* ✅ Your progress (now uses CardShell for consistent padding) */}
-            <CardShell>
-              <Text category="h6" style={{ marginBottom: 12 }}>
-                Your progress
-              </Text>
-
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <PieChart percent={totals.percent} />
-
-                <View style={{ flex: 1, marginLeft: 16, gap: 10 }}>
-                  <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} />
-                  <StatRow label="Share bonus" value={shareBonusCount} />
-
-                  {/* ✅ All-done banner (also CardShell for consistent padding) */}
-                  {allDone ? (
-                    <View style={{ marginTop: 10 }}>
-                      <CardShell>
-                        <Text category="s1" style={{ fontWeight: "800" }}>
-                          You’ve completed them all 🎉
-                        </Text>
-                      </CardShell>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            </CardShell>
-
-            {/* Cones to review */}
-            {conesToReview.length > 0 ? (
-              <ConesToReviewCard cones={conesToReview} onOpenCone={goToCone} />
-            ) : null}
-
-            {/* Badges */}
-            <BadgesSummaryCard
-              nextUp={badgeState.nextUp}
-              recentlyUnlocked={badgeState.recentlyUnlocked}
-              onViewAll={() => router.push("/(tabs)/progress/badges")}
-            />
-
-            {/* Nearest unclimbed */}
-            <NearestUnclimbedCard
-              cone={nearestUnclimbed?.cone ?? null}
-              locErr={locErr}
-              distanceMeters={nearestUnclimbed?.distance ?? null}
-              onOpenCone={(coneId) => goToCone(coneId)}
-            />
-
-            <Text appearance="hint">Tip: Better GPS accuracy helps when you’re close to the cone.</Text>
-          </View>
-        </ScrollView>
-      </Layout>
-    </Screen>
-  );
-}
+  const allDone = totals.total > 0 && totals

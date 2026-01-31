@@ -5,6 +5,7 @@ import { router } from "expo-router";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
@@ -40,7 +41,7 @@ export default function ConeListPage() {
     setErr("");
 
     try {
-      const qy = query(collection(db, "cones"), where("active", "==", true));
+      const qy = query(collection(db, COL.cones), where("active", "==", true));
       const snap = await getDocs(qy);
 
       const list: Cone[] = snap.docs.map((d) => {
@@ -214,7 +215,7 @@ export default function ConeListPage() {
             const { cone, distance } = item;
 
             return (
-              <CardShell onPress={() => openCone(cone.id)} activeOpacity={0.92}>
+              <CardShell onPress={() => openCone(cone.id)}>
                 <Text category="s1" style={{ fontWeight: "800" }}>
                   {cone.name}
                 </Text>

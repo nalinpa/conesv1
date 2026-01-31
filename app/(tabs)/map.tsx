@@ -5,7 +5,8 @@ import * as Location from "expo-location";
 import { router } from "expo-router";
 
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { auth, db } from "../../lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
@@ -62,7 +63,7 @@ export default function MapScreen() {
       setErr("");
 
       try {
-        const conesQ = query(collection(db, "cones"), where("active", "==", true));
+        const conesQ = query(collection(db, COL.cones), where("active", "==", true));
         const snap = await getDocs(conesQ);
 
         const list: Cone[] = snap.docs
@@ -128,7 +129,7 @@ export default function MapScreen() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const qy = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
+    const qy = query(collection(db, COL.coneCompletions), where("userId", "==", user.uid));
 
     const unsub = onSnapshot(
       qy,

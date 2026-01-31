@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { View, ScrollView, Modal, TextInput, Pressable, Share } from "react-native";
-import * as Location from "expo-location";
 import { Stack, useLocalSearchParams, router, useFocusEffect } from "expo-router";
 
 import {
@@ -15,9 +14,10 @@ import {
   where,
 } from "firebase/firestore";
 
-import { auth, db } from "../../../../lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 import { Screen } from "@/components/screen";
-import { nearestCheckpoint } from "../../../../lib/checkpoints";
+import { nearestCheckpoint } from "@/lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
 
 // UI Kitten
@@ -84,7 +84,7 @@ export default function ConeDetailRoute() {
       try {
         if (!coneId) throw new Error("Missing coneId.");
 
-        const ref = doc(db, "cones", String(coneId));
+        const ref = doc(db, COL.cones, String(coneId));
         const snap = await getDoc(ref);
         if (!snap.exists()) throw new Error("Cone not found.");
 
@@ -149,7 +149,7 @@ export default function ConeDetailRoute() {
       if (!user) return;
 
       const completionId = `${user.uid}_${cone.id}`;
-      const snap = await getDoc(doc(db, "coneCompletions", completionId));
+      const snap = await getDoc(doc(db, COL.coneCompletions, completionId));
 
       if (snap.exists()) {
         const data = snap.data() as any;
@@ -171,7 +171,7 @@ export default function ConeDetailRoute() {
     const user = auth.currentUser;
     const myId = user ? `${user.uid}_${cone.id}` : null;
 
-    const reviewsQ = query(collection(db, "coneReviews"), where("coneId", "==", cone.id));
+    const reviewsQ = query(collection(db, COL.coneReviews), where("coneId", "==", cone.id));
 
     const unsub = onSnapshot(
       reviewsQ,
@@ -231,7 +231,8 @@ export default function ConeDetailRoute() {
     const nearest = nearestCheckpoint(cone, latitude, longitude);
 
     const acc = accuracy ?? null;
-    const inRange = nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
+    const inRange =
+      nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
 
     return {
       distance: nearest.distanceMeters,
@@ -323,7 +324,7 @@ export default function ConeDetailRoute() {
         sharedPlatform: null,
       };
 
-      await setDoc(doc(db, "coneCompletions", completionId), payload);
+      await setDoc(doc(db, COL.coneCompletions, completionId), payload);
 
       setCompletedId(completionId);
       setShareBonus(false);
@@ -349,7 +350,7 @@ export default function ConeDetailRoute() {
 
       const completionId = `${user.uid}_${cone.id}`;
 
-      await updateDoc(doc(db, "coneCompletions", completionId), {
+      await updateDoc(doc(db, COL.coneCompletions, completionId), {
         shareBonus: true,
         shareConfirmed: true,
         sharedAt: serverTimestamp(),
@@ -406,7 +407,7 @@ export default function ConeDetailRoute() {
         reviewCreatedAt: serverTimestamp(),
       };
 
-      await setDoc(doc(db, "coneReviews", reviewId), publicPayload);
+      await setDoc(doc(db, COL.coneReviews, reviewId), publicPayload);
 
       setMyReviewRating(draftRating);
       setMyReviewText(draftText.trim() ? draftText.trim() : null);
@@ -524,9 +525,7 @@ export default function ConeDetailRoute() {
             <Text appearance="hint">No reviews yet.</Text>
           ) : (
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Pill status="info">
-                ⭐ {avgRating?.toFixed(1)} / 5
-              </Pill>
+              <Pill status="info">⭐ {avgRating?.toFixed(1)} / 5</Pill>
               <Text appearance="hint">
                 ({ratingCount} review{ratingCount === 1 ? "" : "s"})
               </Text>
@@ -577,7 +576,13 @@ export default function ConeDetailRoute() {
 
               <Divider />
 
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
                 <Text appearance="hint">Range check</Text>
                 <Pill status={stats.inRange ? "success" : "danger"}>
                   {stats.inRange ? "✅ In range" : "❌ Not in range"}
@@ -612,7 +617,13 @@ export default function ConeDetailRoute() {
         ) : (
           <CardShell>
             <View style={{ gap: 14 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
                 <Text category="h6" style={{ fontWeight: "900" }}>
                   Completed
                 </Text>
@@ -669,8 +680,20 @@ export default function ConeDetailRoute() {
       </ScrollView>
 
       {/* REVIEW MODAL */}
-      <Modal visible={reviewOpen} transparent animationType="fade" onRequestClose={() => setReviewOpen(false)}>
-        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 18 }}>
+      <Modal
+        visible={reviewOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReviewOpen(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            padding: 18,
+          }}
+        >
           <Layout style={{ borderRadius: 18, padding: 16 }}>
             <Text category="h6" style={{ fontWeight: "900" }}>
               Leave a review
@@ -697,9 +720,7 @@ export default function ConeDetailRoute() {
                       backgroundColor: selected ? "rgba(95,179,162,0.16)" : "transparent",
                     }}
                   >
-                    <Text style={{ fontWeight: "900" }}>
-                      {"⭐".repeat(n)}
-                    </Text>
+                    <Text style={{ fontWeight: "900" }}>{"⭐".repeat(n)}</Text>
                   </Pressable>
                 );
               })}
