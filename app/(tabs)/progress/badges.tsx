@@ -1,169 +1,36 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { View, ScrollView } from "react-native";
-import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { Layout, Text, Button } from "@ui-kitten/components";
 
-import { COL } from "@/lib/constants/firestore";
-import { auth, db } from "@/lib/firebase";
 import { BADGES, getBadgeState } from "@/lib/badges";
+import type { ConeMeta } from "@/lib/badges";
+import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { goProgressHome, goBadges } from "@/lib/routes";
-import { ConeMeta } from "@/lib/badges";
 
 import { LoadingState } from "@/components/ui/LoadingState";
 import { CardShell } from "@/components/ui/CardShell";
 import { Screen } from "@/components/screen";
 import { ErrorCard } from "@/components/ui/ErrorCard";
-
-function BadgeTile({
-  name,
-  unlockText,
-  unlocked,
-  progressLabel,
-}: {
-  name: string;
-  unlockText: string;
-  unlocked: boolean;
-  progressLabel?: string | null;
-}) {
-  return (
-    <View style={{ width: "50%", padding: 6 }}>
-      <View
-        style={{
-          borderWidth: 1,
-          borderRadius: 18,
-          padding: 12,
-          opacity: unlocked ? 1 : 0.55,
-        }}
-      >
-        <Text category="s1" style={{ fontWeight: "800" }}>
-          {name}
-        </Text>
-
-        <Text appearance="hint" style={{ marginTop: 6 }}>
-          {unlockText}
-        </Text>
-
-        <View style={{ marginTop: 10 }}>
-          {unlocked ? (
-            <Text category="c1" style={{ fontWeight: "800" }}>
-              Unlocked ✓
-            </Text>
-          ) : progressLabel ? (
-            <Text appearance="hint" category="c1">
-              {progressLabel}
-            </Text>
-          ) : (
-            <Text appearance="hint" category="c1">
-              Locked
-            </Text>
-          )}
-        </View>
-      </View>
-    </View>
-  );
-}
+import { BadgeTile } from "@/components/badges/BadgeTile";
 
 export default function BadgesScreen() {
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-
-  const [cones, setCones] = useState<ConeMeta[]>([]);
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const [shareBonusCount, setShareBonusCount] = useState(0);
-  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    let mounted = true;
-    let unsubCompletions: (() => void) | null = null;
-
-    (async () => {
-      setLoading(true);
-      setErr("");
-
-      try {
-        const user = auth.currentUser;
-        if (!user) throw new Error("Not signed in.");
-
-        // cones
-        const conesQ = query(collection(db, COL.cones), where("active", "==", true));
-        const conesSnap = await getDocs(conesQ);
-
-        const conesList: ConeMeta[] = conesSnap.docs.map((d) => {
-          const data = d.data() as any;
-          return {
-            id: d.id,
-            active: !!data.active,
-            type: data.type === "crater" ? "crater" : data.type === "cone" ? "cone" : undefined,
-            region:
-              data.region === "north" ||
-              data.region === "central" ||
-              data.region === "south" ||
-              data.region === "harbour"
-                ? data.region
-                : undefined,
-          };
-        });
-
-        if (!mounted) return;
-        setCones(conesList);
-
-        // completions (live)
-        const compQ = query(collection(db, COL.coneCompletions), where("userId", "==", user.uid));
-        unsubCompletions = onSnapshot(
-          compQ,
-          (snap) => {
-            const ids = new Set<string>();
-            let bonus = 0;
-            const byConeId: Record<string, number> = {};
-
-            snap.docs.forEach((dd) => {
-              const data = dd.data() as any;
-
-              if (data?.coneId) ids.add(String(data.coneId));
-              if (data?.shareBonus) bonus += 1;
-
-              const ms =
-                typeof data?.completedAt?.toMillis === "function"
-                  ? data.completedAt.toMillis()
-                  : typeof data?.completedAt === "number"
-                    ? data.completedAt
-                    : null;
-
-              if (data?.coneId && ms != null) byConeId[String(data.coneId)] = ms;
-            });
-
-            setCompletedIds(ids);
-            setShareBonusCount(bonus);
-            setCompletedAtByConeId(byConeId);
-          },
-          (e) => {
-            console.error(e);
-            setErr(e?.message ?? "Failed to load completions");
-          }
-        );
-      } catch (e: any) {
-        if (!mounted) return;
-        setErr(e?.message ?? "Failed to load badges");
-      } finally {
-        if (!mounted) return;
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-      if (unsubCompletions) unsubCompletions();
-    };
-  }, []);
+  const {
+    loading,
+    err,  
+    conesMeta,
+    completedConeIds,
+    shareBonusCount,
+    completedAtByConeId,
+  } = useBadgesData();
 
   const badgeState = useMemo(() => {
     return getBadgeState({
-      cones,
-      completedConeIds: completedIds,
+      cones: conesMeta as ConeMeta[],
+      completedConeIds,
       shareBonusCount,
       completedAtByConeId,
     });
-  }, [cones, completedIds, shareBonusCount, completedAtByConeId]);
+  }, [conesMeta, completedConeIds, shareBonusCount, completedAtByConeId]);
 
   const totals = useMemo(() => {
     const unlocked = badgeState.earnedIds.size;

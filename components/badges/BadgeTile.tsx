@@ -1,0 +1,51 @@
+import { View } from "react-native";
+import { Text } from "@ui-kitten/components";
+
+export function BadgeTile({
+  name,
+  unlockText,
+  unlocked,
+  progressLabel,
+}: {
+  name: string;
+  unlockText: string;
+  unlocked: boolean;
+  progressLabel?: string | null;
+}) {
+  return (
+    <View style={{ width: "50%", padding: 6 }}>
+      <View
+        style={{
+          borderWidth: 1,
+          borderRadius: 18,
+          padding: 12,
+          opacity: unlocked ? 1 : 0.55,
+        }}
+      >
+        <Text category="s1" style={{ fontWeight: "800" }}>
+          {name}
+        </Text>
+
+        <Text appearance="hint" style={{ marginTop: 6 }}>
+          {unlockText}
+        </Text>
+
+        <View style={{ marginTop: 10 }}>
+          {unlocked ? (
+            <Text category="c1" style={{ fontWeight: "800" }}>
+              Unlocked ✓
+            </Text>
+          ) : progressLabel ? (
+            <Text appearance="hint" category="c1">
+              {progressLabel}
+            </Text>
+          ) : (
+            <Text appearance="hint" category="c1">
+              Locked
+            </Text>
+          )}
+        </View>
+      </View>
+    </View>
+  );
+}

@@ -11,33 +11,16 @@ import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
+import type { Cone } from "@/lib/models";
+import { coneService } from "@/lib/services/coneService";
+import { completionService } from "@/lib/services/completionService";
+import { coneFromDoc } from "@/lib/mappers/coneFromDoc";
+import { completionFromDoc } from "@/lib/mappers/completionFromDoc";
 
 import { Text } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
-
-type Cone = {
-  id: string;
-  name: string;
-  slug: string;
-  lat: number;
-  lng: number;
-  radiusMeters: number;
-  checkpoints?: {
-    id?: string;
-    label?: string;
-    lat: number;
-    lng: number;
-    radiusMeters: number;
-  }[];
-  active: boolean;
-};
-
-function toNum(v: any): number {
-  const n = typeof v === "number" ? v : Number(v);
-  return Number.isFinite(n) ? n : NaN;
-}
 
 export default function MapScreen() {
   const [loading, setLoading] = useState(true);
@@ -60,49 +43,7 @@ export default function MapScreen() {
       setErr("");
 
       try {
-        const conesQ = query(collection(db, COL.cones), where("active", "==", true));
-        const snap = await getDocs(conesQ);
-
-        const list: Cone[] = snap.docs
-          .map((d) => {
-            const data = d.data() as any;
-
-            const checkpoints = Array.isArray(data.checkpoints)
-              ? data.checkpoints
-                  .map((cp: any) => ({
-                    id: cp.id,
-                    label: cp.label,
-                    lat: toNum(cp.lat),
-                    lng: toNum(cp.lng),
-                    radiusMeters: toNum(cp.radiusMeters),
-                  }))
-                  .filter(
-                    (cp: any) =>
-                      Number.isFinite(cp.lat) &&
-                      Number.isFinite(cp.lng) &&
-                      Number.isFinite(cp.radiusMeters)
-                  )
-              : undefined;
-
-            return {
-              id: d.id,
-              name: String(data.name ?? ""),
-              slug: String(data.slug ?? ""),
-              lat: toNum(data.lat),
-              lng: toNum(data.lng),
-              radiusMeters: toNum(data.radiusMeters),
-              checkpoints,
-              active: !!data.active,
-            };
-          })
-          .filter(
-            (c) =>
-              c.name &&
-              Number.isFinite(c.lat) &&
-              Number.isFinite(c.lng) &&
-              Number.isFinite(c.radiusMeters)
-          );
-
+        const list = await coneService.listActiveCones();
         if (!mounted) return;
         setCones(list);
       } catch (e: any) {
@@ -126,21 +67,10 @@ export default function MapScreen() {
     const user = auth.currentUser;
     if (!user) return;
 
-    const qy = query(collection(db, COL.coneCompletions), where("userId", "==", user.uid));
-
-    const unsub = onSnapshot(
-      qy,
-      (snap) => {
-        const ids = new Set<string>();
-        snap.docs.forEach((d) => {
-          const data = d.data() as any;
-          if (data?.coneId) ids.add(String(data.coneId));
-        });
-        setCompletedIds(ids);
-      },
-      (e) => {
-        console.error(e);
-      }
+    const unsub = completionService.watchMyCompletions(
+      user.uid,
+      ({ completedConeIds }) => setCompletedIds(completedConeIds),
+      (e) => console.error(e)
     );
 
     return () => unsub();

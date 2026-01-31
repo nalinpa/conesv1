@@ -22,13 +22,13 @@ import { nearestCheckpoint } from "@/lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
 import { formatMeters } from "@/lib/formatters";
 import { goConesHome, goConeReviews } from "@/lib/routes";
+import { coneFromDoc } from "@/lib/mappers/coneFromDoc";
 
 import { Layout, Text, Button, Divider } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
-
 
 type PublicReviewDoc = {
   coneId: string;
@@ -85,19 +85,7 @@ export default function ConeDetailRoute() {
         const snap = await getDoc(ref);
         if (!snap.exists()) throw new Error("Cone not found.");
 
-        const data = snap.data() as any;
-
-        const c: Cone = {
-          id: snap.id,
-          name: data.name,
-          slug: data.slug,
-          lat: data.lat,
-          lng: data.lng,
-          radiusMeters: data.radiusMeters,
-          checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
-          description: data.description ?? "",
-          active: !!data.active,
-        };
+        const c = coneFromDoc(snap);
 
         if (mounted) setCone(c);
       } catch (e: any) {

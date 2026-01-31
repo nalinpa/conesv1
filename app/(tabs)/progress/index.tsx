@@ -2,12 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView } from "react-native";
 import * as Location from "expo-location";
 
-import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 
+import type { Cone } from "@/lib/models";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 import { getBadgeState } from "@/lib/badges";
+
+import { coneService } from "@/lib/services/coneService";
+import { completionService } from "@/lib/services/completionService";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
 
@@ -15,7 +19,7 @@ import { Screen } from "@/components/screen";
 import { PieChart } from "@/components/progress/PieChart";
 import { StatRow } from "@/components/progress/StatRow";
 import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
-import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
+import { BadgesSummaryCard } from "@/components/badges/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -23,28 +27,6 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
 import { goBadges, goCone, goProgressHome } from "@/lib/routes";
-
-type Cone = {
-  id: string;
-  name: string;
-  slug: string;
-  lat: number;
-  lng: number;
-  radiusMeters: number;
-  checkpoints?: {
-    id?: string;
-    label?: string;
-    lat: number;
-    lng: number;
-    radiusMeters: number;
-  }[];
-  description?: string;
-  active: boolean;
-
-  // optional metadata (safe if missing)
-  type?: "cone" | "crater";
-  region?: "north" | "central" | "south" | "harbour";
-};
 
 export default function ProgressScreen() {
   const [loading, setLoading] = useState(true);
@@ -64,6 +46,7 @@ export default function ProgressScreen() {
   // Load cones once + subscribe to user completions/reviews (live)
   useEffect(() => {
     let mounted = true;
+
     let unsubCompletions: (() => void) | null = null;
     let unsubReviews: (() => void) | null = null;
 
@@ -75,78 +58,29 @@ export default function ProgressScreen() {
         const user = auth.currentUser;
         if (!user) throw new Error("Not signed in.");
 
-        // 1) cones list (static-ish)
-        const conesQ = query(collection(db, COL.cones), where("active", "==", true));
-        const conesSnap = await getDocs(conesQ);
-
-        const conesList: Cone[] = conesSnap.docs.map((d) => {
-          const data = d.data() as any;
-          return {
-            id: d.id,
-            name: String(data.name ?? ""),
-            slug: String(data.slug ?? ""),
-            lat: Number(data.lat),
-            lng: Number(data.lng),
-            radiusMeters: Number(data.radiusMeters),
-            checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
-            description: data.description ?? "",
-            active: !!data.active,
-            type: data.type === "crater" ? "crater" : data.type === "cone" ? "cone" : undefined,
-            region:
-              data.region === "north" ||
-              data.region === "central" ||
-              data.region === "south" ||
-              data.region === "harbour"
-                ? data.region
-                : undefined,
-          };
-        });
-
+        // 1) cones list (from service)
+        const conesList = await coneService.listActiveCones();
         if (!mounted) return;
         setCones(conesList);
 
-        // 2) user completions (live)
-        const compQ = query(
-          collection(db, COL.coneCompletions),
-          where("userId", "==", user.uid)
-        );
-
-        unsubCompletions = onSnapshot(
-          compQ,
-          (snap) => {
-            const ids = new Set<string>();
-            let bonus = 0;
-            const byConeId: Record<string, number> = {};
-
-            snap.docs.forEach((dd) => {
-              const data = dd.data() as any;
-
-              if (data?.coneId) ids.add(String(data.coneId));
-              if (data?.shareBonus) bonus += 1;
-
-              const ms =
-                typeof data?.completedAt?.toMillis === "function"
-                  ? data.completedAt.toMillis()
-                  : typeof data?.completedAt === "number"
-                    ? data.completedAt
-                    : null;
-
-              if (data?.coneId && ms != null) byConeId[String(data.coneId)] = ms;
-            });
-
-            setCompletedIds(ids);
-            setShareBonusCount(bonus);
-            setCompletedAtByConeId(byConeId);
+        // 2) user completions (live via service)
+        unsubCompletions = completionService.watchMyCompletions(
+          user.uid,
+          (state) => {
+            if (!mounted) return;
+            setCompletedIds(state.completedConeIds);
+            setShareBonusCount(state.shareBonusCount);
+            setCompletedAtByConeId(state.completedAtByConeId);
           },
           (e) => {
             console.error(e);
+            if (!mounted) return;
             setErr(e?.message ?? "Failed to load completions");
           }
         );
 
         // 3) user reviews (live) — used only for “cones to review”
         const revQ = query(collection(db, COL.coneReviews), where("userId", "==", user.uid));
-
         unsubReviews = onSnapshot(
           revQ,
           (snap) => {
@@ -283,12 +217,10 @@ export default function ProgressScreen() {
     <Screen>
       <Layout style={{ flex: 1 }}>
         <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          gap: 12,
-        }}
-        showsVerticalScrollIndicator={false}
-      >
+          style={{ flex: 1 }}
+          contentContainerStyle={{ gap: 12 }}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Header */}
           <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
@@ -321,9 +253,6 @@ export default function ProgressScreen() {
               <View style={{ marginTop: 12 }}>
                 <Text category="s1" style={{ fontWeight: "900" }}>
                   You’ve completed everything ✅
-                </Text>
-                <Text appearance="hint" style={{ marginTop: 4 }}>
-                  Absolute cone goblin behavior.
                 </Text>
               </View>
             ) : null}

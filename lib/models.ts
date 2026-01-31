@@ -1,3 +1,6 @@
+export type ConeType = "cone" | "crater";
+export type ConeRegion = "north" | "central" | "south" | "harbour";
+
 export type Checkpoint = {
   id?: string; // stable string (recommended)
   label?: string; // user-friendly name
@@ -16,6 +19,8 @@ export type Cone = {
   checkpoints?: Checkpoint[];
   description?: string;
   active: boolean;
+  type?: ConeType;
+  region?: ConeRegion;
 };
 
 export type ConeCompletionWrite = {
@@ -58,4 +63,11 @@ export type ConeReviewWrite = {
   reviewRating: number; // 1–5
   reviewText: string | null;
   reviewCreatedAt: any; // serverTimestamp()
+};
+
+export type CompletionMeta = {
+  id: string;
+  coneId: string;
+  shareBonus: boolean;
+  completedAtMs: number; // epoch ms
 };

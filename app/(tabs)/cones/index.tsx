@@ -11,6 +11,7 @@ import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import type { Cone } from "@/lib/models";
 import { goCone } from "@/lib/routes";
+import { coneFromDoc } from "@/lib/mappers/coneFromDoc";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
@@ -41,20 +42,7 @@ export default function ConeListPage() {
       const qy = query(collection(db, COL.cones), where("active", "==", true));
       const snap = await getDocs(qy);
 
-      const list: Cone[] = snap.docs.map((d) => {
-        const data = d.data() as any;
-        return {
-          id: d.id,
-          name: data.name,
-          slug: data.slug,
-          lat: data.lat,
-          lng: data.lng,
-          radiusMeters: data.radiusMeters,
-          checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
-          description: data.description ?? "",
-          active: !!data.active,
-        };
-      });
+      const list: Cone[] = snap.docs.map(coneFromDoc);
 
       // stable baseline order (when no GPS)
       list.sort((a, b) => a.name.localeCompare(b.name));
