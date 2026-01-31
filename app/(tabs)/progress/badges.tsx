@@ -9,6 +9,7 @@ import { auth, db } from "@/lib/firebase";
 import { Screen } from "@/components/screen";
 import { BADGES, getBadgeState } from "@/lib/badges";
 import { CardShell } from "@/components/ui/CardShell";
+import { goProgressHome } from "@/lib/routes";
 
 type Cone = {
   id: string;
@@ -237,7 +238,7 @@ export default function BadgesScreen() {
               </Text>
             </View>
 
-            <Button size="small" appearance="outline" onPress={() => router.back()}>
+            <Button size="small" appearance="outline" onPress={goProgressHome}>
               Done
             </Button>
           </View>

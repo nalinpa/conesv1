@@ -11,6 +11,7 @@ import { formatDistanceMeters } from "@/lib/formatters";
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import type { Cone } from "@/lib/models";
+import { goCone } from "@/lib/routes";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
@@ -122,10 +123,7 @@ export default function ConeListPage() {
   }, [cones, loc]);
 
   function openCone(coneId: string) {
-    router.push({
-      pathname: "/(tabs)/cones/[coneId]",
-      params: { coneId },
-    });
+    goCone(coneId);
   }
 
   if (loading) {

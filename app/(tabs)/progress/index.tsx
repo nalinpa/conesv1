@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
-import { router } from "expo-router";
 
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { auth, db } from "../../../lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 
-import { nearestCheckpoint } from "../../../lib/checkpoints";
+import { nearestCheckpoint } from "@/lib/checkpoints";
 import { getBadgeState } from "@/lib/badges";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
@@ -20,6 +20,9 @@ import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard
 
 // ✅ Shared padded card wrapper
 import { CardShell } from "@/components/ui/CardShell";
+
+// ✅ Route helpers (Commit 2)
+import { goBadges, goCone, goProgressHome } from "@/lib/routes";
 
 type Cone = {
   id: string;
@@ -73,18 +76,18 @@ export default function ProgressScreen() {
         if (!user) throw new Error("Not signed in.");
 
         // 1) cones list (static-ish)
-        const conesQ = query(collection(db, "cones"), where("active", "==", true));
+        const conesQ = query(collection(db, COL.cones), where("active", "==", true));
         const conesSnap = await getDocs(conesQ);
 
         const conesList: Cone[] = conesSnap.docs.map((d) => {
           const data = d.data() as any;
           return {
             id: d.id,
-            name: data.name,
-            slug: data.slug,
-            lat: data.lat,
-            lng: data.lng,
-            radiusMeters: data.radiusMeters,
+            name: String(data.name ?? ""),
+            slug: String(data.slug ?? ""),
+            lat: Number(data.lat),
+            lng: Number(data.lng),
+            radiusMeters: Number(data.radiusMeters),
             checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
             description: data.description ?? "",
             active: !!data.active,
@@ -103,7 +106,11 @@ export default function ProgressScreen() {
         setCones(conesList);
 
         // 2) user completions (live)
-        const compQ = query(collection(db, "coneCompletions"), where("userId", "==", user.uid));
+        const compQ = query(
+          collection(db, COL.coneCompletions),
+          where("userId", "==", user.uid)
+        );
+
         unsubCompletions = onSnapshot(
           compQ,
           (snap) => {
@@ -138,7 +145,8 @@ export default function ProgressScreen() {
         );
 
         // 3) user reviews (live) — used only for “cones to review”
-        const revQ = query(collection(db, "coneReviews"), where("userId", "==", user.uid));
+        const revQ = query(collection(db, COL.coneReviews), where("userId", "==", user.uid));
+
         unsubReviews = onSnapshot(
           revQ,
           (snap) => {
@@ -180,6 +188,7 @@ export default function ProgressScreen() {
           setLocErr("Location permission denied.");
           return;
         }
+
         const cur = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
@@ -240,8 +249,10 @@ export default function ProgressScreen() {
     });
   }, [cones, completedIds, shareBonusCount, completedAtByConeId]);
 
-  function goToCone(coneId: string) {
-    router.push(`/(tabs)/cones/${coneId}`);
+  const allDone = totals.total > 0 && totals.completed >= totals.total;
+
+  function openCone(coneId: string) {
+    goCone(coneId);
   }
 
   if (loading) {
@@ -268,7 +279,7 @@ export default function ProgressScreen() {
             <Text status="danger">{err}</Text>
 
             <View style={{ height: 12 }} />
-            <Button appearance="outline" onPress={() => router.replace("/(tabs)/progress")}>
+            <Button appearance="outline" onPress={goProgressHome}>
               Retry
             </Button>
           </CardShell>
@@ -277,4 +288,80 @@ export default function ProgressScreen() {
     );
   }
 
-  const allDone = totals.total > 0 && totals
+  return (
+    <Screen>
+      <Layout style={{ flex: 1 }}>
+        <View style={{ gap: 12 }}>
+          {/* Header */}
+          <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <Text category="h4" style={{ fontWeight: "900" }}>
+                Progress
+              </Text>
+              <Text appearance="hint" style={{ marginTop: 4 }}>
+                {totals.completed} / {totals.total} completed
+              </Text>
+            </View>
+
+            <Button size="small" appearance="outline" onPress={goBadges}>
+              Badges
+            </Button>
+          </View>
+
+          {/* Completion ring */}
+          <CardShell>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
+              <PieChart percent={totals.percent} />
+
+              <View style={{ flex: 1, gap: 10 }}>
+                <StatRow label="Completed" value={`${totals.completed}`} />
+                <StatRow label="Remaining" value={`${Math.max(0, totals.total - totals.completed)}`} />
+                <StatRow label="Share bonuses" value={`${shareBonusCount}`} />
+              </View>
+            </View>
+
+            {allDone ? (
+              <View style={{ marginTop: 12 }}>
+                <Text category="s1" style={{ fontWeight: "900" }}>
+                  You’ve completed everything ✅
+                </Text>
+                <Text appearance="hint" style={{ marginTop: 4 }}>
+                  Absolute cone goblin behavior.
+                </Text>
+              </View>
+            ) : null}
+          </CardShell>
+
+          {/* Nearest unclimbed */}
+          <NearestUnclimbedCard
+            cone={
+              nearestUnclimbed
+                ? {
+                    id: nearestUnclimbed.cone.id,
+                    name: nearestUnclimbed.cone.name,
+                    description: nearestUnclimbed.cone.description,
+                  }
+                : null
+            }
+            distanceMeters={nearestUnclimbed?.distance ?? null}
+            locErr={locErr}
+            onOpenCone={openCone}
+          />
+
+          {/* Cones to review */}
+          <ConesToReviewCard
+            cones={conesToReview.map((c) => ({ id: c.id, name: c.name, description: c.description }))}
+            onOpenCone={openCone}
+          />
+
+          {/* Badges summary */}
+          <BadgesSummaryCard
+            nextUp={badgeState.nextUp}
+            recentlyUnlocked={badgeState.recentlyUnlocked}
+            onViewAll={goBadges}
+          />
+        </View>
+      </Layout>
+    </Screen>
+  );
+}

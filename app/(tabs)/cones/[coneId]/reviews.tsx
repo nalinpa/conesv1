@@ -5,6 +5,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
+import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
 import { Layout, Text, Button, List } from "@ui-kitten/components";
@@ -119,7 +120,7 @@ export default function ConeReviewsPage() {
 
   function goBack() {
     if (router.canGoBack()) router.back();
-    else router.replace(`/(tabs)/cones/${String(coneId)}`);
+    else goCone(String(coneId));
   }
 
   const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {

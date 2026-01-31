@@ -20,6 +20,7 @@ import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
 import { formatMeters } from "@/lib/formatters";
+import { goConesHome, goConeReviews } from "@/lib/routes";
 
 // UI Kitten
 import { Layout, Text, Button, Spinner, Divider } from "@ui-kitten/components";
@@ -445,7 +446,7 @@ export default function ConeDetailRoute() {
             </Text>
             <Text status="danger">{coneErr || "Cone missing."}</Text>
 
-            <Button appearance="outline" onPress={() => router.replace("/(tabs)/cones")}>
+            <Button appearance="outline" onPress={goConesHome}>
               Back to list
             </Button>
           </View>
@@ -501,11 +502,7 @@ export default function ConeDetailRoute() {
               <Button
                 size="small"
                 appearance="outline"
-                onPress={() =>
-                  router.push(
-                    `/(tabs)/cones/${cone.id}/reviews?coneName=${encodeURIComponent(cone.name)}`
-                  )
-                }
+                onPress={() => goConeReviews(cone.id, cone.name)}
               >
                 View all
               </Button>

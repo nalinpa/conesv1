@@ -8,6 +8,7 @@ import { collection, getDocs, onSnapshot, query, where } from "firebase/firestor
 import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { formatDistanceMeters } from "@/lib/formatters";
+import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
@@ -250,7 +251,7 @@ export default function MapScreen() {
                   coordinate={{ latitude: cone.lat, longitude: cone.lng }}
                   pinColor={completed ? "green" : "red"}
                   title={cone.name}
-                  onPress={() => router.push(`/(tabs)/cones/${cone.id}`)}
+                  onPress={() => goCone(cone.id)}
                 />
               </View>
             );
