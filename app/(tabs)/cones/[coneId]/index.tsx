@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { View, ScrollView, Modal, TextInput, Pressable, Share } from "react-native";
-import { Stack, useLocalSearchParams, router, useFocusEffect } from "expo-router";
+import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
+import * as Location from 'expo-location';
 
 import {
   collection,
@@ -22,12 +23,12 @@ import type { Cone, ConeCompletionWrite } from "@/lib/models";
 import { formatMeters } from "@/lib/formatters";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 
-// UI Kitten
-import { Layout, Text, Button, Spinner, Divider } from "@ui-kitten/components";
-
-// New primitives
+import { Layout, Text, Button, Divider } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorCard } from "@/components/ui/ErrorCard";
+
 
 type PublicReviewDoc = {
   coneId: string;
@@ -426,10 +427,7 @@ export default function ConeDetailRoute() {
     return (
       <Screen>
         <Stack.Screen options={{ title: "Loading…" }} />
-        <Layout style={{ gap: 12 }}>
-          <Spinner />
-          <Text appearance="hint">Loading cone…</Text>
-        </Layout>
+        <LoadingState fullScreen={false} label="Loading cone…" />
       </Screen>
     );
   }
@@ -439,18 +437,11 @@ export default function ConeDetailRoute() {
       <Screen>
         <Stack.Screen options={{ title: "Cone" }} />
 
-        <CardShell>
-          <View style={{ gap: 10 }}>
-            <Text category="h6" style={{ fontWeight: "900" }}>
-              Couldn’t load cone
-            </Text>
-            <Text status="danger">{coneErr || "Cone missing."}</Text>
-
-            <Button appearance="outline" onPress={goConesHome}>
-              Back to list
-            </Button>
-          </View>
-        </CardShell>
+        <ErrorCard
+          title="Couldn’t load cone"
+          message={coneErr || "Cone missing."}
+          action={{ label: "Back to list", onPress: goConesHome }}
+        />
       </Screen>
     );
   }
@@ -541,10 +532,7 @@ export default function ConeDetailRoute() {
           <View style={{ height: 12 }} />
 
           {!loc ? (
-            <View style={{ alignItems: "center", paddingVertical: 6, gap: 10 }}>
-              <Spinner />
-              <Text appearance="hint">Getting your GPS…</Text>
-            </View>
+            <LoadingState fullScreen={false} size="small" label="Getting your GPS…" style={{ paddingVertical: 6 }} />
           ) : (
             <View style={{ gap: 10 }}>
               {stats.checkpointLabel ? (

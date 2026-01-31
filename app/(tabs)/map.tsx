@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 
@@ -12,9 +12,10 @@ import { goCone } from "@/lib/routes";
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 
-// UI Kitten
 import { Text } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorCard } from "@/components/ui/ErrorCard";
 
 type Cone = {
   id: string;
@@ -200,10 +201,7 @@ export default function MapScreen() {
   if (loading) {
     return (
       <Screen>
-        <View style={{ alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
-          <ActivityIndicator />
-          <Text appearance="hint">Loading map…</Text>
-        </View>
+        <LoadingState label="Loading map…" />
       </Screen>
     );
   }
@@ -211,12 +209,7 @@ export default function MapScreen() {
   if (err) {
     return (
       <Screen>
-        <CardShell status="danger">
-          <Text category="s1" style={{ fontWeight: "800", marginBottom: 6 }}>
-            Map error
-          </Text>
-          <Text status="danger">{err}</Text>
-        </CardShell>
+        <ErrorCard title="Map error" message={err} />
       </Screen>
     );
   }

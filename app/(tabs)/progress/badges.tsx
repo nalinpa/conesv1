@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, ActivityIndicator } from "react-native";
-import { router } from "expo-router";
+import { View, ScrollView } from "react-native";
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
 import { Layout, Text, Button } from "@ui-kitten/components";
 
 import { COL } from "@/lib/constants/firestore";
 import { auth, db } from "@/lib/firebase";
-import { Screen } from "@/components/screen";
 import { BADGES, getBadgeState } from "@/lib/badges";
-import { CardShell } from "@/components/ui/CardShell";
 import { goProgressHome, goBadges } from "@/lib/routes";
 import { ConeMeta } from "@/lib/badges";
+
+import { LoadingState } from "@/components/ui/LoadingState";
+import { CardShell } from "@/components/ui/CardShell";
+import { Screen } from "@/components/screen";
+import { ErrorCard } from "@/components/ui/ErrorCard";
 
 function BadgeTile({
   name,
@@ -185,11 +187,8 @@ export default function BadgesScreen() {
 
   if (loading) {
     return (
-      <Layout style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator />
-        <Text appearance="hint" style={{ marginTop: 10 }}>
-          Loading badges…
-        </Text>
+      <Layout style={{ flex: 1 }}>
+        <LoadingState label="Loading badges…" />
       </Layout>
     );
   }
@@ -198,15 +197,11 @@ export default function BadgesScreen() {
     return (
       <Screen>
         <Layout style={{ flex: 1, padding: 16, justifyContent: "center" }}>
-          <CardShell status="danger">
-            <Text category="h6" style={{ marginBottom: 6, fontWeight: "800" }}>
-              Badges
-            </Text>
-            <Text status="danger">{err}</Text>
-            <Button style={{ marginTop: 12 }} onPress={() => goBadges()}>
-              Retry
-            </Button>
-          </CardShell>
+          <ErrorCard
+            title="Badges"
+            message={err}
+            action={{ label: "Retry", onPress: goBadges, appearance: "filled" }}
+          />
         </Layout>
       </Screen>
     );

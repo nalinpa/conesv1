@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, ActivityIndicator, ScrollView } from "react-native";
+import { View, ScrollView } from "react-native";
 import * as Location from "expo-location";
 
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
@@ -18,10 +18,10 @@ import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 
-// ✅ Shared padded card wrapper
 import { CardShell } from "@/components/ui/CardShell";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorCard } from "@/components/ui/ErrorCard";
 
-// ✅ Route helpers (Commit 2)
 import { goBadges, goCone, goProgressHome } from "@/lib/routes";
 
 type Cone = {
@@ -258,11 +258,8 @@ export default function ProgressScreen() {
   if (loading) {
     return (
       <Screen>
-        <Layout style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator />
-          <Text appearance="hint" style={{ marginTop: 10 }}>
-            Loading progress…
-          </Text>
+        <Layout style={{ flex: 1 }}>
+          <LoadingState label="Loading progress…" />
         </Layout>
       </Screen>
     );
@@ -272,17 +269,11 @@ export default function ProgressScreen() {
     return (
       <Screen>
         <Layout style={{ flex: 1, justifyContent: "center" }}>
-          <CardShell status="danger">
-            <Text category="h6" style={{ marginBottom: 6, fontWeight: "900" }}>
-              Progress
-            </Text>
-            <Text status="danger">{err}</Text>
-
-            <View style={{ height: 12 }} />
-            <Button appearance="outline" onPress={goProgressHome}>
-              Retry
-            </Button>
-          </CardShell>
+          <ErrorCard
+            title="Progress"
+            message={err}
+            action={{ label: "Retry", onPress: goProgressHome }}
+          />
         </Layout>
       </Screen>
     );

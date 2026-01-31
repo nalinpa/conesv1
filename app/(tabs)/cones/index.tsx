@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { View, ActivityIndicator, FlatList, Pressable } from "react-native";
+import { View, FlatList } from "react-native";
 import * as Location from "expo-location";
-import { router } from "expo-router";
 
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
@@ -16,6 +15,8 @@ import { goCone } from "@/lib/routes";
 import { Layout, Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorCard } from "@/components/ui/ErrorCard";
 
 type ConeRow = {
   cone: Cone;
@@ -129,11 +130,8 @@ export default function ConeListPage() {
   if (loading) {
     return (
       <Screen>
-        <Layout style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-          <ActivityIndicator />
-          <Text appearance="hint" style={{ marginTop: 10 }}>
-            Loading cones…
-          </Text>
+        <Layout style={{ flex: 1 }}>
+          <LoadingState label="Loading cones…" />
         </Layout>
       </Screen>
     );
@@ -143,16 +141,11 @@ export default function ConeListPage() {
     return (
       <Screen>
         <Layout style={{ flex: 1 }}>
-          <CardShell status="danger">
-            <Text category="s1" style={{ marginBottom: 6, fontWeight: "800" }}>
-              Couldn’t load cones
-            </Text>
-            <Text appearance="hint" style={{ marginBottom: 12 }}>
-              {err}
-            </Text>
-
-            <Button onPress={() => void loadCones()}>Retry</Button>
-          </CardShell>
+          <ErrorCard
+            title="Couldn’t load cones"
+            message={err}
+            action={{ label: "Retry", onPress: () => void loadCones(), appearance: "filled" }}
+          />
         </Layout>
       </Screen>
     );

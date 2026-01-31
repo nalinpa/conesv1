@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, ActivityIndicator, ListRenderItemInfo } from "react-native";
+import { View, ListRenderItemInfo } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 
 import { collection, getDocs, orderBy, query, where } from "firebase/firestore";
@@ -11,6 +11,8 @@ import { Screen } from "@/components/screen";
 import { Layout, Text, Button, List } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorCard } from "@/components/ui/ErrorCard";
 
 type PublicReview = {
   id: string;
@@ -179,21 +181,18 @@ export default function ConeReviewsPage() {
 
           {err ? (
             <View style={{ marginTop: 12 }}>
-              <CardShell status="danger">
-                <Text status="danger">{err}</Text>
-              </CardShell>
+                <ErrorCard
+                title="Couldn’t load reviews"
+                message={err}
+                action={{ label: "Back", onPress: goBack }}
+                />
             </View>
-          ) : null}
+            ) : null}
         </View>
 
         {loading ? (
-          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-            <ActivityIndicator />
-            <Text appearance="hint" style={{ marginTop: 10 }}>
-              Loading reviews…
-            </Text>
-          </View>
-        ) : (
+            <LoadingState label="Loading reviews…" />
+            ) : (
           <List
             data={reviews}
             keyExtractor={(item) => item.id}

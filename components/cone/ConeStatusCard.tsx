@@ -3,6 +3,7 @@ import { View, ActivityIndicator } from "react-native";
 import { Text, Button, Divider } from "@ui-kitten/components";
 import { Pill } from "@/components/ui/Pill";
 import { CardShell } from "../ui/CardShell";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 export function ConeStatusCard({
   loadingLocation,
@@ -32,9 +33,7 @@ export function ConeStatusCard({
       <View style={{ height: 12 }} />
 
       {loadingLocation ? (
-        <View style={{ alignItems: "center", paddingVertical: 12 }}>
-          <ActivityIndicator />
-        </View>
+        <LoadingState fullScreen={false} size="small" label={null as any} style={{ paddingVertical: 12 }} />
       ) : (
         <View style={{ gap: 12 }}>
           {/* Checkpoint */}

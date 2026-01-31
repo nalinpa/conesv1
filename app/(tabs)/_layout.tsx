@@ -1,5 +1,5 @@
 import React from "react";
-import { Tabs, router } from "expo-router";
+import { Tabs } from "expo-router";
 import { BottomNavigation, BottomNavigationTab } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
