@@ -1,6 +1,9 @@
 import React from "react";
-import { View } from "react-native";
-import { Card, Text, Button } from "@ui-kitten/components";
+import { View, Pressable } from "react-native";
+import { Text } from "@ui-kitten/components";
+
+import { CardShell } from "@/components/ui/CardShell";
+import { Pill } from "@/components/ui/Pill";
 
 type ConeLite = {
   id: string;
@@ -25,17 +28,28 @@ export function NearestUnclimbedCard({
   locErr?: string;
   onOpenCone: (coneId: string) => void;
 }) {
+  const distanceLabel =
+    distanceMeters == null && locErr ? "Distance — (no GPS)" : formatDistance(distanceMeters);
+
   return (
-    <Card>
-      <View style={{ gap: 12 }}>
-        <Text category="h6">Nearest unclimbed</Text>
+    <CardShell>
+      <View style={{ gap: 10 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <Text category="h6">Nearest unclimbed</Text>
+
+          <Pill status={distanceMeters == null ? "basic" : "success"}>
+            {distanceMeters == null ? "—" : distanceMeters < 1000 ? `${Math.round(distanceMeters)}m` : `${(distanceMeters / 1000).toFixed(1)}km`}
+          </Pill>
+        </View>
 
         {!cone ? (
           <Text appearance="hint">No cones found — check admin “active” flags.</Text>
         ) : (
-          <View style={{ gap: 10 }}>
+          <View style={{ gap: 8 }}>
             <View style={{ gap: 4 }}>
-              <Text category="s1">{cone.name}</Text>
+              <Text category="s1" style={{ fontWeight: "800" }}>
+                {cone.name}
+              </Text>
 
               {cone.description?.trim() ? (
                 <Text appearance="hint" numberOfLines={2}>
@@ -44,16 +58,29 @@ export function NearestUnclimbedCard({
               ) : null}
 
               <Text appearance="hint" category="c1">
-                {distanceMeters == null && locErr ? "Distance — (no GPS)" : formatDistance(distanceMeters)}
+                {distanceLabel}
               </Text>
             </View>
 
-            <Button appearance="outline" onPress={() => onOpenCone(cone.id)}>
-              Open cone
-            </Button>
+            <Pressable
+              onPress={() => onOpenCone(cone.id)}
+              hitSlop={10}
+              style={{
+                alignSelf: "flex-start",
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: "rgba(100,116,139,0.25)",
+              }}
+            >
+              <Text status="primary" style={{ fontWeight: "800" }}>
+                Open cone
+              </Text>
+            </Pressable>
           </View>
         )}
       </View>
-    </Card>
+    </CardShell>
   );
 }

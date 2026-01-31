@@ -21,7 +21,11 @@ import { nearestCheckpoint } from "../../../../lib/checkpoints";
 import type { Cone, ConeCompletionWrite } from "@/lib/models";
 
 // UI Kitten
-import { Layout, Card, Text, Button, Spinner, Divider } from "@ui-kitten/components";
+import { Layout, Text, Button, Spinner, Divider } from "@ui-kitten/components";
+
+// New primitives
+import { CardShell } from "@/components/ui/CardShell";
+import { Pill } from "@/components/ui/Pill";
 
 type PublicReviewDoc = {
   coneId: string;
@@ -31,10 +35,6 @@ type PublicReviewDoc = {
   reviewText: string | null;
   reviewCreatedAt: any;
 };
-
-function surfGreen(active: boolean) {
-  return active ? "#2a9d8f" : "#64748b";
-}
 
 function formatMeters(m: number | null) {
   if (m == null) return "—";
@@ -441,17 +441,19 @@ export default function ConeDetailRoute() {
     return (
       <Screen>
         <Stack.Screen options={{ title: "Cone" }} />
-        <Card>
-          <Text category="h6" style={{ marginBottom: 8 }}>
-            Couldn’t load cone
-          </Text>
-          <Text status="danger">{coneErr || "Cone missing."}</Text>
 
-          <View style={{ height: 12 }} />
-          <Button appearance="outline" onPress={() => router.replace("/(tabs)/cones")}>
-            Back to list
-          </Button>
-        </Card>
+        <CardShell>
+          <View style={{ gap: 10 }}>
+            <Text category="h6" style={{ fontWeight: "900" }}>
+              Couldn’t load cone
+            </Text>
+            <Text status="danger">{coneErr || "Cone missing."}</Text>
+
+            <Button appearance="outline" onPress={() => router.replace("/(tabs)/cones")}>
+              Back to list
+            </Button>
+          </View>
+        </CardShell>
       </Screen>
     );
   }
@@ -472,73 +474,41 @@ export default function ConeDetailRoute() {
         showsVerticalScrollIndicator={false}
       >
         {/* HERO */}
-        <Layout style={{ gap: 10 }}>
-          <Text category="h4">{cone.name}</Text>
+        <View style={{ gap: 10 }}>
+          <Text category="h4" style={{ fontWeight: "900" }}>
+            {cone.name}
+          </Text>
+
           <Text appearance="hint">
             {cone.description?.trim() ? cone.description.trim() : "No description yet."}
           </Text>
 
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: "rgba(100,116,139,0.25)",
-              }}
-            >
-              <Text style={{ fontWeight: "700", color: surfGreen(true) }}>
-                Radius {cone.radiusMeters}m
-              </Text>
-            </View>
-
-            {cone.slug ? (
-              <View
-                style={{
-                  paddingHorizontal: 10,
-                  paddingVertical: 6,
-                  borderRadius: 999,
-                  borderWidth: 1,
-                  borderColor: "rgba(100,116,139,0.25)",
-                }}
-              >
-                <Text appearance="hint" style={{ fontWeight: "700" }}>
-                  {cone.slug}
-                </Text>
-              </View>
-            ) : null}
-
-            <View
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 6,
-                borderRadius: 999,
-                borderWidth: 1,
-                borderColor: completed ? "rgba(42,157,143,0.35)" : "rgba(239,68,68,0.25)",
-                backgroundColor: completed ? "rgba(42,157,143,0.10)" : "rgba(239,68,68,0.08)",
-              }}
-            >
-              <Text style={{ fontWeight: "800", color: completed ? surfGreen(true) : "#ef4444" }}>
-                {completed ? "Completed" : "Not completed"}
-              </Text>
-            </View>
+            <Pill>Radius {cone.radiusMeters}m</Pill>
+            {cone.slug ? <Pill>{cone.slug}</Pill> : null}
+            <Pill status={completed ? "success" : "danger"}>
+              {completed ? "Completed" : "Not completed"}
+            </Pill>
           </View>
-        </Layout>
+        </View>
 
         <View style={{ height: 14 }} />
 
         {/* REVIEWS SUMMARY */}
-        <Card>
+        <CardShell>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text category="h6">Reviews</Text>
+            <Text category="h6" style={{ fontWeight: "900" }}>
+              Reviews
+            </Text>
 
             {ratingCount > 0 ? (
               <Button
                 size="small"
                 appearance="outline"
                 onPress={() =>
-                  router.push(`/(tabs)/cones/${cone.id}/reviews?coneName=${encodeURIComponent(cone.name)}`)
+                  router.push(
+                    `/(tabs)/cones/${cone.id}/reviews?coneName=${encodeURIComponent(cone.name)}`
+                  )
                 }
               >
                 View all
@@ -549,29 +519,38 @@ export default function ConeDetailRoute() {
           </View>
 
           <View style={{ height: 10 }} />
+
           {ratingCount === 0 ? (
             <Text appearance="hint">No reviews yet.</Text>
           ) : (
-            <Text appearance="hint">
-              ⭐ {avgRating?.toFixed(1)} / 5 ({ratingCount} review{ratingCount === 1 ? "" : "s"})
-            </Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Pill status="info">
+                ⭐ {avgRating?.toFixed(1)} / 5
+              </Pill>
+              <Text appearance="hint">
+                ({ratingCount} review{ratingCount === 1 ? "" : "s"})
+              </Text>
+            </View>
           )}
 
-          <View style={{ height: 8 }} />
+          <View style={{ height: 10 }} />
           <Text appearance="hint" style={{ fontSize: 12 }}>
             Reviews are public. You can leave one review per cone after completing it.
           </Text>
-        </Card>
+        </CardShell>
 
         <View style={{ height: 14 }} />
 
         {/* STATUS */}
-        <Card>
-          <Text category="h6">Status</Text>
-          <View style={{ height: 10 }} />
+        <CardShell>
+          <Text category="h6" style={{ fontWeight: "900" }}>
+            Status
+          </Text>
+
+          <View style={{ height: 12 }} />
 
           {!loc ? (
-            <View style={{ alignItems: "center", paddingVertical: 10, gap: 10 }}>
+            <View style={{ alignItems: "center", paddingVertical: 6, gap: 10 }}>
               <Spinner />
               <Text appearance="hint">Getting your GPS…</Text>
             </View>
@@ -600,9 +579,9 @@ export default function ConeDetailRoute() {
 
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text appearance="hint">Range check</Text>
-                <Text style={{ fontWeight: "900", color: stats.inRange ? surfGreen(true) : "#ef4444" }}>
+                <Pill status={stats.inRange ? "success" : "danger"}>
                   {stats.inRange ? "✅ In range" : "❌ Not in range"}
-                </Text>
+                </Pill>
               </View>
 
               <Button appearance="outline" onPress={() => void refreshLocation()}>
@@ -612,11 +591,11 @@ export default function ConeDetailRoute() {
           )}
 
           {err ? (
-            <View style={{ marginTop: 12, padding: 10, borderRadius: 12, backgroundColor: "rgba(239,68,68,0.10)" }}>
-              <Text status="danger">{err}</Text>
+            <View style={{ marginTop: 12 }}>
+              <Pill status="danger">{err}</Pill>
             </View>
           ) : null}
-        </Card>
+        </CardShell>
 
         <View style={{ height: 14 }} />
 
@@ -631,56 +610,61 @@ export default function ConeDetailRoute() {
             {saving ? "Saving…" : "Complete cone"}
           </Button>
         ) : (
-          <Card>
-            <Text category="h6">Completed ✅</Text>
+          <CardShell>
+            <View style={{ gap: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <Text category="h6" style={{ fontWeight: "900" }}>
+                  Completed
+                </Text>
+                <Pill status="success">✅</Pill>
+              </View>
 
-            <View style={{ height: 12 }} />
-            <Text style={{ fontWeight: "800" }}>Your review</Text>
-            <View style={{ height: 8 }} />
+              {/* Review */}
+              <View style={{ gap: 8 }}>
+                <Text style={{ fontWeight: "800" }}>Your review</Text>
 
-            {!hasReview ? (
-              <View style={{ gap: 10 }}>
-                <Text appearance="hint">Leave a quick rating (once only) after you’ve done the cone.</Text>
-                <Button appearance="outline" onPress={openReview}>
-                  Leave a review
+                {!hasReview ? (
+                  <View style={{ gap: 10 }}>
+                    <Text appearance="hint">
+                      Leave a quick rating (once only) after you’ve done the cone.
+                    </Text>
+                    <Button appearance="outline" onPress={openReview}>
+                      Leave a review
+                    </Button>
+                  </View>
+                ) : (
+                  <View style={{ gap: 8 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={{ fontWeight: "900" }}>
+                        {stars}{" "}
+                        <Text appearance="hint" style={{ fontWeight: "700" }}>
+                          ({myReviewRating}/5)
+                        </Text>
+                      </Text>
+                    </View>
+
+                    <Text appearance="hint">
+                      {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Share bonus */}
+              <View style={{ gap: 8 }}>
+                <Text appearance="hint">Optional: share a pic on socials for bonus credit.</Text>
+
+                <Button
+                  appearance={shareBonus ? "filled" : "outline"}
+                  status={shareBonus ? "success" : "basic"}
+                  onPress={() => void doShareBonus()}
+                  disabled={shareBonus}
+                >
+                  {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
                 </Button>
               </View>
-            ) : (
-              <View
-                style={{
-                  padding: 12,
-                  borderRadius: 16,
-                  borderWidth: 1,
-                  borderColor: "rgba(100,116,139,0.25)",
-                }}
-              >
-                <Text style={{ fontWeight: "900" }}>
-                  {stars}{" "}
-                  <Text appearance="hint" style={{ fontWeight: "700" }}>
-                    ({myReviewRating}/5)
-                  </Text>
-                </Text>
-
-                <View style={{ height: 6 }} />
-                <Text appearance="hint">
-                  {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
-                </Text>
-              </View>
-            )}
-
-            <View style={{ height: 16 }} />
-            <Text appearance="hint">Optional: share a pic on socials for bonus credit.</Text>
-            <View style={{ height: 10 }} />
-
-            <Button
-              appearance={shareBonus ? "filled" : "outline"}
-              status={shareBonus ? "success" : "basic"}
-              onPress={() => void doShareBonus()}
-              disabled={shareBonus}
-            >
-              {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
-            </Button>
-          </Card>
+            </View>
+          </CardShell>
         )}
       </ScrollView>
 
@@ -688,7 +672,10 @@ export default function ConeDetailRoute() {
       <Modal visible={reviewOpen} transparent animationType="fade" onRequestClose={() => setReviewOpen(false)}>
         <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "center", padding: 18 }}>
           <Layout style={{ borderRadius: 18, padding: 16 }}>
-            <Text category="h6">Leave a review</Text>
+            <Text category="h6" style={{ fontWeight: "900" }}>
+              Leave a review
+            </Text>
+
             <View style={{ height: 8 }} />
             <Text appearance="hint">One-time only. Choose a rating and (optionally) add a short note.</Text>
 
@@ -706,11 +693,11 @@ export default function ConeDetailRoute() {
                       paddingVertical: 10,
                       borderRadius: 999,
                       borderWidth: 1,
-                      borderColor: selected ? "rgba(42,157,143,0.45)" : "rgba(100,116,139,0.25)",
-                      backgroundColor: selected ? "rgba(42,157,143,0.12)" : "transparent",
+                      borderColor: selected ? "rgba(95,179,162,0.55)" : "rgba(100,116,139,0.25)",
+                      backgroundColor: selected ? "rgba(95,179,162,0.16)" : "transparent",
                     }}
                   >
-                    <Text style={{ fontWeight: "900", color: selected ? surfGreen(true) : "#64748b" }}>
+                    <Text style={{ fontWeight: "900" }}>
                       {"⭐".repeat(n)}
                     </Text>
                   </Pressable>

@@ -1,4 +1,3 @@
-// components/progress/StatRow.tsx
 import React from "react";
 import { View } from "react-native";
 import { Text } from "@ui-kitten/components";
@@ -11,12 +10,20 @@ export function StatRow({
   value: React.ReactNode;
 }) {
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
       <Text appearance="hint" category="c1">
         {label}
       </Text>
 
-      <Text category="s1">{value}</Text>
+      <View style={{ width: 10 }} />
+
+      {typeof value === "string" || typeof value === "number" ? (
+        <Text category="s1" style={{ fontWeight: "800" }}>
+          {value}
+        </Text>
+      ) : (
+        <View>{value}</View>
+      )}
     </View>
   );
 }

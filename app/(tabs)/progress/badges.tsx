@@ -6,7 +6,7 @@ import { Layout, Card, Text, Button } from "@ui-kitten/components";
 
 import { auth, db } from "@/lib/firebase";
 import { Screen } from "@/components/screen";
-import { getBadgeState } from "@/lib/badges";
+import { BADGES, getBadgeState } from "@/lib/badges";
 
 type Cone = {
   id: string;
@@ -62,36 +62,6 @@ function BadgeTile({
       </View>
     </View>
   );
-}
-
-function getProgressLabelForBadge(
-  progressByBadgeId: unknown,
-  badgeId: string
-): string | null {
-  if (!progressByBadgeId) return null;
-
-  // Case 1: Record<string, string | {progressLabel:string} | {label:string}>
-  if (typeof progressByBadgeId === "object" && !Array.isArray(progressByBadgeId)) {
-    const rec = progressByBadgeId as Record<string, any>;
-    const v = rec[badgeId];
-    if (typeof v === "string") return v;
-    if (v && typeof v === "object") {
-      if (typeof v.progressLabel === "string") return v.progressLabel;
-      if (typeof v.label === "string") return v.label;
-    }
-    return null;
-  }
-
-  // Case 2: Array<{ badgeId, progressLabel }>
-  if (Array.isArray(progressByBadgeId)) {
-    const found = (progressByBadgeId as any[]).find((p) => String(p?.badgeId) === String(badgeId));
-    if (!found) return null;
-    if (typeof found.progressLabel === "string") return found.progressLabel;
-    if (typeof found.label === "string") return found.label;
-    return null;
-  }
-
-  return null;
 }
 
 export default function BadgesScreen() {
@@ -202,31 +172,24 @@ export default function BadgesScreen() {
   }, [cones, completedIds, shareBonusCount, completedAtByConeId]);
 
   const totals = useMemo(() => {
-    const unlocked = Array.isArray((badgeState as any)?.unlocked) ? (badgeState as any).unlocked.length : 0;
-    const total = Array.isArray((badgeState as any)?.allBadges) ? (badgeState as any).allBadges.length : 0;
+    const unlocked = badgeState.earnedIds.size;
+    const total = BADGES.length;
     return { unlocked, total };
-  }, [badgeState]);
+  }, [badgeState.earnedIds]);
 
   const items = useMemo(() => {
-    const state: any = badgeState as any;
-
-    const all: any[] = Array.isArray(state?.allBadges) ? state.allBadges : [];
-    const unlockedArr: any[] = Array.isArray(state?.unlocked) ? state.unlocked : [];
-    const unlockedIds = new Set(unlockedArr.map((u) => String(u?.badge?.id ?? u?.id ?? "")));
-
-    return all.map((b) => {
-      const id = String(b?.id ?? "");
-      const progressLabel = getProgressLabelForBadge(state?.progressByBadgeId, id);
-
+    return BADGES.map((b) => {
+      const progress = badgeState.progressById[b.id];
+      const unlocked = badgeState.earnedIds.has(b.id);
       return {
-        id,
-        name: String(b?.name ?? "Badge"),
-        unlockText: String(b?.unlockText ?? ""),
-        unlocked: unlockedIds.has(id),
-        progressLabel,
+        id: b.id,
+        name: b.name,
+        unlockText: b.unlockText,
+        unlocked,
+        progressLabel: unlocked ? null : progress?.progressLabel ?? null,
       };
     });
-  }, [badgeState]);
+  }, [badgeState.earnedIds, badgeState.progressById]);
 
   if (loading) {
     return (
@@ -281,7 +244,7 @@ export default function BadgesScreen() {
           <Card style={{ padding: 16, marginTop: 14 }}>
             <Text category="h6">Next up</Text>
 
-            {!((badgeState as any)?.nextUp) ? (
+            {!badgeState.nextUp ? (
               <Text appearance="hint" style={{ marginTop: 8 }}>
                 Nothing queued — you might already have everything that’s configured.
               </Text>
@@ -296,14 +259,14 @@ export default function BadgesScreen() {
                 }}
               >
                 <Text category="s1" style={{ fontWeight: "800" }}>
-                  {(badgeState as any).nextUp.badge.name}
+                  {badgeState.nextUp.badge.name}
                 </Text>
                 <Text appearance="hint" style={{ marginTop: 6 }}>
-                  {(badgeState as any).nextUp.badge.unlockText}
+                  {badgeState.nextUp.badge.unlockText}
                 </Text>
-                {(badgeState as any).nextUp.progressLabel ? (
+                {badgeState.nextUp.progressLabel ? (
                   <Text appearance="hint" style={{ marginTop: 10 }}>
-                    {(badgeState as any).nextUp.progressLabel}
+                    {badgeState.nextUp.progressLabel}
                   </Text>
                 ) : null}
               </View>

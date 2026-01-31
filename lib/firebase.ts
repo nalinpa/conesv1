@@ -1,4 +1,4 @@
-import { initializeApp, getApps } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -8,11 +8,13 @@ const firebaseConfig = {
   projectId: "cones-app-fd230",
   storageBucket: "cones-app-fd230.firebasestorage.app",
   messagingSenderId: "808761272356",
-  appId: "1:808761272356:web:4b9d2dc698013bcdd390b1"
+  appId: "1:808761272356:web:4b9d2dc698013bcdd390b1",
 };
 
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-
+// ✅ Expo-safe auth
 export const auth = getAuth(app);
+
+// Firestore
 export const db = getFirestore(app);

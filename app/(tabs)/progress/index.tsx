@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, ScrollView, ActivityIndicator, Pressable } from "react-native";
+import { View, ScrollView, ActivityIndicator } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
@@ -17,6 +17,9 @@ import { StatRow } from "@/components/progress/StatRow";
 import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/progress/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
+
+// ✅ New: shared padded card wrapper
+import { CardShell } from "@/components/ui/CardShell";
 
 type Cone = {
   id: string;
@@ -293,8 +296,8 @@ export default function ProgressScreen() {
 
           {/* One place to control spacing */}
           <View style={{ gap: 14 }}>
-            {/* Your progress */}
-            <Card style={{ padding: 16 }}>
+            {/* ✅ Your progress (now uses CardShell for consistent padding) */}
+            <CardShell>
               <Text category="h6" style={{ marginBottom: 12 }}>
                 Your progress
               </Text>
@@ -306,16 +309,19 @@ export default function ProgressScreen() {
                   <StatRow label="Completed" value={`${totals.completed} / ${totals.total}`} />
                   <StatRow label="Share bonus" value={shareBonusCount} />
 
+                  {/* ✅ All-done banner (also CardShell for consistent padding) */}
                   {allDone ? (
-                    <Card style={{ marginTop: 10, padding: 12 }}>
-                      <Text category="s1" style={{ fontWeight: "800" }}>
-                        You’ve completed them all 🎉
-                      </Text>
-                    </Card>
+                    <View style={{ marginTop: 10 }}>
+                      <CardShell>
+                        <Text category="s1" style={{ fontWeight: "800" }}>
+                          You’ve completed them all 🎉
+                        </Text>
+                      </CardShell>
+                    </View>
                   ) : null}
                 </View>
               </View>
-            </Card>
+            </CardShell>
 
             {/* Cones to review */}
             {conesToReview.length > 0 ? (

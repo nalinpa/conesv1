@@ -1,6 +1,7 @@
-import { View, Text, ActivityIndicator } from "react-native";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import React from "react";
+import { View, ActivityIndicator } from "react-native";
+import { Card, Text, Button, Divider } from "@ui-kitten/components";
+import { Pill } from "@/components/ui/Pill";
 
 export function ConeStatusCard({
   loadingLocation,
@@ -22,64 +23,73 @@ export function ConeStatusCard({
   checkpointLabel?: string;
 }) {
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Status</CardTitle>
-      </CardHeader>
+    <Card style={{ borderRadius: 18, padding: 16 }}>
+      <Text category="h6" style={{ fontWeight: "900" }}>
+        Status
+      </Text>
 
-      <CardContent className="gap-3">
-        {loadingLocation ? (
-          <View className="items-center justify-center py-2">
-            <ActivityIndicator />
-          </View>
-        ) : (
-          <>
-            {checkpointLabel ? (
-              <View className="flex-row items-center justify-between">
-                <Text className="text-foreground">Checkpoint</Text>
-                <Text className="font-semibold text-foreground">{checkpointLabel}</Text>
-              </View>
-            ) : null}
+      <View style={{ height: 12 }} />
 
-            {showDistance ? (
-              <View className="flex-row items-center justify-between">
-                <Text className="text-foreground">Distance</Text>
-                <Text className="font-semibold text-foreground">
-                  {distanceMeters == null ? "—" : `${Math.round(distanceMeters)} m`}
-                </Text>
-              </View>
-            ) : null}
+      {loadingLocation ? (
+        <View style={{ alignItems: "center", paddingVertical: 12 }}>
+          <ActivityIndicator />
+        </View>
+      ) : (
+        <View style={{ gap: 12 }}>
+          {/* Checkpoint */}
+          {checkpointLabel ? (
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text appearance="hint">Checkpoint</Text>
+              <Pill>{checkpointLabel}</Pill>
+            </View>
+          ) : null}
 
-            <View className="flex-row items-center justify-between">
-              <Text className="text-foreground">Accuracy</Text>
-              <Text className="font-semibold text-foreground">
-                {accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`}
+          {/* Distance */}
+          {showDistance ? (
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <Text appearance="hint">Distance</Text>
+              <Text style={{ fontWeight: "800" }}>
+                {distanceMeters == null ? "—" : `${Math.round(distanceMeters)} m`}
               </Text>
             </View>
+          ) : null}
 
-            <View className="flex-row items-center justify-between">
-              <Text className="text-foreground">Range check</Text>
-              <Text
-                className={
-                  inRange ? "font-extrabold text-green-700" : "font-extrabold text-red-700"
-                }
-              >
-                {inRange ? "✅ In range" : "❌ Not in range"}
-              </Text>
-            </View>
-
-            <Button variant="outline" onPress={onRefreshGps}>
-              <Text className="font-semibold">Refresh GPS</Text>
-            </Button>
-          </>
-        )}
-
-        {errorText ? (
-          <View className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
-            <Text className="text-sm text-destructive">{errorText}</Text>
+          {/* Accuracy */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text appearance="hint">Accuracy</Text>
+            <Text style={{ fontWeight: "800" }}>
+              {accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`}
+            </Text>
           </View>
-        ) : null}
-      </CardContent>
+
+          <Divider />
+
+          {/* Range check */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text appearance="hint">Range</Text>
+            <Pill status={inRange ? "success" : "danger"}>
+              {inRange ? "In range" : "Not in range"}
+            </Pill>
+          </View>
+
+          <Button appearance="outline" onPress={onRefreshGps}>
+            Refresh GPS
+          </Button>
+        </View>
+      )}
+
+      {errorText ? (
+        <View
+          style={{
+            marginTop: 12,
+            padding: 12,
+            borderRadius: 14,
+            backgroundColor: "rgba(239,68,68,0.10)",
+          }}
+        >
+          <Text status="danger">{errorText}</Text>
+        </View>
+      ) : null}
     </Card>
   );
 }

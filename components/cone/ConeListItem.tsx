@@ -1,72 +1,80 @@
 import React from "react";
-import { Pressable, View } from "react-native";
-import { Card, Text } from "@ui-kitten/components";
+import { View, Pressable } from "react-native";
+import { Text } from "@ui-kitten/components";
 
-type Cone = {
+import { CardShell } from "@/components/ui/CardShell";
+import { Pill } from "@/components/ui/Pill";
+
+type ConeListItemProps = {
   id: string;
   name: string;
   description?: string;
-  radiusMeters?: number;
+  radiusMeters?: number | null;
+  completed?: boolean;
+  distanceMeters?: number | null;
+  onPress: (coneId: string) => void;
 };
 
+function formatDistance(distanceMeters?: number | null) {
+  if (distanceMeters == null) return null;
+  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} m`;
+  return `${(distanceMeters / 1000).toFixed(1)} km`;
+}
+
 export function ConeListItem({
-  cone,
+  id,
+  name,
+  description,
+  radiusMeters,
+  completed = false,
   distanceMeters,
   onPress,
-}: {
-  cone: Cone;
-  distanceMeters: number | null;
-  onPress: (coneId: string) => void;
-}) {
-  const distanceLabel =
-    distanceMeters == null ? "Distance —" : `${Math.round(distanceMeters)} m`;
-
+}: ConeListItemProps) {
   return (
-    <Pressable onPress={() => onPress(cone.id)}>
-      <Card>
-        <View style={{ gap: 8 }}>
-          {/* Title */}
-          <Text category="h6">
-            {cone.name}
-          </Text>
+    <Pressable onPress={() => onPress(id)}>
+      {({ pressed }) => (
+        <View style={{ opacity: pressed ? 0.9 : 1 }}>
+          <CardShell>
+            <View style={{ gap: 10 }}>
+              {/* Header */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 10,
+                }}
+              >
+                <Text category="s1" style={{ fontWeight: "900", flexShrink: 1 }}>
+                  {name}
+                </Text>
 
-          {/* Description */}
-          <Text appearance="hint" numberOfLines={2}>
-            {cone.description?.trim()
-              ? cone.description.trim()
-              : "Tap to view details"}
-          </Text>
+                <Pill status={completed ? "success" : "basic"}>
+                  {completed ? "Completed" : "Not completed"}
+                </Pill>
+              </View>
 
-          {/* Meta row */}
-          <View
-            style={{
-              flexDirection: "row",
-              flexWrap: "wrap",
-              gap: 8,
-              marginTop: 4,
-            }}
-          >
-            {cone.radiusMeters != null ? (
-              <Card appearance="outline">
-                <Text category="c2">Radius {cone.radiusMeters}m</Text>
-              </Card>
-            ) : null}
+              {/* Description */}
+              {description?.trim() ? (
+                <Text appearance="hint" numberOfLines={2}>
+                  {description.trim()}
+                </Text>
+              ) : null}
 
-            <Card appearance="outline">
-              <Text category="c2">{distanceLabel}</Text>
-            </Card>
-          </View>
+              {/* Meta row */}
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+                {radiusMeters != null ? (
+                  <Pill>Radius {radiusMeters}m</Pill>
+                ) : null}
 
-          {/* Action hint */}
-          <Text
-            status="primary"
-            category="c1"
-            style={{ marginTop: 4 }}
-          >
-            Open →
-          </Text>
+                {distanceMeters != null ? (
+                  <Pill>{formatDistance(distanceMeters)}</Pill>
+                ) : null}
+              </View>
+            </View>
+          </CardShell>
         </View>
-      </Card>
+      )}
     </Pressable>
   );
 }

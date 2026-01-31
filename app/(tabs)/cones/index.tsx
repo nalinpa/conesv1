@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { View, ActivityIndicator, FlatList } from "react-native";
+import { View, ActivityIndicator, FlatList, Pressable } from "react-native";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 
@@ -10,12 +10,20 @@ import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import type { Cone } from "@/lib/models";
 
-import { Layout, Text, Card, Button } from "@ui-kitten/components";
+import { Layout, Text, Button } from "@ui-kitten/components";
+import { CardShell } from "@/components/ui/CardShell";
+import { Pill } from "@/components/ui/Pill";
 
 type ConeRow = {
   cone: Cone;
   distance: number | null;
 };
+
+function formatDistance(distance: number | null) {
+  if (distance == null) return "Distance —";
+  if (distance < 1000) return `${Math.round(distance)} m`;
+  return `${(distance / 1000).toFixed(1)} km`;
+}
 
 export default function ConeListPage() {
   const [loading, setLoading] = useState(true);
@@ -24,9 +32,7 @@ export default function ConeListPage() {
   const [cones, setCones] = useState<Cone[]>([]);
 
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
-  const [locStatus, setLocStatus] = useState<"unknown" | "granted" | "denied">(
-    "unknown"
-  );
+  const [locStatus, setLocStatus] = useState<"unknown" | "granted" | "denied">("unknown");
   const [locErr, setLocErr] = useState<string>("");
 
   const loadCones = useCallback(async () => {
@@ -143,7 +149,7 @@ export default function ConeListPage() {
     return (
       <Screen>
         <Layout style={{ flex: 1 }}>
-          <Card status="danger" style={{ padding: 16 }}>
+          <CardShell tone="danger">
             <Text category="s1" style={{ marginBottom: 6, fontWeight: "800" }}>
               Couldn’t load cones
             </Text>
@@ -152,7 +158,7 @@ export default function ConeListPage() {
             </Text>
 
             <Button onPress={() => void loadCones()}>Retry</Button>
-          </Card>
+          </CardShell>
         </Layout>
       </Screen>
     );
@@ -184,15 +190,19 @@ export default function ConeListPage() {
         </Text>
 
         {locStatus === "denied" ? (
-          <Card status="warning" style={{ marginTop: 12, padding: 12 }}>
-            <Text>Location permission denied — distances won’t show.</Text>
-          </Card>
+          <View style={{ marginTop: 12 }}>
+            <CardShell tone="warning">
+              <Text>Location permission denied — distances won’t show.</Text>
+            </CardShell>
+          </View>
         ) : null}
 
         {locErr ? (
-          <Card status="danger" style={{ marginTop: 12, padding: 12 }}>
-            <Text>{locErr}</Text>
-          </Card>
+          <View style={{ marginTop: 12 }}>
+            <CardShell tone="danger">
+              <Text>{locErr}</Text>
+            </CardShell>
+          </View>
         ) : null}
 
         <FlatList
@@ -204,51 +214,27 @@ export default function ConeListPage() {
             const { cone, distance } = item;
 
             return (
-              <Card style={{ padding: 14 }} onPress={() => openCone(cone.id)}>
-                <Text category="s1" style={{ fontWeight: "800" }}>
-                  {cone.name}
-                </Text>
+              <Pressable onPress={() => openCone(cone.id)}>
+                <CardShell>
+                  <Text category="s1" style={{ fontWeight: "800" }}>
+                    {cone.name}
+                  </Text>
 
-                <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
-                  {cone.description?.trim() ? cone.description.trim() : "Tap to view details"}
-                </Text>
+                  <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
+                    {cone.description?.trim() ? cone.description.trim() : "Tap to view details"}
+                  </Text>
 
-                <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 12 }}>
-                  {cone.radiusMeters != null ? (
-                    <View
-                      style={{
-                        paddingHorizontal: 10,
-                        paddingVertical: 6,
-                        borderRadius: 999,
-                        borderWidth: 1,
-                        borderColor: "rgba(0,0,0,0.08)",
-                        marginRight: 8,
-                        marginBottom: 8,
-                      }}
-                    >
-                      <Text category="c1">Radius {cone.radiusMeters}m</Text>
-                    </View>
-                  ) : null}
+                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                    {cone.radiusMeters != null ? (
+                      <Pill tone="neutral">Radius {cone.radiusMeters}m</Pill>
+                    ) : null}
 
-                  <View
-                    style={{
-                      paddingHorizontal: 10,
-                      paddingVertical: 6,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: "rgba(0,0,0,0.08)",
-                      marginRight: 8,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <Text category="c1">
-                      {distance == null ? "Distance —" : `${Math.round(distance)} m`}
-                    </Text>
+                    <Pill tone="neutral">{formatDistance(distance)}</Pill>
                   </View>
-                </View>
 
-                <Text style={{ marginTop: 6, fontWeight: "700" }}>Open →</Text>
-              </Card>
+                  <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>
+                </CardShell>
+              </Pressable>
             );
           }}
         />

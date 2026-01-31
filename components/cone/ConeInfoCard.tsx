@@ -1,6 +1,8 @@
-import { View, Text } from "react-native";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+// components/cone/ConeInfoCard.tsx
+import React from "react";
+import { View } from "react-native";
+import { Card, Text } from "@ui-kitten/components";
+import { Pill } from "@/components/ui/Pill";
 
 export function ConeInfoCard({
   name,
@@ -14,30 +16,24 @@ export function ConeInfoCard({
   radiusMeters?: number | null;
 }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{name}</CardTitle>
-      </CardHeader>
-
-      <CardContent className="gap-2">
-        <Text className="text-muted-foreground">
-          {description?.trim() ? description : "No description yet."}
+    <Card style={{ borderRadius: 18, padding: 16 }}>
+      <View style={{ gap: 10 }}>
+        {/* Title */}
+        <Text category="h5" style={{ fontWeight: "900" }}>
+          {name}
         </Text>
 
-        <View className="flex-row flex-wrap gap-2">
-          {radiusMeters != null ? (
-            <Badge variant="secondary">
-              <Text className="text-xs">Radius {radiusMeters}m</Text>
-            </Badge>
-          ) : null}
+        {/* Description */}
+        <Text appearance="hint">
+          {description?.trim() ? description.trim() : "No description yet."}
+        </Text>
 
-          {slug ? (
-            <Badge variant="secondary">
-              <Text className="text-xs">Slug {slug}</Text>
-            </Badge>
-          ) : null}
+        {/* Meta pills */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 }}>
+          {radiusMeters != null ? <Pill>Radius {radiusMeters}m</Pill> : null}
+          {slug ? <Pill>{slug}</Pill> : null}
         </View>
-      </CardContent>
+      </View>
     </Card>
   );
 }

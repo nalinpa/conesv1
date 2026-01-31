@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 import { router } from "expo-router";
@@ -9,6 +9,9 @@ import { auth, db } from "../../lib/firebase";
 
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "@/lib/checkpoints";
+
+// UI Kitten
+import { Card, Text } from "@ui-kitten/components";
 
 type Cone = {
   id: string;
@@ -30,6 +33,12 @@ type Cone = {
 function toNum(v: any): number {
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : NaN;
+}
+
+function formatDistance(distanceMeters: number | null): string {
+  if (distanceMeters == null) return "Distance —";
+  if (distanceMeters < 1000) return `${Math.round(distanceMeters)} m`;
+  return `${(distanceMeters / 1000).toFixed(1)} km`;
 }
 
 export default function MapScreen() {
@@ -113,7 +122,7 @@ export default function MapScreen() {
   }, []);
 
   // -----------------------------
-  // ✅ Live completions listener
+  // Live completions listener
   // -----------------------------
   useEffect(() => {
     const user = auth.currentUser;
@@ -194,8 +203,10 @@ export default function MapScreen() {
   if (loading) {
     return (
       <Screen>
-        <ActivityIndicator />
-        <Text className="mt-2 text-muted-foreground">Loading map…</Text>
+        <View style={{ alignItems: "center", justifyContent: "center", flex: 1, gap: 10 }}>
+          <ActivityIndicator />
+          <Text appearance="hint">Loading map…</Text>
+        </View>
       </Screen>
     );
   }
@@ -203,63 +214,101 @@ export default function MapScreen() {
   if (err) {
     return (
       <Screen>
-        <Text className="text-destructive">{err}</Text>
+        <Card status="danger" style={{ padding: 14 }}>
+          <Text category="s1" style={{ fontWeight: "800", marginBottom: 6 }}>
+            Map error
+          </Text>
+          <Text status="danger">{err}</Text>
+        </Card>
       </Screen>
     );
   }
 
   return (
     <Screen padded={false}>
-      <MapView
-        style={{ flex: 1 }}
-        showsUserLocation
-        initialRegion={{
-          latitude: loc?.coords.latitude ?? -36.8485,
-          longitude: loc?.coords.longitude ?? 174.7633,
-          latitudeDelta: 0.25,
-          longitudeDelta: 0.25,
-        }}
-      >
-        {cones.map((cone) => {
-          const completed = completedIds.has(cone.id);
+      <View style={{ flex: 1 }}>
+        <MapView
+          style={{ flex: 1 }}
+          showsUserLocation
+          initialRegion={{
+            latitude: loc?.coords.latitude ?? -36.8485,
+            longitude: loc?.coords.longitude ?? 174.7633,
+            latitudeDelta: 0.25,
+            longitudeDelta: 0.25,
+          }}
+        >
+          {cones.map((cone) => {
+            const completed = completedIds.has(cone.id);
 
-          return (
-            <View key={cone.id}>
-              {/* ✅ Circle must be a direct child of MapView (NOT inside Marker) */}
-              <Circle
-                center={{ latitude: cone.lat, longitude: cone.lng }}
-                radius={cone.radiusMeters}
-                strokeColor={completed ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}
-                fillColor={completed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}
-              />
+            return (
+              <View key={cone.id}>
+                {/* Circle must be a direct child of MapView (NOT inside Marker) */}
+                <Circle
+                  center={{ latitude: cone.lat, longitude: cone.lng }}
+                  radius={cone.radiusMeters}
+                  strokeColor={completed ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}
+                  fillColor={completed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}
+                />
 
-              <Marker
-                coordinate={{ latitude: cone.lat, longitude: cone.lng }}
-                pinColor={completed ? "green" : "red"}
-                title={cone.name}
-                onPress={() => router.push(`/(tabs)/cones/${cone.id}`)}
-              />
-            </View>
-          );
-        })}
-      </MapView>
+                <Marker
+                  coordinate={{ latitude: cone.lat, longitude: cone.lng }}
+                  pinColor={completed ? "green" : "red"}
+                  title={cone.name}
+                  onPress={() => router.push(`/(tabs)/cones/${cone.id}`)}
+                />
+              </View>
+            );
+          })}
+        </MapView>
 
-      {/* Optional nearest unclimbed overlay */}
-      {nearestUnclimbed ? (
-        <View className="absolute bottom-6 left-4 right-4 rounded-2xl border border-border bg-card px-4 py-3">
-          <Text className="font-semibold text-foreground">Nearest unclimbed</Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
-            {nearestUnclimbed.cone.name}
-            {nearestUnclimbed.distance != null ? ` · ${Math.round(nearestUnclimbed.distance)} m` : ""}
-          </Text>
-        </View>
-      ) : null}
+        {/* Nearest unclimbed overlay */}
+        {nearestUnclimbed ? (
+          <View
+            style={{
+              position: "absolute",
+              left: 16,
+              right: 16,
+              bottom: 16,
+            }}
+          >
+            <Card style={{ borderRadius: 18, padding: 14 }}>
+              <Text category="s1" style={{ fontWeight: "800" }}>
+                Nearest unclimbed
+              </Text>
 
-      {locErr ? (
-        <View className="absolute top-6 left-4 right-4 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2">
-          <Text className="text-sm text-destructive">{locErr}</Text>
-        </View>
-      ) : null}
+              <View style={{ height: 6 }} />
+
+              <Text appearance="hint">
+                {nearestUnclimbed.cone.name}
+                {nearestUnclimbed.distance != null
+                  ? ` · ${formatDistance(nearestUnclimbed.distance)}`
+                  : ""}
+              </Text>
+
+              <View style={{ height: 10 }} />
+              <Text appearance="hint" category="c1">
+                Tap the marker to open the cone.
+              </Text>
+            </Card>
+          </View>
+        ) : null}
+
+        {/* Location error toast */}
+        {locErr ? (
+          <View
+            style={{
+              position: "absolute",
+              left: 16,
+              right: 16,
+              top: 16,
+            }}
+          >
+            <Card status="warning" style={{ borderRadius: 16, padding: 12 }}>
+              <Text status="warning">{locErr}</Text>
+            </Card>
+          </View>
+        ) : null}
+      </View>
     </Screen>
   );
 }
