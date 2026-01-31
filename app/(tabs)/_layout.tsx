@@ -1,5 +1,5 @@
 import React from "react";
-import { Tabs } from "expo-router";
+import { Tabs, router } from "expo-router";
 import { BottomNavigation, BottomNavigationTab } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -29,16 +29,35 @@ function KittenTabBar({
     const route = state.routes[index];
     if (!route) return;
 
-    // Let React Navigation handle tab semantics properly.
+    // Preserve tab semantics (scroll-to-top handlers, etc)
     const event = navigation.emit({
       type: "tabPress",
       target: route.key,
       canPreventDefault: true,
     });
 
-    if (!event.defaultPrevented) {
-      navigation.navigate(route.name);
+    if (event.defaultPrevented) return;
+
+    // Force these tabs to always land on their index route
+    // (prevents being "stuck" on nested screens like /progress/badges)
+    if (route.name === "cones") {
+      router.replace("/(tabs)/cones");
+      return;
     }
+
+    if (route.name === "progress") {
+      router.replace("/(tabs)/progress");
+      return;
+    }
+
+    // Map can behave normally (or force it too if you want)
+    if (route.name === "map") {
+      router.replace("/(tabs)/map");
+      return;
+    }
+
+    // Fallback
+    navigation.navigate(route.name);
   };
 
   return (
@@ -79,9 +98,10 @@ export default function TabsLayout() {
       screenOptions={{ headerShown: false }}
       tabBar={(props) => <KittenTabBar {...props} />}
     >
-      <Tabs.Screen name="cones" />
-      <Tabs.Screen name="progress" />
-      <Tabs.Screen name="map" />
+      {/* href pins the tab route to the index as well (nice extra safety) */}
+      <Tabs.Screen name="cones" options={{ href: "/(tabs)/cones" }} />
+      <Tabs.Screen name="progress" options={{ href: "/(tabs)/progress" }} />
+      <Tabs.Screen name="map" options={{ href: "/(tabs)/map" }} />
     </Tabs>
   );
 }

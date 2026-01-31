@@ -1,6 +1,7 @@
 import React from "react";
 import { View } from "react-native";
-import { Card, Text, Button } from "@ui-kitten/components";
+import { Text, Button } from "@ui-kitten/components";
+import { CardShell } from "../ui/CardShell";
 
 export function MapOverlayCard({
   title,
@@ -21,7 +22,7 @@ export function MapOverlayCard({
       : `${(distanceMeters / 1000).toFixed(1)} km away`;
 
   return (
-    <Card>
+    <CardShell>
       <View style={{ gap: 8 }}>
         <Text category="s1">{title}</Text>
 
@@ -37,6 +38,6 @@ export function MapOverlayCard({
           View cone
         </Button>
       </View>
-    </Card>
+    </CardShell>
   );
 }

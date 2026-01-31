@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -31,50 +31,43 @@ export function ConeListItem({
   onPress,
 }: ConeListItemProps) {
   return (
-    <Pressable onPress={() => onPress(id)}>
-      {({ pressed }) => (
-        <View style={{ opacity: pressed ? 0.9 : 1 }}>
-          <CardShell>
-            <View style={{ gap: 10 }}>
-              {/* Header */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
-              >
-                <Text category="s1" style={{ fontWeight: "900", flexShrink: 1 }}>
-                  {name}
-                </Text>
+    <CardShell
+      onPress={() => onPress(id)}
+      // UI Kitten Card supports this; gives nice feedback
+      activeOpacity={0.92}
+    >
+      <View style={{ gap: 10 }}>
+        {/* Header */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 10,
+          }}
+        >
+          <Text category="s1" style={{ fontWeight: "900", flexShrink: 1 }}>
+            {name}
+          </Text>
 
-                <Pill status={completed ? "success" : "basic"}>
-                  {completed ? "Completed" : "Not completed"}
-                </Pill>
-              </View>
-
-              {/* Description */}
-              {description?.trim() ? (
-                <Text appearance="hint" numberOfLines={2}>
-                  {description.trim()}
-                </Text>
-              ) : null}
-
-              {/* Meta row */}
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {radiusMeters != null ? (
-                  <Pill>Radius {radiusMeters}m</Pill>
-                ) : null}
-
-                {distanceMeters != null ? (
-                  <Pill>{formatDistance(distanceMeters)}</Pill>
-                ) : null}
-              </View>
-            </View>
-          </CardShell>
+          <Pill status={completed ? "success" : "basic"}>
+            {completed ? "Completed" : "Not completed"}
+          </Pill>
         </View>
-      )}
-    </Pressable>
+
+        {/* Description */}
+        {description?.trim() ? (
+          <Text appearance="hint" numberOfLines={2}>
+            {description.trim()}
+          </Text>
+        ) : null}
+
+        {/* Meta row */}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {radiusMeters != null ? <Pill>Radius {radiusMeters}m</Pill> : null}
+          {distanceMeters != null ? <Pill>{formatDistance(distanceMeters)}</Pill> : null}
+        </View>
+      </View>
+    </CardShell>
   );
 }

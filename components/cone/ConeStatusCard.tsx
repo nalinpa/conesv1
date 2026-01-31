@@ -1,7 +1,8 @@
 import React from "react";
 import { View, ActivityIndicator } from "react-native";
-import { Card, Text, Button, Divider } from "@ui-kitten/components";
+import { Text, Button, Divider } from "@ui-kitten/components";
 import { Pill } from "@/components/ui/Pill";
+import { CardShell } from "../ui/CardShell";
 
 export function ConeStatusCard({
   loadingLocation,
@@ -23,7 +24,7 @@ export function ConeStatusCard({
   checkpointLabel?: string;
 }) {
   return (
-    <Card style={{ borderRadius: 18, padding: 16 }}>
+    <CardShell style={{ borderRadius: 18, padding: 16 }}>
       <Text category="h6" style={{ fontWeight: "900" }}>
         Status
       </Text>
@@ -90,6 +91,6 @@ export function ConeStatusCard({
           <Text status="danger">{errorText}</Text>
         </View>
       ) : null}
-    </Card>
+    </CardShell>
   );
 }

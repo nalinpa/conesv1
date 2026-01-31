@@ -1,8 +1,8 @@
-// components/cone/ConeInfoCard.tsx
 import React from "react";
 import { View } from "react-native";
-import { Card, Text } from "@ui-kitten/components";
+import { Text } from "@ui-kitten/components";
 import { Pill } from "@/components/ui/Pill";
+import { CardShell } from "../ui/CardShell";
 
 export function ConeInfoCard({
   name,
@@ -16,7 +16,7 @@ export function ConeInfoCard({
   radiusMeters?: number | null;
 }) {
   return (
-    <Card style={{ borderRadius: 18, padding: 16 }}>
+    <CardShell style={{ borderRadius: 18, padding: 16 }}>
       <View style={{ gap: 10 }}>
         {/* Title */}
         <Text category="h5" style={{ fontWeight: "900" }}>
@@ -34,6 +34,6 @@ export function ConeInfoCard({
           {slug ? <Pill>{slug}</Pill> : null}
         </View>
       </View>
-    </Card>
+    </CardShell>
   );
 }

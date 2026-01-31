@@ -149,7 +149,7 @@ export default function ConeListPage() {
     return (
       <Screen>
         <Layout style={{ flex: 1 }}>
-          <CardShell tone="danger">
+          <CardShell status="danger">
             <Text category="s1" style={{ marginBottom: 6, fontWeight: "800" }}>
               Couldn’t load cones
             </Text>
@@ -191,7 +191,7 @@ export default function ConeListPage() {
 
         {locStatus === "denied" ? (
           <View style={{ marginTop: 12 }}>
-            <CardShell tone="warning">
+            <CardShell status="warning">
               <Text>Location permission denied — distances won’t show.</Text>
             </CardShell>
           </View>
@@ -199,7 +199,7 @@ export default function ConeListPage() {
 
         {locErr ? (
           <View style={{ marginTop: 12 }}>
-            <CardShell tone="danger">
+            <CardShell status="danger">
               <Text>{locErr}</Text>
             </CardShell>
           </View>
@@ -214,27 +214,25 @@ export default function ConeListPage() {
             const { cone, distance } = item;
 
             return (
-              <Pressable onPress={() => openCone(cone.id)}>
-                <CardShell>
-                  <Text category="s1" style={{ fontWeight: "800" }}>
-                    {cone.name}
-                  </Text>
+              <CardShell onPress={() => openCone(cone.id)} activeOpacity={0.92}>
+                <Text category="s1" style={{ fontWeight: "800" }}>
+                  {cone.name}
+                </Text>
 
-                  <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
-                    {cone.description?.trim() ? cone.description.trim() : "Tap to view details"}
-                  </Text>
+                <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
+                  {cone.description?.trim() ? cone.description.trim() : "Tap to view details"}
+                </Text>
 
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                    {cone.radiusMeters != null ? (
-                      <Pill tone="neutral">Radius {cone.radiusMeters}m</Pill>
-                    ) : null}
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                  {cone.radiusMeters != null ? (
+                    <Pill status="basic">Radius {cone.radiusMeters}m</Pill>
+                  ) : null}
 
-                    <Pill tone="neutral">{formatDistance(distance)}</Pill>
-                  </View>
+                  <Pill status="basic">{formatDistance(distance)}</Pill>
+                </View>
 
-                  <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>
-                </CardShell>
-              </Pressable>
+                <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>
+              </CardShell>
             );
           }}
         />

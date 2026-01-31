@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { Layout, Card, Text, Button } from "@ui-kitten/components";
+import { Layout, Text, Button } from "@ui-kitten/components";
 
 import { auth, db } from "@/lib/firebase";
 import { Screen } from "@/components/screen";
 import { BADGES, getBadgeState } from "@/lib/badges";
+import { CardShell } from "@/components/ui/CardShell";
 
 type Cone = {
   id: string;
@@ -206,15 +207,15 @@ export default function BadgesScreen() {
     return (
       <Screen>
         <Layout style={{ flex: 1, padding: 16, justifyContent: "center" }}>
-          <Card status="danger" style={{ padding: 16 }}>
-            <Text category="h6" style={{ marginBottom: 6 }}>
+          <CardShell status="danger">
+            <Text category="h6" style={{ marginBottom: 6, fontWeight: "800" }}>
               Badges
             </Text>
             <Text status="danger">{err}</Text>
             <Button style={{ marginTop: 12 }} onPress={() => router.replace("/(tabs)/progress/badges")}>
               Retry
             </Button>
-          </Card>
+          </CardShell>
         </Layout>
       </Screen>
     );
@@ -241,60 +242,64 @@ export default function BadgesScreen() {
           </View>
 
           {/* Next up */}
-          <Card style={{ padding: 16, marginTop: 14 }}>
-            <Text category="h6">Next up</Text>
+          <View style={{ marginTop: 14 }}>
+            <CardShell>
+              <Text category="h6">Next up</Text>
 
-            {!badgeState.nextUp ? (
-              <Text appearance="hint" style={{ marginTop: 8 }}>
-                Nothing queued — you might already have everything that’s configured.
-              </Text>
-            ) : (
-              <View
-                style={{
-                  marginTop: 12,
-                  borderWidth: 1,
-                  borderRadius: 16,
-                  paddingHorizontal: 12,
-                  paddingVertical: 12,
-                }}
-              >
-                <Text category="s1" style={{ fontWeight: "800" }}>
-                  {badgeState.nextUp.badge.name}
+              {!badgeState.nextUp ? (
+                <Text appearance="hint" style={{ marginTop: 8 }}>
+                  Nothing queued — you might already have everything that’s configured.
                 </Text>
-                <Text appearance="hint" style={{ marginTop: 6 }}>
-                  {badgeState.nextUp.badge.unlockText}
-                </Text>
-                {badgeState.nextUp.progressLabel ? (
-                  <Text appearance="hint" style={{ marginTop: 10 }}>
-                    {badgeState.nextUp.progressLabel}
+              ) : (
+                <View
+                  style={{
+                    marginTop: 12,
+                    borderWidth: 1,
+                    borderRadius: 16,
+                    paddingHorizontal: 12,
+                    paddingVertical: 12,
+                  }}
+                >
+                  <Text category="s1" style={{ fontWeight: "800" }}>
+                    {badgeState.nextUp.badge.name}
                   </Text>
-                ) : null}
-              </View>
-            )}
-          </Card>
+                  <Text appearance="hint" style={{ marginTop: 6 }}>
+                    {badgeState.nextUp.badge.unlockText}
+                  </Text>
+                  {badgeState.nextUp.progressLabel ? (
+                    <Text appearance="hint" style={{ marginTop: 10 }}>
+                      {badgeState.nextUp.progressLabel}
+                    </Text>
+                  ) : null}
+                </View>
+              )}
+            </CardShell>
+          </View>
 
           {/* Grid */}
-          <Card style={{ padding: 12, marginTop: 14 }}>
-            <Text category="h6" style={{ marginBottom: 10 }}>
-              All badges
-            </Text>
+          <View style={{ marginTop: 14 }}>
+            <CardShell>
+              <Text category="h6" style={{ marginBottom: 10 }}>
+                All badges
+              </Text>
 
-            <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-              {items.map((b) => (
-                <BadgeTile
-                  key={b.id}
-                  name={b.name}
-                  unlockText={b.unlockText}
-                  unlocked={b.unlocked}
-                  progressLabel={b.progressLabel}
-                />
-              ))}
-            </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {items.map((b) => (
+                  <BadgeTile
+                    key={b.id}
+                    name={b.name}
+                    unlockText={b.unlockText}
+                    unlocked={b.unlocked}
+                    progressLabel={b.progressLabel}
+                  />
+                ))}
+              </View>
 
-            <Text appearance="hint" style={{ marginTop: 10 }}>
-              Tip: unlocked badges are full opacity; locked badges are faded.
-            </Text>
-          </Card>
+              <Text appearance="hint" style={{ marginTop: 10 }}>
+                Tip: unlocked badges are full opacity; locked badges are faded.
+              </Text>
+            </CardShell>
+          </View>
         </ScrollView>
       </Layout>
     </Screen>
