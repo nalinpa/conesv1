@@ -32,6 +32,12 @@ import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 
+import { ConeHero } from "@/components/cone/detail/ConeHero";
+import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard";
+import { StatusCard } from "@/components/cone/detail/StatusCard";
+import { ActionsCard } from "@/components/cone/detail/ActionsCard";
+import { ReviewModal } from "@/components/cone/detail/ReviewModal";
+
 type PublicReviewDoc = {
   coneId: string;
   coneName: string;
@@ -357,287 +363,65 @@ export default function ConeDetailRoute() {
   // One “top” error string for UI
   const topErr = err || completionErr || locErr || "";
 
-  return (
-    <Screen padded={false}>
-      <Stack.Screen options={{ title: headerTitle }} />
+    return (
+      <Screen padded={false}>
+        <Stack.Screen options={{ title: headerTitle }} />
 
-      <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* HERO */}
-        <View style={{ gap: 10 }}>
-          <Text category="h4" style={{ fontWeight: "900" }}>
-            {cone.name}
-          </Text>
-
-          <Text appearance="hint">
-            {cone.description?.trim() ? cone.description.trim() : "No description yet."}
-          </Text>
-
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            <Pill>Radius {cone.radiusMeters}m</Pill>
-            {cone.slug ? <Pill>{cone.slug}</Pill> : null}
-            <Pill status={completed ? "success" : "danger"}>
-              {completed ? "Completed" : "Not completed"}
-            </Pill>
-          </View>
-        </View>
-
-        <View style={{ height: 14 }} />
-
-        {/* REVIEWS SUMMARY */}
-        <CardShell>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-            <Text category="h6" style={{ fontWeight: "900" }}>
-              Reviews
-            </Text>
-
-            {ratingCount > 0 ? (
-              <Button size="small" appearance="outline" onPress={() => goConeReviews(cone.id, cone.name)}>
-                View all
-              </Button>
-            ) : (
-              <View />
-            )}
-          </View>
-
-          <View style={{ height: 10 }} />
-
-          {ratingCount === 0 ? (
-            <Text appearance="hint">No reviews yet.</Text>
-          ) : (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <Pill status="info">⭐ {avgRating?.toFixed(1)} / 5</Pill>
-              <Text appearance="hint">
-                ({ratingCount} review{ratingCount === 1 ? "" : "s"})
-              </Text>
-            </View>
-          )}
-
-          <View style={{ height: 10 }} />
-          <Text appearance="hint" style={{ fontSize: 12 }}>
-            Reviews are public. You can leave one review per cone after completing it.
-          </Text>
-        </CardShell>
-
-        <View style={{ height: 14 }} />
-
-        {/* STATUS */}
-        <CardShell>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            Status
-          </Text>
-
-          <View style={{ height: 12 }} />
-
-          {!loc ? (
-            <LoadingState
-              fullScreen={false}
-              size="small"
-              label={locStatus === "denied" ? "Location permission denied" : "Getting your GPS…"}
-              style={{ paddingVertical: 6 }}
-            />
-          ) : (
-            <View style={{ gap: 10 }}>
-              {gate.checkpointLabel ? (
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <Text appearance="hint">Checkpoint</Text>
-                  <Text style={{ fontWeight: "800" }}>{gate.checkpointLabel}</Text>
-                </View>
-              ) : null}
-
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text appearance="hint">Distance</Text>
-                <Text style={{ fontWeight: "800" }}>{formatMeters(gate.distanceMeters)}</Text>
-              </View>
-
-              <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                <Text appearance="hint">Accuracy</Text>
-                <Text style={{ fontWeight: "800" }}>
-                  {gate.accuracyMeters == null ? "—" : `${Math.round(gate.accuracyMeters)} m`}
-                </Text>
-              </View>
-
-              <Divider />
-
-              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                <Text appearance="hint">Range check</Text>
-                <Pill status={gate.inRange ? "success" : "danger"}>
-                  {gate.inRange ? "✅ In range" : "❌ Not in range"}
-                </Pill>
-              </View>
-
-              <Button appearance="outline" onPress={() => void refreshLocation()}>
-                Refresh GPS
-              </Button>
-            </View>
-          )}
-
-          {topErr ? (
-            <View style={{ marginTop: 12 }}>
-              <Pill status="danger">{topErr}</Pill>
-            </View>
-          ) : null}
-        </CardShell>
-
-        <View style={{ height: 14 }} />
-
-        {/* ACTIONS */}
-        {!completed ? (
-          <Button
-            size="giant"
-            onPress={() => void completeCone()}
-            disabled={saving || completionLoading || !loc}
-            style={{ borderRadius: 14 }}
-          >
-            {saving ? "Saving…" : completionLoading ? "Loading…" : "Complete cone"}
-          </Button>
-        ) : (
-          <CardShell>
-            <View style={{ gap: 14 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                <Text category="h6" style={{ fontWeight: "900" }}>
-                  Completed
-                </Text>
-                <Pill status="success">✅</Pill>
-              </View>
-
-              {/* Review */}
-              <View style={{ gap: 8 }}>
-                <Text style={{ fontWeight: "800" }}>Your review</Text>
-
-                {!hasReview ? (
-                  <View style={{ gap: 10 }}>
-                    <Text appearance="hint">Leave a quick rating (once only) after you’ve done the cone.</Text>
-                    <Button appearance="outline" onPress={openReview}>
-                      Leave a review
-                    </Button>
-                  </View>
-                ) : (
-                  <View style={{ gap: 8 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <Text style={{ fontWeight: "900" }}>
-                        {stars}{" "}
-                        <Text appearance="hint" style={{ fontWeight: "700" }}>
-                          ({myReviewRating}/5)
-                        </Text>
-                      </Text>
-                    </View>
-
-                    <Text appearance="hint">{myReviewText?.trim() ? myReviewText.trim() : "No comment."}</Text>
-                  </View>
-                )}
-              </View>
-
-              {/* Share bonus */}
-              <View style={{ gap: 8 }}>
-                <Text appearance="hint">Optional: share a pic on socials for bonus credit.</Text>
-
-                <Button
-                  appearance={shareBonus ? "filled" : "outline"}
-                  status={shareBonus ? "success" : "basic"}
-                  onPress={() => void doShareBonus()}
-                  disabled={shareBonus}
-                >
-                  {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
-                </Button>
-              </View>
-            </View>
-          </CardShell>
-        )}
-      </ScrollView>
-
-      {/* REVIEW MODAL */}
-      <Modal visible={reviewOpen} transparent animationType="fade" onRequestClose={() => setReviewOpen(false)}>
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
-            justifyContent: "center",
-            padding: 18,
-          }}
+        <ScrollView
+          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+          showsVerticalScrollIndicator={false}
         >
-          <Layout style={{ borderRadius: 18, padding: 16 }}>
-            <Text category="h6" style={{ fontWeight: "900" }}>
-              Leave a review
-            </Text>
+          {/* HERO */}
+          <ConeHero cone={cone} completed={completed} />
 
-            <View style={{ height: 8 }} />
-            <Text appearance="hint">One-time only. Choose a rating and (optionally) add a short note.</Text>
+          <View style={{ height: 14 }} />
 
-            <View style={{ height: 14 }} />
+          {/* REVIEWS SUMMARY */}
+          <ReviewsSummaryCard
+            ratingCount={ratingCount}
+            avgRating={avgRating}
+            onViewAll={() => goConeReviews(cone.id, cone.name)}
+          />
 
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {[1, 2, 3, 4, 5].map((n) => {
-                const selected = draftRating === n;
-                return (
-                  <Pressable
-                    key={n}
-                    onPress={() => setDraftRating(n)}
-                    style={{
-                      paddingHorizontal: 12,
-                      paddingVertical: 10,
-                      borderRadius: 999,
-                      borderWidth: 1,
-                      borderColor: selected ? "rgba(95,179,162,0.55)" : "rgba(100,116,139,0.25)",
-                      backgroundColor: selected ? "rgba(95,179,162,0.16)" : "transparent",
-                    }}
-                  >
-                    <Text style={{ fontWeight: "900" }}>{"⭐".repeat(n)}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+          <View style={{ height: 14 }} />
 
-            <View style={{ height: 14 }} />
+          {/* STATUS */}
+          <StatusCard
+            hasLoc={!!loc}
+            locStatus={locStatus}
+            locErr={locErr || null}
+            topErr={topErr}
+            gate={gate as any}
+            onRefreshGPS={() => void refreshLocation()}
+          />
 
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: "rgba(100,116,139,0.25)",
-                borderRadius: 14,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-              }}
-            >
-              <TextInput
-                value={draftText}
-                onChangeText={setDraftText}
-                placeholder="Optional note (e.g. great views, muddy track)…"
-                placeholderTextColor="rgba(100,116,139,0.9)"
-                multiline
-                style={{ minHeight: 84, color: "#0f172a" }}
-                maxLength={280}
-              />
-              <Text appearance="hint" style={{ fontSize: 12 }}>
-                {draftText.length} / 280
-              </Text>
-            </View>
+          <View style={{ height: 14 }} />
 
-            <View style={{ height: 14 }} />
+          {/* ACTIONS */}
+          <ActionsCard
+            completed={completed}
+            saving={saving}
+            hasLoc={!!loc}
+            onComplete={() => void completeCone()}
+            hasReview={hasReview}
+            myReviewRating={myReviewRating}
+            myReviewText={myReviewText}
+            onOpenReview={openReview}
+            shareBonus={shareBonus}
+            onShareBonus={() => void doShareBonus()}
+          />
+        </ScrollView>
 
-            <View style={{ flexDirection: "row", gap: 10 }}>
-              <Button
-                appearance="outline"
-                style={{ flex: 1 }}
-                disabled={reviewSaving}
-                onPress={() => setReviewOpen(false)}
-              >
-                Cancel
-              </Button>
-
-              <Button
-                style={{ flex: 1 }}
-                disabled={reviewSaving || draftRating == null}
-                onPress={() => void saveReview()}
-              >
-                {reviewSaving ? "Saving…" : "Save review"}
-              </Button>
-            </View>
-          </Layout>
-        </View>
-      </Modal>
-    </Screen>
-  );
+        <ReviewModal
+          visible={reviewOpen}
+          saving={reviewSaving}
+          draftRating={draftRating}
+          draftText={draftText}
+          onChangeRating={setDraftRating}
+          onChangeText={setDraftText}
+          onClose={() => setReviewOpen(false)}
+          onSave={() => void saveReview()}
+        />
+      </Screen>
+    );
 }
