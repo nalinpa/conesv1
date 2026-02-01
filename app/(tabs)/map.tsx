@@ -3,9 +3,7 @@ import { View } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 import * as Location from "expo-location";
 
-import { collection, getDocs, onSnapshot, query, where } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import { COL } from "@/lib/constants/firestore";
+import { auth } from "@/lib/firebase";
 import { formatDistanceMeters } from "@/lib/formatters";
 import { goCone } from "@/lib/routes";
 
@@ -14,8 +12,6 @@ import { nearestCheckpoint } from "@/lib/checkpoints";
 import type { Cone } from "@/lib/models";
 import { coneService } from "@/lib/services/coneService";
 import { completionService } from "@/lib/services/completionService";
-import { coneFromDoc } from "@/lib/mappers/coneFromDoc";
-import { completionFromDoc } from "@/lib/mappers/completionFromDoc";
 
 import { Text } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";

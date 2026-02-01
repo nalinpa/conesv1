@@ -2,16 +2,12 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { View, FlatList } from "react-native";
 import * as Location from "expo-location";
 
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { db } from "../../../lib/firebase";
-import { COL } from "@/lib/constants/firestore";
 import { formatDistanceMeters } from "@/lib/formatters";
 import { coneService } from "@/lib/services/coneService";
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import type { Cone } from "@/lib/models";
 import { goCone } from "@/lib/routes";
-import { coneFromDoc } from "@/lib/mappers/coneFromDoc";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";

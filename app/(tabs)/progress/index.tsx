@@ -74,7 +74,7 @@ export default function ProgressScreen() {
             setShareBonusCount(state.shareBonusCount);
             setCompletedAtByConeId(state.completedAtByConeId);
           },
-          (e) => {
+          (e: any) => {
             console.error(e);
             if (!mounted) return;
             setErr(e?.message ?? "Failed to load completions");

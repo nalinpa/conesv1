@@ -74,20 +74,32 @@ function KittenTabBar({
     >
       <BottomNavigationTab
         title="Cones"
-        icon={({ style }) => (
-          <Ionicon name="triangle-outline" color={style?.tintColor} size={22} />
+        icon={(props) => (
+          <Ionicon
+            name="triangle-outline"
+            color={(props as any)?.style?.tintColor ?? (props as any)?.tintColor}
+            size={22}
+          />
         )}
       />
       <BottomNavigationTab
         title="Progress"
-        icon={({ style }) => (
-          <Ionicon name="stats-chart-outline" color={style?.tintColor} size={22} />
+        icon={(props) => (
+          <Ionicon
+            name="stats-chart-outline"
+            color={(props as any)?.style?.tintColor ?? (props as any)?.tintColor}
+            size={22}
+          />
         )}
       />
       <BottomNavigationTab
         title="Map"
-        icon={({ style }) => (
-          <Ionicon name="map-outline" color={style?.tintColor} size={22} />
+        icon={(props) => (
+          <Ionicon
+            name="map-outline"
+            color={(props as any)?.style?.tintColor ?? (props as any)?.tintColor}
+            size={22}
+          />
         )}
       />
     </BottomNavigation>
