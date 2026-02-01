@@ -8,7 +8,7 @@ import { COL } from "@/lib/constants/firestore";
 
 import type { Cone } from "@/lib/models";
 import { nearestCheckpoint } from "@/lib/checkpoints";
-import { getBadgeState } from "@/lib/badges";
+import { useBadgesData } from "@/lib/hooks/useBadgesData";
 
 import { coneService } from "@/lib/services/coneService";
 import { completionService } from "@/lib/services/completionService";
@@ -42,6 +42,8 @@ export default function ProgressScreen() {
 
   const [loc, setLoc] = useState<Location.LocationObject | null>(null);
   const [locErr, setLocErr] = useState<string>("");
+  const { badgeState } = useBadgesData();
+
 
   // Load cones once + subscribe to user completions/reviews (live)
   useEffect(() => {
@@ -168,20 +170,6 @@ export default function ProgressScreen() {
       .filter((c) => completedIds.has(c.id) && !reviewedConeIds.has(c.id))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [cones, completedIds, reviewedConeIds]);
-
-  const badgeState = useMemo(() => {
-    return getBadgeState({
-      cones: cones.map((c) => ({
-        id: c.id,
-        type: c.type,
-        region: c.region,
-        active: c.active,
-      })),
-      completedConeIds: completedIds,
-      shareBonusCount,
-      completedAtByConeId,
-    });
-  }, [cones, completedIds, shareBonusCount, completedAtByConeId]);
 
   const allDone = totals.total > 0 && totals.completed >= totals.total;
 

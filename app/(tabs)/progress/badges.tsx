@@ -1,9 +1,6 @@
-import { useMemo } from "react";
 import { View, ScrollView } from "react-native";
 import { Layout, Text, Button } from "@ui-kitten/components";
 
-import { BADGES, getBadgeState } from "@/lib/badges";
-import type { ConeMeta } from "@/lib/badges";
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { goProgressHome, goBadges } from "@/lib/routes";
 
@@ -14,43 +11,7 @@ import { ErrorCard } from "@/components/ui/ErrorCard";
 import { BadgeTile } from "@/components/badges/BadgeTile";
 
 export default function BadgesScreen() {
-  const {
-    loading,
-    err,  
-    conesMeta,
-    completedConeIds,
-    shareBonusCount,
-    completedAtByConeId,
-  } = useBadgesData();
-
-  const badgeState = useMemo(() => {
-    return getBadgeState({
-      cones: conesMeta as ConeMeta[],
-      completedConeIds,
-      shareBonusCount,
-      completedAtByConeId,
-    });
-  }, [conesMeta, completedConeIds, shareBonusCount, completedAtByConeId]);
-
-  const totals = useMemo(() => {
-    const unlocked = badgeState.earnedIds.size;
-    const total = BADGES.length;
-    return { unlocked, total };
-  }, [badgeState.earnedIds]);
-
-  const items = useMemo(() => {
-    return BADGES.map((b) => {
-      const progress = badgeState.progressById[b.id];
-      const unlocked = badgeState.earnedIds.has(b.id);
-      return {
-        id: b.id,
-        name: b.name,
-        unlockText: b.unlockText,
-        unlocked,
-        progressLabel: unlocked ? null : progress?.progressLabel ?? null,
-      };
-    });
-  }, [badgeState.earnedIds, badgeState.progressById]);
+  const { loading, err, badgeState, badgeTotals, badgeItems } = useBadgesData();
 
   if (loading) {
     return (
@@ -85,7 +46,7 @@ export default function BadgesScreen() {
             <View>
               <Text category="h1">Badges</Text>
               <Text appearance="hint" style={{ marginTop: 4 }}>
-                {totals.unlocked} / {totals.total} unlocked
+                {badgeTotals.unlocked} / {badgeTotals.total} unlocked
               </Text>
             </View>
 
@@ -137,7 +98,7 @@ export default function BadgesScreen() {
               </Text>
 
               <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                {items.map((b) => (
+                {badgeItems.map((b) => (
                   <BadgeTile
                     key={b.id}
                     name={b.name}
