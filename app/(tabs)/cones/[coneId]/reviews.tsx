@@ -155,55 +155,47 @@ export default function ConeReviewsPage() {
   };
 
   return (
-    <Screen>
+    <Screen padded={false}>
       <Stack.Screen options={{ title: `${title} Reviews` }} />
 
       <Layout style={{ flex: 1 }}>
-        <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-            <View>
-              <Text category="h4" style={{ fontWeight: "900" }}>
-                Reviews
-              </Text>
-              <Text appearance="hint" style={{ marginTop: 4 }}>
-                {summary.count === 0
-                  ? "No reviews yet."
-                  : `★ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${
-                      summary.count === 1 ? "" : "s"
-                    })`}
-              </Text>
-            </View>
-
-            <Button size="small" appearance="outline" onPress={goBack}>
-              Back
-            </Button>
-          </View>
-
-          {err ? (
-            <View style={{ marginTop: 12 }}>
-                <ErrorCard
-                title="Couldn’t load reviews"
-                message={err}
-                action={{ label: "Back", onPress: goBack }}
-                />
-            </View>
-            ) : null}
-        </View>
-
         {loading ? (
-            <LoadingState label="Loading reviews…" />
-            ) : (
+          <LoadingState label="Loading reviews…" />
+        ) : err ? (
+          <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
+            <ErrorCard title="Couldn’t load reviews" message={err} action={{ label: "Back", onPress: goBack }} />
+          </View>
+        ) : (
           <List
             data={reviews}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 24 }}
             renderItem={renderItem}
-            ListEmptyComponent={
-              <View style={{ marginHorizontal: 16 }}>
-                <CardShell>
-                  <Text appearance="hint">No reviews yet — be the first 😈</Text>
-                </CardShell>
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+            ListHeaderComponent={
+              <View style={{ marginBottom: 14 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <View>
+                    <Text category="h4" style={{ fontWeight: "900" }}>
+                      Reviews
+                    </Text>
+                    <Text appearance="hint" style={{ marginTop: 4 }}>
+                      {summary.count === 0
+                        ? "No reviews yet."
+                        : `★ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${summary.count === 1 ? "" : "s"})`}
+                    </Text>
+                  </View>
+
+                  <Button size="small" appearance="outline" onPress={goBack}>
+                    Back
+                  </Button>
+                </View>
               </View>
+            }
+            ListEmptyComponent={
+              <CardShell>
+                <Text appearance="hint">No reviews yet — be the first 😈</Text>
+              </CardShell>
             }
           />
         )}

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View, ScrollView, Modal, TextInput, Pressable, Share } from "react-native";
 import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 
@@ -17,7 +17,7 @@ import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 
 import { Screen } from "@/components/screen";
-import type { ConeCompletionWrite, Cone } from "@/lib/models";
+import type { ConeCompletionWrite } from "@/lib/models";
 import { formatMeters } from "@/lib/formatters";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 
@@ -28,7 +28,6 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
-import { useCones } from "@/lib/hooks/useCones";
 import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
@@ -70,7 +69,6 @@ export default function ConeDetailRoute() {
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: 50 });
 
   const [err, setErr] = useState<string>("");
-
   const [saving, setSaving] = useState(false);
 
   // My review (read-only after submit) — sourced from coneReviews
@@ -163,14 +161,12 @@ export default function ConeDetailRoute() {
       return;
     }
 
-    // No permission? try request flow
     if (locStatus === "denied") {
       setErr("Location permission denied. Please enable it in Settings.");
       return;
     }
 
     if (!loc) {
-      // kick the request flow (permission + balanced fetch)
       try {
         await requestLocation?.();
       } catch {}
@@ -180,12 +176,18 @@ export default function ConeDetailRoute() {
 
     // Gate checks
     if (!gate.inRange) {
-      if (gate.distanceMeters != null && gate.checkpointRadius != null && gate.distanceMeters > gate.checkpointRadius) {
+      if (
+        gate.distanceMeters != null &&
+        gate.checkpointRadius != null &&
+        gate.distanceMeters > gate.checkpointRadius
+      ) {
         setErr(`Not in range yet. You are ~${Math.round(gate.distanceMeters)}m away.`);
         return;
       }
       if (gate.accuracyMeters != null && gate.accuracyMeters > 50) {
-        setErr(`GPS accuracy too low (${Math.round(gate.accuracyMeters)}m). Try refresh in a clearer spot.`);
+        setErr(
+          `GPS accuracy too low (${Math.round(gate.accuracyMeters)}m). Try refresh in a clearer spot.`
+        );
         return;
       }
       setErr("Not in range yet.");
@@ -253,7 +255,7 @@ export default function ConeDetailRoute() {
         sharedPlatform: "unknown",
       });
 
-      // update immediately for UI snappiness; snapshot will confirm
+      // UI snappiness; snapshot will confirm
       setShareBonusLocal(true);
     } catch {
       // cancel is normal
@@ -352,8 +354,8 @@ export default function ConeDetailRoute() {
   const hasReview = myReviewRating != null;
   const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
 
-  // unify errors
-  const topErr = err || completionErr || "";
+  // One “top” error string for UI
+  const topErr = err || completionErr || locErr || "";
 
   return (
     <Screen padded={false}>
@@ -459,13 +461,7 @@ export default function ConeDetailRoute() {
 
               <Divider />
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-              >
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text appearance="hint">Range check</Text>
                 <Pill status={gate.inRange ? "success" : "danger"}>
                   {gate.inRange ? "✅ In range" : "❌ Not in range"}
@@ -478,9 +474,9 @@ export default function ConeDetailRoute() {
             </View>
           )}
 
-          {(locErr || topErr) ? (
+          {topErr ? (
             <View style={{ marginTop: 12 }}>
-              <Pill status="danger">{topErr || locErr}</Pill>
+              <Pill status="danger">{topErr}</Pill>
             </View>
           ) : null}
         </CardShell>
@@ -492,21 +488,15 @@ export default function ConeDetailRoute() {
           <Button
             size="giant"
             onPress={() => void completeCone()}
-            disabled={saving || !loc}
+            disabled={saving || completionLoading || !loc}
             style={{ borderRadius: 14 }}
           >
-            {saving ? "Saving…" : "Complete cone"}
+            {saving ? "Saving…" : completionLoading ? "Loading…" : "Complete cone"}
           </Button>
         ) : (
           <CardShell>
             <View style={{ gap: 14 }}>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Text category="h6" style={{ fontWeight: "900" }}>
                   Completed
                 </Text>
@@ -519,9 +509,7 @@ export default function ConeDetailRoute() {
 
                 {!hasReview ? (
                   <View style={{ gap: 10 }}>
-                    <Text appearance="hint">
-                      Leave a quick rating (once only) after you’ve done the cone.
-                    </Text>
+                    <Text appearance="hint">Leave a quick rating (once only) after you’ve done the cone.</Text>
                     <Button appearance="outline" onPress={openReview}>
                       Leave a review
                     </Button>
@@ -537,9 +525,7 @@ export default function ConeDetailRoute() {
                       </Text>
                     </View>
 
-                    <Text appearance="hint">
-                      {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
-                    </Text>
+                    <Text appearance="hint">{myReviewText?.trim() ? myReviewText.trim() : "No comment."}</Text>
                   </View>
                 )}
               </View>
@@ -563,12 +549,7 @@ export default function ConeDetailRoute() {
       </ScrollView>
 
       {/* REVIEW MODAL */}
-      <Modal
-        visible={reviewOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setReviewOpen(false)}
-      >
+      <Modal visible={reviewOpen} transparent animationType="fade" onRequestClose={() => setReviewOpen(false)}>
         <View
           style={{
             flex: 1,
@@ -583,9 +564,7 @@ export default function ConeDetailRoute() {
             </Text>
 
             <View style={{ height: 8 }} />
-            <Text appearance="hint">
-              One-time only. Choose a rating and (optionally) add a short note.
-            </Text>
+            <Text appearance="hint">One-time only. Choose a rating and (optionally) add a short note.</Text>
 
             <View style={{ height: 14 }} />
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
 
@@ -7,7 +7,6 @@ import { formatDistanceMeters } from "@/lib/formatters";
 import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
-import type { Cone } from "@/lib/models";
 import { completionService } from "@/lib/services/completionService";
 
 import { Text } from "@ui-kitten/components";
@@ -26,6 +25,10 @@ export default function MapScreen() {
 
   const { loc, err: locErr } = useUserLocation();
 
+  // ✅ Map recentering fix (Tier 0.1)
+  const mapRef = useRef<MapView | null>(null);
+  const hasCenteredRef = useRef(false);
+
   // Live completions listener
   useEffect(() => {
     const user = auth.currentUser;
@@ -39,6 +42,25 @@ export default function MapScreen() {
 
     return () => unsub();
   }, []);
+
+  // ✅ Recenter once when GPS becomes available (initialRegion is only read on mount)
+  useEffect(() => {
+    if (!loc) return;
+    if (!mapRef.current) return;
+    if (hasCenteredRef.current) return;
+
+    hasCenteredRef.current = true;
+
+    mapRef.current.animateToRegion(
+      {
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+        latitudeDelta: 0.08,
+        longitudeDelta: 0.08,
+      },
+      600
+    );
+  }, [loc]);
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
@@ -62,6 +84,7 @@ export default function MapScreen() {
     <Screen padded={false}>
       <View style={{ flex: 1 }}>
         <MapView
+          ref={mapRef}
           style={{ flex: 1 }}
           showsUserLocation
           initialRegion={{

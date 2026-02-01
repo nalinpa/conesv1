@@ -15,16 +15,18 @@ export default function BadgesScreen() {
 
   if (loading) {
     return (
-      <Layout style={{ flex: 1 }}>
-        <LoadingState label="Loading badges…" />
-      </Layout>
+      <Screen padded={false}>
+        <Layout style={{ flex: 1 }}>
+          <LoadingState label="Loading badges…" />
+        </Layout>
+      </Screen>
     );
   }
 
   if (err) {
     return (
-      <Screen>
-        <Layout style={{ flex: 1, padding: 16, justifyContent: "center" }}>
+      <Screen padded={false}>
+        <Layout style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
           <ErrorCard
             title="Badges"
             message={err}
@@ -36,10 +38,14 @@ export default function BadgesScreen() {
   }
 
   return (
-    <Screen>
+    <Screen padded={false}>
       <Layout style={{ flex: 1 }}>
         <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 24,
+          }}
           showsVerticalScrollIndicator={false}
         >
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>

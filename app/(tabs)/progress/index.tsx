@@ -5,10 +5,11 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 
-import type { Cone } from "@/lib/models";
-import { useBadgesData } from "@/lib/hooks/useBadgesData";
-
 import { completionService } from "@/lib/services/completionService";
+import { useBadgesData } from "@/lib/hooks/useBadgesData";
+import { useUserLocation } from "@/lib/hooks/useUserLocation";
+import { useCones } from "@/lib/hooks/useCones";
+import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
 
@@ -24,10 +25,6 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
 import { goBadges, goCone, goProgressHome } from "@/lib/routes";
-
-import { useUserLocation } from "@/lib/hooks/useUserLocation";
-import { useCones } from "@/lib/hooks/useCones";
-import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 
 export default function ProgressScreen() {
   const { cones, loading: conesLoading, err: conesErr } = useCones();
@@ -129,7 +126,7 @@ export default function ProgressScreen() {
 
   if (loading) {
     return (
-      <Screen>
+      <Screen padded={false}>
         <Layout style={{ flex: 1 }}>
           <LoadingState label="Loading progress…" />
         </Layout>
@@ -139,18 +136,30 @@ export default function ProgressScreen() {
 
   if (fatalErr) {
     return (
-      <Screen>
-        <Layout style={{ flex: 1, justifyContent: "center" }}>
-          <ErrorCard title="Progress" message={fatalErr} action={{ label: "Retry", onPress: goProgressHome }} />
+      <Screen padded={false}>
+        <Layout style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
+          <ErrorCard
+            title="Progress"
+            message={fatalErr}
+            action={{ label: "Retry", onPress: goProgressHome, appearance: "filled" }}
+          />
         </Layout>
       </Screen>
     );
   }
 
   return (
-    <Screen>
+    <Screen padded={false}>
       <Layout style={{ flex: 1 }}>
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 12 }} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 24,
+            gap: 12,
+          }}
+        >
           {/* Header */}
           <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
