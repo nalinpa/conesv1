@@ -6,7 +6,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../../../lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { formatDistanceMeters } from "@/lib/formatters";
-
+import { coneService } from "@/lib/services/coneService";
 import { Screen } from "@/components/screen";
 import { nearestCheckpoint } from "../../../lib/checkpoints";
 import type { Cone } from "@/lib/models";
@@ -39,13 +39,7 @@ export default function ConeListPage() {
     setErr("");
 
     try {
-      const qy = query(collection(db, COL.cones), where("active", "==", true));
-      const snap = await getDocs(qy);
-
-      const list: Cone[] = snap.docs.map(coneFromDoc);
-
-      // stable baseline order (when no GPS)
-      list.sort((a, b) => a.name.localeCompare(b.name));
+      const list = await coneService.listActiveCones();
       setCones(list);
     } catch (e: any) {
       setErr(e?.message ?? "Failed to load cones");
