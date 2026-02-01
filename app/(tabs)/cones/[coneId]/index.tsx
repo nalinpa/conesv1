@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { View, ScrollView, Modal, TextInput, Pressable, Share } from "react-native";
 import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
-import * as Location from 'expo-location';
 
 import {
   collection,
   doc,
-  getDoc,
   onSnapshot,
   query,
   serverTimestamp,
@@ -17,18 +15,23 @@ import {
 
 import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
+
 import { Screen } from "@/components/screen";
-import { nearestCheckpoint } from "@/lib/checkpoints";
-import type { Cone, ConeCompletionWrite } from "@/lib/models";
+import type { ConeCompletionWrite, Cone } from "@/lib/models";
 import { formatMeters } from "@/lib/formatters";
 import { goConesHome, goConeReviews } from "@/lib/routes";
-import { coneFromDoc } from "@/lib/mappers/coneFromDoc";
 
-import { Layout, Text, Button, Divider } from "@ui-kitten/components";
+import { Text, Button, Divider, Layout } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
+
+import { useUserLocation } from "@/lib/hooks/useUserLocation";
+import { useCones } from "@/lib/hooks/useCones";
+import { useCone } from "@/lib/hooks/useCone";
+import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
+import { useGPSGate } from "@/lib/hooks/useGPSGate";
 
 type PublicReviewDoc = {
   coneId: string;
@@ -42,16 +45,33 @@ type PublicReviewDoc = {
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
 
-  const [cone, setCone] = useState<Cone | null>(null);
-  const [coneLoading, setConeLoading] = useState(true);
-  const [coneErr, setConeErr] = useState<string>("");
+  // 4A
+  const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
 
-  const [loc, setLoc] = useState<Location.LocationObject | null>(null);
+  // Shared location flow
+  const {
+    loc,
+    status: locStatus,
+    err: locErr,
+    refresh: refreshLocation,
+    request: requestLocation,
+  } = useUserLocation();
+
+  // 4B
+  const {
+    completedId,
+    shareBonus,
+    loading: completionLoading,
+    err: completionErr,
+    setShareBonusLocal,
+  } = useConeCompletion(coneId);
+
+  // 4C
+  const gate = useGPSGate(cone, loc, { maxAccuracyMeters: 50 });
+
   const [err, setErr] = useState<string>("");
 
   const [saving, setSaving] = useState(false);
-  const [completedId, setCompletedId] = useState<string | null>(null);
-  const [shareBonus, setShareBonus] = useState(false);
 
   // My review (read-only after submit) — sourced from coneReviews
   const [myReviewRating, setMyReviewRating] = useState<number | null>(null);
@@ -67,89 +87,9 @@ export default function ConeDetailRoute() {
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [ratingCount, setRatingCount] = useState<number>(0);
 
-  // -----------------------------
-  // Load cone
-  // -----------------------------
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      setConeLoading(true);
-      setConeErr("");
-      setCone(null);
-
-      try {
-        if (!coneId) throw new Error("Missing coneId.");
-
-        const ref = doc(db, COL.cones, String(coneId));
-        const snap = await getDoc(ref);
-        if (!snap.exists()) throw new Error("Cone not found.");
-
-        const c = coneFromDoc(snap);
-
-        if (mounted) setCone(c);
-      } catch (e: any) {
-        if (mounted) setConeErr(e?.message ?? "Failed to load cone.");
-      } finally {
-        if (mounted) setConeLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [coneId]);
-
-  // -----------------------------
-  // Location (one-time per cone load)
-  // -----------------------------
-  useEffect(() => {
-    if (!cone) return;
-
-    (async () => {
-      setErr("");
-      setLoc(null);
-
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setErr("Location permission denied.");
-        return;
-      }
-
-      const cur = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-      setLoc(cur);
-    })();
-  }, [cone?.id]);
-
-  // -----------------------------
-  // Load completion doc (deterministic)
-  // -----------------------------
-  useEffect(() => {
-    if (!cone) return;
-
-    (async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-
-      const completionId = `${user.uid}_${cone.id}`;
-      const snap = await getDoc(doc(db, COL.coneCompletions, completionId));
-
-      if (snap.exists()) {
-        const data = snap.data() as any;
-        setCompletedId(snap.id);
-        setShareBonus(!!data.shareBonus);
-      } else {
-        setCompletedId(null);
-        setShareBonus(false);
-      }
-    })();
-  }, [cone?.id]);
-
-  // -----------------------------
-  // ✅ My review + public aggregate from coneReviews (live)
-  // -----------------------------
+  // ---------------------------------
+  // Reviews (live): my review + aggregate
+  // ---------------------------------
   useEffect(() => {
     if (!cone) return;
 
@@ -198,49 +138,9 @@ export default function ConeDetailRoute() {
     return () => unsub();
   }, [cone?.id]);
 
-  // -----------------------------
-  // Derived status (nearest checkpoint)
-  // -----------------------------
-  const stats = useMemo(() => {
-    if (!loc || !cone) {
-      return {
-        distance: null as number | null,
-        accuracy: null as number | null,
-        inRange: false,
-        checkpointLabel: null as string | null,
-        checkpointRadius: null as number | null,
-      };
-    }
-
-    const { latitude, longitude, accuracy } = loc.coords;
-    const nearest = nearestCheckpoint(cone, latitude, longitude);
-
-    const acc = accuracy ?? null;
-    const inRange =
-      nearest.distanceMeters <= nearest.checkpoint.radiusMeters && (acc == null || acc <= 50);
-
-    return {
-      distance: nearest.distanceMeters,
-      accuracy: acc,
-      inRange,
-      checkpointLabel: nearest.checkpoint.label ?? null,
-      checkpointRadius: nearest.checkpoint.radiusMeters ?? null,
-    };
-  }, [loc, cone]);
-
-  const refreshLocation = useCallback(async () => {
-    setErr("");
-    try {
-      const cur = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-      setLoc(cur);
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to refresh location.");
-    }
-  }, []);
-
-  // ✅ Auto-refresh GPS on focus (but skip if cone already completed)
+  // ---------------------------------
+  // Auto-refresh GPS on focus (skip if completed)
+  // ---------------------------------
   useFocusEffect(
     useCallback(() => {
       if (!completedId) void refreshLocation();
@@ -248,37 +148,49 @@ export default function ConeDetailRoute() {
     }, [completedId, refreshLocation])
   );
 
-  // -----------------------------
+  // ---------------------------------
   // Actions
-  // -----------------------------
+  // ---------------------------------
   async function completeCone() {
     if (!cone) return;
     if (completedId) return;
 
     setErr("");
+
     const user = auth.currentUser;
     if (!user) {
       setErr("Not signed in.");
       return;
     }
+
+    // No permission? try request flow
+    if (locStatus === "denied") {
+      setErr("Location permission denied. Please enable it in Settings.");
+      return;
+    }
+
     if (!loc) {
+      // kick the request flow (permission + balanced fetch)
+      try {
+        await requestLocation?.();
+      } catch {}
       setErr("Location not available yet. Try refresh.");
       return;
     }
 
-    const { latitude, longitude, accuracy } = loc.coords;
-    const nearest = nearestCheckpoint(cone, latitude, longitude);
-
-    if (nearest.distanceMeters > nearest.checkpoint.radiusMeters) {
-      setErr(`Not in range yet. You are ~${Math.round(nearest.distanceMeters)}m away.`);
+    // Gate checks
+    if (!gate.inRange) {
+      if (gate.distanceMeters != null && gate.checkpointRadius != null && gate.distanceMeters > gate.checkpointRadius) {
+        setErr(`Not in range yet. You are ~${Math.round(gate.distanceMeters)}m away.`);
+        return;
+      }
+      if (gate.accuracyMeters != null && gate.accuracyMeters > 50) {
+        setErr(`GPS accuracy too low (${Math.round(gate.accuracyMeters)}m). Try refresh in a clearer spot.`);
+        return;
+      }
+      setErr("Not in range yet.");
       return;
     }
-    if (accuracy != null && accuracy > 50) {
-      setErr(`GPS accuracy too low (${Math.round(accuracy)}m). Try refresh in a clearer spot.`);
-      return;
-    }
-
-    const cp = nearest.checkpoint;
 
     setSaving(true);
     try {
@@ -290,18 +202,19 @@ export default function ConeDetailRoute() {
         coneName: cone.name,
         userId: user.uid,
         completedAt: serverTimestamp(),
-        deviceLat: latitude,
-        deviceLng: longitude,
-        accuracyMeters: accuracy ?? null,
 
-        distanceMeters: nearest.distanceMeters,
+        deviceLat: loc.coords.latitude,
+        deviceLng: loc.coords.longitude,
+        accuracyMeters: loc.coords.accuracy ?? null,
 
-        checkpointId: cp?.id ?? null,
-        checkpointLabel: cp?.label ?? null,
-        checkpointLat: cp?.lat ?? null,
-        checkpointLng: cp?.lng ?? null,
-        checkpointRadiusMeters: cp?.radiusMeters ?? null,
-        checkpointDistanceMeters: nearest.distanceMeters,
+        distanceMeters: gate.distanceMeters ?? 0,
+
+        checkpointId: gate.checkpointId ?? null,
+        checkpointLabel: gate.checkpointLabel ?? null,
+        checkpointLat: gate.checkpointLat ?? null,
+        checkpointLng: gate.checkpointLng ?? null,
+        checkpointRadiusMeters: gate.checkpointRadius ?? null,
+        checkpointDistanceMeters: gate.distanceMeters ?? null,
 
         shareBonus: false,
         shareConfirmed: false,
@@ -310,9 +223,7 @@ export default function ConeDetailRoute() {
       };
 
       await setDoc(doc(db, COL.coneCompletions, completionId), payload);
-
-      setCompletedId(completionId);
-      setShareBonus(false);
+      // live snapshot will update completedId + shareBonus
     } catch (e: any) {
       console.error(e);
       setErr(e?.message ?? "Failed to save completion");
@@ -342,7 +253,8 @@ export default function ConeDetailRoute() {
         sharedPlatform: "unknown",
       });
 
-      setShareBonus(true);
+      // update immediately for UI snappiness; snapshot will confirm
+      setShareBonusLocal(true);
     } catch {
       // cancel is normal
     }
@@ -406,11 +318,11 @@ export default function ConeDetailRoute() {
     }
   }
 
+  // ---------------------------------
+  // Loading / error states
+  // ---------------------------------
   const headerTitle = cone?.name ?? "Cone";
 
-  // -----------------------------
-  // Loading / error states
-  // -----------------------------
   if (coneLoading) {
     return (
       <Screen>
@@ -424,7 +336,6 @@ export default function ConeDetailRoute() {
     return (
       <Screen>
         <Stack.Screen options={{ title: "Cone" }} />
-
         <ErrorCard
           title="Couldn’t load cone"
           message={coneErr || "Cone missing."}
@@ -434,12 +345,15 @@ export default function ConeDetailRoute() {
     );
   }
 
-  // -----------------------------
+  // ---------------------------------
   // Main UI
-  // -----------------------------
+  // ---------------------------------
   const completed = !!completedId;
   const hasReview = myReviewRating != null;
   const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
+
+  // unify errors
+  const topErr = err || completionErr || "";
 
   return (
     <Screen padded={false}>
@@ -478,11 +392,7 @@ export default function ConeDetailRoute() {
             </Text>
 
             {ratingCount > 0 ? (
-              <Button
-                size="small"
-                appearance="outline"
-                onPress={() => goConeReviews(cone.id, cone.name)}
-              >
+              <Button size="small" appearance="outline" onPress={() => goConeReviews(cone.id, cone.name)}>
                 View all
               </Button>
             ) : (
@@ -520,25 +430,30 @@ export default function ConeDetailRoute() {
           <View style={{ height: 12 }} />
 
           {!loc ? (
-            <LoadingState fullScreen={false} size="small" label="Getting your GPS…" style={{ paddingVertical: 6 }} />
+            <LoadingState
+              fullScreen={false}
+              size="small"
+              label={locStatus === "denied" ? "Location permission denied" : "Getting your GPS…"}
+              style={{ paddingVertical: 6 }}
+            />
           ) : (
             <View style={{ gap: 10 }}>
-              {stats.checkpointLabel ? (
+              {gate.checkpointLabel ? (
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                   <Text appearance="hint">Checkpoint</Text>
-                  <Text style={{ fontWeight: "800" }}>{stats.checkpointLabel}</Text>
+                  <Text style={{ fontWeight: "800" }}>{gate.checkpointLabel}</Text>
                 </View>
               ) : null}
 
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Text appearance="hint">Distance</Text>
-                <Text style={{ fontWeight: "800" }}>{formatMeters(stats.distance)}</Text>
+                <Text style={{ fontWeight: "800" }}>{formatMeters(gate.distanceMeters)}</Text>
               </View>
 
               <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                 <Text appearance="hint">Accuracy</Text>
                 <Text style={{ fontWeight: "800" }}>
-                  {stats.accuracy == null ? "—" : `${Math.round(stats.accuracy)} m`}
+                  {gate.accuracyMeters == null ? "—" : `${Math.round(gate.accuracyMeters)} m`}
                 </Text>
               </View>
 
@@ -552,8 +467,8 @@ export default function ConeDetailRoute() {
                 }}
               >
                 <Text appearance="hint">Range check</Text>
-                <Pill status={stats.inRange ? "success" : "danger"}>
-                  {stats.inRange ? "✅ In range" : "❌ Not in range"}
+                <Pill status={gate.inRange ? "success" : "danger"}>
+                  {gate.inRange ? "✅ In range" : "❌ Not in range"}
                 </Pill>
               </View>
 
@@ -563,9 +478,9 @@ export default function ConeDetailRoute() {
             </View>
           )}
 
-          {err ? (
+          {(locErr || topErr) ? (
             <View style={{ marginTop: 12 }}>
-              <Pill status="danger">{err}</Pill>
+              <Pill status="danger">{topErr || locErr}</Pill>
             </View>
           ) : null}
         </CardShell>
@@ -668,7 +583,9 @@ export default function ConeDetailRoute() {
             </Text>
 
             <View style={{ height: 8 }} />
-            <Text appearance="hint">One-time only. Choose a rating and (optionally) add a short note.</Text>
+            <Text appearance="hint">
+              One-time only. Choose a rating and (optionally) add a short note.
+            </Text>
 
             <View style={{ height: 14 }} />
 

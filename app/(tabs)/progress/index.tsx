@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, ScrollView } from "react-native";
-import * as Location from "expo-location";
 
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 
 import type { Cone } from "@/lib/models";
-import { nearestCheckpoint } from "@/lib/checkpoints";
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 
-import { coneService } from "@/lib/services/coneService";
 import { completionService } from "@/lib/services/completionService";
 
 import { Layout, Text, Button } from "@ui-kitten/components";
@@ -28,11 +25,12 @@ import { ErrorCard } from "@/components/ui/ErrorCard";
 
 import { goBadges, goCone, goProgressHome } from "@/lib/routes";
 
-export default function ProgressScreen() {
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string>("");
+import { useUserLocation } from "@/lib/hooks/useUserLocation";
+import { useCones } from "@/lib/hooks/useCones";
+import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 
-  const [cones, setCones] = useState<Cone[]>([]);
+export default function ProgressScreen() {
+  const { cones, loading: conesLoading, err: conesErr } = useCones();
 
   // live user state
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -40,12 +38,12 @@ export default function ProgressScreen() {
   const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
   const [reviewedConeIds, setReviewedConeIds] = useState<Set<string>>(new Set());
 
-  const [loc, setLoc] = useState<Location.LocationObject | null>(null);
-  const [locErr, setLocErr] = useState<string>("");
+  const { loc, err: locErr } = useUserLocation();
   const { badgeState } = useBadgesData();
 
+  const [err, setErr] = useState<string>("");
 
-  // Load cones once + subscribe to user completions/reviews (live)
+  // Subscribe to user completions/reviews (live)
   useEffect(() => {
     let mounted = true;
 
@@ -53,19 +51,13 @@ export default function ProgressScreen() {
     let unsubReviews: (() => void) | null = null;
 
     (async () => {
-      setLoading(true);
       setErr("");
 
       try {
         const user = auth.currentUser;
         if (!user) throw new Error("Not signed in.");
 
-        // 1) cones list (from service)
-        const conesList = await coneService.listActiveCones();
-        if (!mounted) return;
-        setCones(conesList);
-
-        // 2) user completions (live via service)
+        // user completions (live via service)
         unsubCompletions = completionService.watchMyCompletions(
           user.uid,
           (state) => {
@@ -81,7 +73,7 @@ export default function ProgressScreen() {
           }
         );
 
-        // 3) user reviews (live) — used only for “cones to review”
+        // user reviews (live) — used only for “cones to review”
         const revQ = query(collection(db, COL.coneReviews), where("userId", "==", user.uid));
         unsubReviews = onSnapshot(
           revQ,
@@ -101,9 +93,6 @@ export default function ProgressScreen() {
       } catch (e: any) {
         if (!mounted) return;
         setErr(e?.message ?? "Failed to load progress");
-      } finally {
-        if (!mounted) return;
-        setLoading(false);
       }
     })();
 
@@ -114,27 +103,6 @@ export default function ProgressScreen() {
     };
   }, []);
 
-  // Location (for nearest unclimbed)
-  useEffect(() => {
-    (async () => {
-      setLocErr("");
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setLocErr("Location permission denied.");
-          return;
-        }
-
-        const cur = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        setLoc(cur);
-      } catch (e: any) {
-        setLocErr(e?.message ?? "Could not get location.");
-      }
-    })();
-  }, []);
-
   const totals = useMemo(() => {
     const total = cones.length;
     const completed = cones.reduce((acc, c) => acc + (completedIds.has(c.id) ? 1 : 0), 0);
@@ -142,28 +110,7 @@ export default function ProgressScreen() {
     return { total, completed, percent };
   }, [cones, completedIds]);
 
-  const nearestUnclimbed = useMemo(() => {
-    const unclimbed = cones.filter((c) => !completedIds.has(c.id));
-    if (unclimbed.length === 0) return null;
-
-    if (!loc) return { cone: unclimbed[0], distance: null as number | null };
-
-    const { latitude, longitude } = loc.coords;
-
-    let best = unclimbed[0];
-    let bestDist = nearestCheckpoint(best, latitude, longitude).distanceMeters;
-
-    for (let i = 1; i < unclimbed.length; i++) {
-      const c = unclimbed[i];
-      const d = nearestCheckpoint(c, latitude, longitude).distanceMeters;
-      if (d < bestDist) {
-        best = c;
-        bestDist = d;
-      }
-    }
-
-    return { cone: best, distance: bestDist };
-  }, [cones, completedIds, loc]);
+  const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
   const conesToReview = useMemo(() => {
     return cones
@@ -177,6 +124,9 @@ export default function ProgressScreen() {
     goCone(coneId);
   }
 
+  const loading = conesLoading;
+  const fatalErr = conesErr || err;
+
   if (loading) {
     return (
       <Screen>
@@ -187,15 +137,11 @@ export default function ProgressScreen() {
     );
   }
 
-  if (err) {
+  if (fatalErr) {
     return (
       <Screen>
         <Layout style={{ flex: 1, justifyContent: "center" }}>
-          <ErrorCard
-            title="Progress"
-            message={err}
-            action={{ label: "Retry", onPress: goProgressHome }}
-          />
+          <ErrorCard title="Progress" message={fatalErr} action={{ label: "Retry", onPress: goProgressHome }} />
         </Layout>
       </Screen>
     );
@@ -204,11 +150,7 @@ export default function ProgressScreen() {
   return (
     <Screen>
       <Layout style={{ flex: 1 }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ gap: 12 }}
-          showsVerticalScrollIndicator={false}
-        >
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: 12 }} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
@@ -257,7 +199,7 @@ export default function ProgressScreen() {
                   }
                 : null
             }
-            distanceMeters={nearestUnclimbed?.distance ?? null}
+            distanceMeters={nearestUnclimbed?.distanceMeters ?? null}
             locErr={locErr}
             onOpenCone={openCone}
           />

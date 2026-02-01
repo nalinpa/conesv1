@@ -1,109 +1,33 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useMemo } from "react";
 import { View, FlatList } from "react-native";
-import * as Location from "expo-location";
 
-import { formatDistanceMeters } from "@/lib/formatters";
-import { coneService } from "@/lib/services/coneService";
 import { Screen } from "@/components/screen";
-import { nearestCheckpoint } from "../../../lib/checkpoints";
-import type { Cone } from "@/lib/models";
-import { goCone } from "@/lib/routes";
-
-import { Layout, Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
-type ConeRow = {
-  cone: Cone;
-  distance: number | null;
-};
+import { Layout, Text, Button } from "@ui-kitten/components";
+
+import { formatDistanceMeters } from "@/lib/formatters";
+import { goCone } from "@/lib/routes";
+
+import { useCones } from "@/lib/hooks/useCones";
+import { useUserLocation } from "@/lib/hooks/useUserLocation";
+import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 
 export default function ConeListPage() {
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string>("");
+  // 🔥 shared data hooks
+  const { cones, loading, error, refresh } = useCones();
+  const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
 
-  const [cones, setCones] = useState<Cone[]>([]);
+  // 🔥 shared distance + sorting logic
+  const rows = useSortedConeRows(cones, loc);
 
-  const [loc, setLoc] = useState<Location.LocationObject | null>(null);
-  const [locStatus, setLocStatus] = useState<"unknown" | "granted" | "denied">("unknown");
-  const [locErr, setLocErr] = useState<string>("");
-
-  const loadCones = useCallback(async () => {
-    setLoading(true);
-    setErr("");
-
-    try {
-      const list = await coneService.listActiveCones();
-      setCones(list);
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to load cones");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const requestAndLoadLocation = useCallback(async () => {
-    setLocErr("");
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setLocStatus("denied");
-        setLoc(null);
-        return;
-      }
-
-      setLocStatus("granted");
-      const cur = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setLoc(cur);
-    } catch (e: any) {
-      setLocErr(e?.message ?? "Could not get location.");
-    }
-  }, []);
-
-  const refreshLocation = useCallback(async () => {
-    setLocErr("");
-    try {
-      const cur = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Highest,
-      });
-      setLoc(cur);
-    } catch (e: any) {
-      setLocErr(e?.message ?? "Failed to refresh location.");
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadCones();
-    void requestAndLoadLocation();
-  }, [loadCones, requestAndLoadLocation]);
-
-  const rows: ConeRow[] = useMemo(() => {
-    if (!loc) return cones.map((c) => ({ cone: c, distance: null }));
-
-    const { latitude, longitude } = loc.coords;
-
-    const list = cones.map((c) => ({
-      cone: c,
-      distance: nearestCheckpoint(c, latitude, longitude).distanceMeters,
-    }));
-
-    list.sort((a, b) => {
-      if (a.distance == null && b.distance == null) return a.cone.name.localeCompare(b.cone.name);
-      if (a.distance == null) return 1;
-      if (b.distance == null) return -1;
-      return a.distance - b.distance;
-    });
-
-    return list;
-  }, [cones, loc]);
-
-  function openCone(coneId: string) {
-    goCone(coneId);
-  }
+  const gpsButtonLabel = useMemo(() => {
+    if (status === "denied") return "Enable GPS";
+    return loc ? "Refresh GPS" : "Enable GPS";
+  }, [loc, status]);
 
   if (loading) {
     return (
@@ -115,14 +39,14 @@ export default function ConeListPage() {
     );
   }
 
-  if (err) {
+  if (error) {
     return (
       <Screen>
         <Layout style={{ flex: 1 }}>
           <ErrorCard
             title="Couldn’t load cones"
-            message={err}
-            action={{ label: "Retry", onPress: () => void loadCones(), appearance: "filled" }}
+            message={error}
+            action={{ label: "Retry", onPress: () => void refresh(), appearance: "filled" }}
           />
         </Layout>
       </Screen>
@@ -132,9 +56,6 @@ export default function ConeListPage() {
   return (
     <Screen>
       <Layout style={{ flex: 1 }}>
-        {/* little extra top breathing room */}
-        <View style={{ height: 6 }} />
-
         {/* Header */}
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
           <Text category="h4">Cones</Text>
@@ -142,11 +63,9 @@ export default function ConeListPage() {
           <Button
             size="small"
             appearance="outline"
-            onPress={() => {
-              void (loc ? refreshLocation() : requestAndLoadLocation());
-            }}
+            onPress={() => void (loc ? refreshGPS() : request())}
           >
-            {loc ? "Refresh GPS" : "Enable GPS"}
+            {gpsButtonLabel}
           </Button>
         </View>
 
@@ -154,10 +73,11 @@ export default function ConeListPage() {
           Tap a cone to view details and complete it when you’re in range.
         </Text>
 
-        {locStatus === "denied" ? (
+        {/* GPS warnings */}
+        {status === "denied" ? (
           <View style={{ marginTop: 12 }}>
             <CardShell status="warning">
-              <Text>Location permission denied — distances won’t show.</Text>
+              <Text>Location permission denied — distances won’t be shown.</Text>
             </CardShell>
           </View>
         ) : null}
@@ -170,22 +90,25 @@ export default function ConeListPage() {
           </View>
         ) : null}
 
+        {/* Cone list */}
         <FlatList
           data={rows}
           keyExtractor={(item) => item.cone.id}
           contentContainerStyle={{ paddingTop: 14, paddingBottom: 24 }}
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
           renderItem={({ item }) => {
-            const { cone, distance } = item;
+            const { cone, distanceMeters } = item;
 
             return (
-              <CardShell onPress={() => openCone(cone.id)}>
+              <CardShell onPress={() => goCone(cone.id)}>
                 <Text category="s1" style={{ fontWeight: "800" }}>
                   {cone.name}
                 </Text>
 
                 <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
-                  {cone.description?.trim() ? cone.description.trim() : "Tap to view details"}
+                  {cone.description?.trim()
+                    ? cone.description.trim()
+                    : "Tap to view details"}
                 </Text>
 
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
@@ -193,7 +116,9 @@ export default function ConeListPage() {
                     <Pill status="basic">Radius {cone.radiusMeters}m</Pill>
                   ) : null}
 
-                  <Pill status="basic">{formatDistanceMeters(distance, "label")}</Pill>
+                  <Pill status="basic">
+                    {formatDistanceMeters(distanceMeters, "label")}
+                  </Pill>
                 </View>
 
                 <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>

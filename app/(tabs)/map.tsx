@@ -1,16 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 import MapView, { Marker, Circle } from "react-native-maps";
-import * as Location from "expo-location";
 
 import { auth } from "@/lib/firebase";
 import { formatDistanceMeters } from "@/lib/formatters";
 import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
-import { nearestCheckpoint } from "@/lib/checkpoints";
 import type { Cone } from "@/lib/models";
-import { coneService } from "@/lib/services/coneService";
 import { completionService } from "@/lib/services/completionService";
 
 import { Text } from "@ui-kitten/components";
@@ -18,47 +15,18 @@ import { CardShell } from "@/components/ui/CardShell";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
-export default function MapScreen() {
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string>("");
+import { useUserLocation } from "@/lib/hooks/useUserLocation";
+import { useCones } from "@/lib/hooks/useCones";
+import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 
-  const [cones, setCones] = useState<Cone[]>([]);
+export default function MapScreen() {
+  const { cones, loading, err } = useCones();
+
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
-  const [loc, setLoc] = useState<Location.LocationObject | null>(null);
-  const [locErr, setLocErr] = useState<string>("");
+  const { loc, err: locErr } = useUserLocation();
 
-  // -----------------------------
-  // Load cones (one-time)
-  // -----------------------------
-  useEffect(() => {
-    let mounted = true;
-
-    (async () => {
-      setLoading(true);
-      setErr("");
-
-      try {
-        const list = await coneService.listActiveCones();
-        if (!mounted) return;
-        setCones(list);
-      } catch (e: any) {
-        if (!mounted) return;
-        setErr(e?.message ?? "Failed to load map");
-      } finally {
-        if (!mounted) return;
-        setLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  // -----------------------------
   // Live completions listener
-  // -----------------------------
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
@@ -72,58 +40,8 @@ export default function MapScreen() {
     return () => unsub();
   }, []);
 
-  // -----------------------------
-  // Location (one-time)
-  // -----------------------------
-  useEffect(() => {
-    (async () => {
-      setLocErr("");
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          setLocErr("Location permission denied.");
-          return;
-        }
+  const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
-        const cur = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        setLoc(cur);
-      } catch (e: any) {
-        setLocErr(e?.message ?? "Could not get location.");
-      }
-    })();
-  }, []);
-
-  // -----------------------------
-  // Nearest unclimbed (live)
-  // -----------------------------
-  const nearestUnclimbed = useMemo(() => {
-    const unclimbed = cones.filter((c) => !completedIds.has(c.id));
-    if (unclimbed.length === 0) return null;
-
-    if (!loc) return { cone: unclimbed[0], distance: null as number | null };
-
-    const { latitude, longitude } = loc.coords;
-
-    let best = unclimbed[0];
-    let bestDist = nearestCheckpoint(best, latitude, longitude).distanceMeters;
-
-    for (let i = 1; i < unclimbed.length; i++) {
-      const c = unclimbed[i];
-      const d = nearestCheckpoint(c, latitude, longitude).distanceMeters;
-      if (d < bestDist) {
-        best = c;
-        bestDist = d;
-      }
-    }
-
-    return { cone: best, distance: bestDist };
-  }, [cones, completedIds, loc]);
-
-  // -----------------------------
-  // UI states
-  // -----------------------------
   if (loading) {
     return (
       <Screen>
@@ -158,7 +76,6 @@ export default function MapScreen() {
 
             return (
               <React.Fragment key={cone.id}>
-                {/* Circle must be a direct child of MapView */}
                 <Circle
                   center={{ latitude: cone.lat, longitude: cone.lng }}
                   radius={cone.radiusMeters}
@@ -189,8 +106,8 @@ export default function MapScreen() {
 
               <Text appearance="hint">
                 {nearestUnclimbed.cone.name}
-                {nearestUnclimbed.distance != null
-                  ? ` · ${formatDistanceMeters(nearestUnclimbed.distance)}`
+                {nearestUnclimbed.distanceMeters != null
+                  ? ` · ${formatDistanceMeters(nearestUnclimbed.distanceMeters)}`
                   : ""}
               </Text>
 
