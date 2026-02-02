@@ -1,16 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { View, ScrollView, Share } from "react-native";
 import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import {
-  collection,
   doc,
-  onSnapshot,
-  query,
   serverTimestamp,
   setDoc,
   updateDoc,
-  where,
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
@@ -28,6 +24,7 @@ import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
+import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 
 import { ConeHero } from "@/components/cone/detail/ConeHero";
 import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard";
@@ -74,77 +71,22 @@ export default function ConeDetailRoute() {
   // GPS gate
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: 50 });
 
+  const {
+    avgRating,
+    ratingCount,
+    myRating: myReviewRating,
+    myText: myReviewText,
+    err: reviewsErr,
+  } = useConeReviewsSummary(coneId);
+
   const [err, setErr] = useState<string>("");
   const [saving, setSaving] = useState(false);
-
-  // My review (read-only after submit) — sourced from coneReviews
-  const [myReviewRating, setMyReviewRating] = useState<number | null>(null);
-  const [myReviewText, setMyReviewText] = useState<string | null>(null);
 
   // Review modal draft
   const [reviewOpen, setReviewOpen] = useState(false);
   const [draftRating, setDraftRating] = useState<number | null>(null);
   const [draftText, setDraftText] = useState("");
   const [reviewSaving, setReviewSaving] = useState(false);
-
-  // Public aggregate (client-side)
-  const [avgRating, setAvgRating] = useState<number | null>(null);
-  const [ratingCount, setRatingCount] = useState<number>(0);
-
-  // ---------------------------------
-  // Reviews (live): my review + aggregate
-  // ---------------------------------
-  useEffect(() => {
-    if (!cone?.id) return;
-    if (authLoading) return;
-
-    const myId = uid ? `${uid}_${cone.id}` : null;
-
-    const reviewsQ = query(
-      collection(db, COL.coneReviews),
-      where("coneId", "==", cone.id),
-    );
-
-    const unsub = onSnapshot(
-      reviewsQ,
-      (snap) => {
-        let sum = 0;
-        let count = 0;
-
-        let mineRating: number | null = null;
-        let mineText: string | null = null;
-
-        snap.docs.forEach((d) => {
-          const data = d.data() as any;
-
-          const r = typeof data?.reviewRating === "number" ? data.reviewRating : null;
-          if (r != null && r >= 1 && r <= 5) {
-            sum += r;
-            count += 1;
-          }
-
-          if (myId && d.id === myId) {
-            mineRating =
-              typeof data?.reviewRating === "number" ? data.reviewRating : null;
-            mineText = typeof data?.reviewText === "string" ? data.reviewText : null;
-          }
-        });
-
-        setRatingCount(count);
-        setAvgRating(count > 0 ? sum / count : null);
-
-        setMyReviewRating(mineRating);
-        setMyReviewText(mineText);
-      },
-      (e) => {
-        console.error(e);
-        setAvgRating(null);
-        setRatingCount(0);
-      },
-    );
-
-    return () => unsub();
-  }, [cone?.id, cone?.id && cone.id, uid, authLoading]);
 
   // ---------------------------------
   // Auto-refresh GPS on focus (skip if completed)
@@ -180,13 +122,12 @@ export default function ConeDetailRoute() {
     }
 
     if (!loc) {
-      try {
-        await requestLocation?.();
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : "Something went wrong");
+      const res = await requestLocation();
+      if (!res.ok) {
+        setErr("Location not available yet. Try refresh.");
         return;
       }
-      setErr("Location not available yet. Try refresh.");
+      setErr("Location acquired — tap Complete again.");
       return;
     }
 
@@ -312,6 +253,8 @@ export default function ConeDetailRoute() {
       return;
     }
 
+    const cleanedText = draftText.trim() ? draftText.trim().slice(0, 280) : null;
+
     setErr("");
     setReviewSaving(true);
 
@@ -323,15 +266,13 @@ export default function ConeDetailRoute() {
         coneName: cone.name,
         userId: uid,
         reviewRating: draftRating,
-        reviewText: draftText.trim() ? draftText.trim() : null,
+        reviewText: cleanedText,
         reviewCreatedAt: serverTimestamp(),
       };
 
       await setDoc(doc(db, COL.coneReviews, reviewId), publicPayload);
 
-      setMyReviewRating(draftRating);
-      setMyReviewText(draftText.trim() ? draftText.trim() : null);
-
+      // Optional: local optimism (hook snapshot will confirm anyway)
       setReviewOpen(false);
     } catch (e: any) {
       console.error(e);
@@ -384,7 +325,7 @@ export default function ConeDetailRoute() {
   const hasReview = myReviewRating != null;
 
   // One “top” error string for UI
-  const topErr = err || completionErr || locErr || "";
+  const topErr = err || completionErr || locErr || reviewsErr || "";
 
   return (
     <Screen padded={false}>
