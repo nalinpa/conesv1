@@ -1,4 +1,4 @@
-import { View, Pressable } from "react-native";
+import { View } from "react-native";
 import { Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -48,7 +48,13 @@ export function ActionsCard({
   return (
     <CardShell>
       <View style={{ gap: 14 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Text category="h6" style={{ fontWeight: "900" }}>
             Completed
           </Text>
@@ -61,7 +67,9 @@ export function ActionsCard({
 
           {!hasReview ? (
             <View style={{ gap: 10 }}>
-              <Text appearance="hint">Leave a quick rating (once only) after you’ve done the cone.</Text>
+              <Text appearance="hint">
+                Leave a quick rating (once only) after you’ve done the cone.
+              </Text>
               <Button appearance="outline" onPress={onOpenReview}>
                 Leave a review
               </Button>
@@ -77,14 +85,18 @@ export function ActionsCard({
                 </Text>
               </View>
 
-              <Text appearance="hint">{myReviewText?.trim() ? myReviewText.trim() : "No comment."}</Text>
+              <Text appearance="hint">
+                {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
+              </Text>
             </View>
           )}
         </View>
 
         {/* Share bonus */}
         <View style={{ gap: 8 }}>
-          <Text appearance="hint">Optional: share a pic on socials for bonus credit.</Text>
+          <Text appearance="hint">
+            Optional: share a pic on socials for bonus credit.
+          </Text>
 
           <Button
             appearance={shareBonus ? "filled" : "outline"}

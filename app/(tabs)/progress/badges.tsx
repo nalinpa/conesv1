@@ -48,7 +48,13 @@ export default function BadgesScreen() {
           }}
           showsVerticalScrollIndicator={false}
         >
-          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
             <View>
               <Text category="h1">Badges</Text>
               <Text appearance="hint" style={{ marginTop: 4 }}>

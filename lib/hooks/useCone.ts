@@ -7,21 +7,24 @@ export function useCone(coneId: string | null | undefined) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const load = useCallback(async (force = false) => {
-    setLoading(true);
-    setErr("");
-    setCone(null);
+  const load = useCallback(
+    async (force = false) => {
+      setLoading(true);
+      setErr("");
+      setCone(null);
 
-    try {
-      if (!coneId) throw new Error("Missing coneId.");
-      const c = await coneService.getCone(String(coneId), { force });
-      setCone(c);
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to load cone.");
-    } finally {
-      setLoading(false);
-    }
-  }, [coneId]);
+      try {
+        if (!coneId) throw new Error("Missing coneId.");
+        const c = await coneService.getCone(String(coneId), { force });
+        setCone(c);
+      } catch (e: any) {
+        setErr(e?.message ?? "Failed to load cone.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [coneId],
+  );
 
   useEffect(() => {
     void load(false);

@@ -21,7 +21,13 @@ export function BadgesSummaryCard({
   return (
     <CardShell>
       {/* Header */}
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+        }}
+      >
         <Text category="h6">Badges</Text>
 
         <Pressable onPress={onViewAll} hitSlop={10}>
@@ -67,8 +73,7 @@ export function BadgesSummaryCard({
           <View style={{ gap: 8 }}>
             {recentlyUnlocked.slice(0, 3).map((u, idx) => {
               // ✅ Keys must be unique and stable enough. We suffix with idx to avoid collisions.
-              const baseId =
-                u?.badge?.id != null ? String(u.badge.id) : "recent";
+              const baseId = u?.badge?.id != null ? String(u.badge.id) : "recent";
               const key = `${baseId}_${idx}`;
 
               const name = u?.badge?.name ?? "Badge";

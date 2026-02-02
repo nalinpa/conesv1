@@ -18,13 +18,7 @@ function Ionicon({
   return <Ionicons name={name} size={size} color={color} />;
 }
 
-function KittenTabBar({
-  state,
-  navigation,
-}: {
-  state: any;
-  navigation: any;
-}) {
+function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
   const insets = useSafeAreaInsets();
 
   const onSelect = (index: number) => {

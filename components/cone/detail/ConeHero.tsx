@@ -3,13 +3,7 @@ import { Text } from "@ui-kitten/components";
 import type { Cone } from "@/lib/models";
 import { Pill } from "@/components/ui/Pill";
 
-export function ConeHero({
-  cone,
-  completed,
-}: {
-  cone: Cone;
-  completed: boolean;
-}) {
+export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }) {
   return (
     <View style={{ gap: 10 }}>
       <Text category="h4" style={{ fontWeight: "900" }}>

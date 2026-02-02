@@ -26,17 +26,7 @@ export function ConeCompletionCard({
   myReviewText: string | null;
   onLeaveReview: () => void;
 }) {
-  if (!completed) {
-    return (
-      <View style={{ marginTop: 16 }}>
-        <Button onPress={onComplete} disabled={saving || !canComplete} status="primary">
-          {saving ? "Saving…" : "Complete cone"}
-        </Button>
-      </View>
-    );
-  }
-
-  const { hasReview, roundedRating, stars, reviewText } = useMemo(() => {
+    const { hasReview, roundedRating, stars, reviewText } = useMemo(() => {
     const hasReview = myReviewRating != null;
     const roundedRating = hasReview
       ? Math.max(0, Math.min(5, Math.round(myReviewRating as number)))
@@ -49,13 +39,20 @@ export function ConeCompletionCard({
       reviewText: (myReviewText ?? "").trim(),
     };
   }, [myReviewRating, myReviewText]);
+  
+  if (!completed) {
+    return (
+      <View style={{ marginTop: 16 }}>
+        <Button onPress={onComplete} disabled={saving || !canComplete} status="primary">
+          {saving ? "Saving…" : "Complete cone"}
+        </Button>
+      </View>
+    );
+  }
 
   return (
     <View style={{ marginTop: 16 }}>
-      <CardShell
-        status="success"
-        header={<Text category="h6">Completed ✅</Text>}
-      >
+      <CardShell status="success" header={<Text category="h6">Completed ✅</Text>}>
         {/* Review block */}
         <View style={{ gap: 8 }}>
           <Text category="s1">Your review</Text>
@@ -96,7 +93,9 @@ export function ConeCompletionCard({
 
         {/* Share bonus block */}
         <View style={{ gap: 8 }}>
-          <Text appearance="hint">Optional: share a pic on socials for bonus credit.</Text>
+          <Text appearance="hint">
+            Optional: share a pic on socials for bonus credit.
+          </Text>
 
           <Button
             appearance={shareBonus ? "filled" : "outline"}

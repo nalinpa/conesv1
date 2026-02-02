@@ -20,8 +20,7 @@ export function Screen({ padded = true, style, ...props }: ScreenProps) {
         {
           flex: 1,
           // Use Kitten background token if available, fallback to white
-          backgroundColor:
-            (theme as any)["background-basic-color-1"] ?? "#ffffff",
+          backgroundColor: (theme as any)["background-basic-color-1"] ?? "#ffffff",
 
           ...(padded
             ? {

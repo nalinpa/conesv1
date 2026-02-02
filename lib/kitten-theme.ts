@@ -4,7 +4,7 @@ export const surfGreenTheme = {
   "color-primary-200": "#BFE6DF",
   "color-primary-300": "#95D6CB",
   "color-primary-400": "#6BC5B6",
-  "color-primary-500": "#5FB3A2", 
+  "color-primary-500": "#5FB3A2",
   "color-primary-600": "#4E9E8E",
   "color-primary-700": "#3E877A",
   "color-primary-800": "#2F6F65",

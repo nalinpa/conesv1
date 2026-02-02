@@ -51,7 +51,11 @@ export default function ConeListPage() {
           <ErrorCard
             title="Couldn’t load cones"
             message={err}
-            action={{ label: "Retry", onPress: () => void reload(), appearance: "filled" }}
+            action={{
+              label: "Retry",
+              onPress: () => void reload(),
+              appearance: "filled",
+            }}
           />
         </Layout>
       </Screen>
@@ -80,7 +84,13 @@ export default function ConeListPage() {
           ListHeaderComponent={
             <View style={{ marginBottom: 14 }}>
               {/* Header */}
-              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                }}
+              >
                 <Text category="h4" style={{ fontWeight: "900" }}>
                   Cones
                 </Text>
@@ -126,15 +136,26 @@ export default function ConeListPage() {
                 </Text>
 
                 <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
-                  {cone.description?.trim() ? cone.description.trim() : "Tap to view details"}
+                  {cone.description?.trim()
+                    ? cone.description.trim()
+                    : "Tap to view details"}
                 </Text>
 
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                    gap: 8,
+                    marginTop: 12,
+                  }}
+                >
                   {cone.radiusMeters != null ? (
                     <Pill status="basic">Radius {cone.radiusMeters}m</Pill>
                   ) : null}
 
-                  <Pill status="basic">{formatDistanceMeters(distanceMeters, "label")}</Pill>
+                  <Pill status="basic">
+                    {formatDistanceMeters(distanceMeters, "label")}
+                  </Pill>
                 </View>
 
                 <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>

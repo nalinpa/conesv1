@@ -1,10 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { Stack, useRouter, useSegments } from "expo-router";
+import React, { useEffect } from "react";
+import { Stack, useSegments } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { PortalHost } from "@rn-primitives/portal";
-
-import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 
 import * as eva from "@eva-design/eva";
 import { ApplicationProvider, IconRegistry } from "@ui-kitten/components";
@@ -12,6 +9,8 @@ import { EvaIconsPack } from "@ui-kitten/eva-icons";
 import { surfGreenTheme } from "@/lib/kitten-theme";
 
 import { goLogin, goProgressHome } from "@/lib/routes";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 export default function RootLayout() {
   return (
@@ -26,38 +25,33 @@ export default function RootLayout() {
 }
 
 function AuthGate() {
-  const router = useRouter();
   const segments = useSegments();
-
-  const [ready, setReady] = useState(false);
-  const [loggedIn, setLoggedIn] = useState(false);
+  const { user, loading } = useAuthUser();
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      setLoggedIn(!!user);
-      setReady(true);
-    });
-    return () => unsub();
-  }, []);
+    if (loading) return;
 
-  useEffect(() => {
-    if (!ready) return;
+    const top = segments[0]; // e.g. "login", "(tabs)"
+    const inAuthRoute = top === "login";
+    const inTabsRoute = top === "(tabs)";
+    const loggedIn = !!user;
 
-    const inAuthGroup = segments[0] === "login";
-    const inTabsGroup = segments[0] === "(tabs)";
-
-    // Not logged in -> must be at login
-    if (!loggedIn && !inAuthGroup) {
-      goLogin(router);
+    // Logged out -> must be at /login
+    if (!loggedIn && !inAuthRoute) {
+      goLogin();
       return;
     }
 
-    // Logged in -> must be in tabs (default to progress)
-    if (loggedIn && !inTabsGroup) {
+    // Logged in -> must be inside tabs (default to progress)
+    if (loggedIn && !inTabsRoute) {
       goProgressHome();
       return;
     }
-  }, [ready, loggedIn, segments, router]);
+  }, [loading, user, segments]);
+
+  if (loading) {
+    return <LoadingState label="Signing you in…" />;
+  }
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

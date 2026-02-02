@@ -22,7 +22,9 @@ export type EffectiveCheckpoint = Checkpoint & {
   source: "checkpoint" | "fallback";
 };
 
-export function getEffectiveCheckpoints(cone: ConeWithCheckpoints): EffectiveCheckpoint[] {
+export function getEffectiveCheckpoints(
+  cone: ConeWithCheckpoints,
+): EffectiveCheckpoint[] {
   if (cone.checkpoints && cone.checkpoints.length > 0) {
     return cone.checkpoints.map((cp, idx) => ({
       id: cp.id ?? `cp_${idx}`,
@@ -49,7 +51,7 @@ export function getEffectiveCheckpoints(cone: ConeWithCheckpoints): EffectiveChe
 export function nearestCheckpoint(
   cone: ConeWithCheckpoints,
   deviceLat: number,
-  deviceLng: number
+  deviceLng: number,
 ): { checkpoint: EffectiveCheckpoint; distanceMeters: number } {
   const cps = getEffectiveCheckpoints(cone);
 
@@ -72,7 +74,7 @@ export function inRange(
   checkpoint: { radiusMeters: number },
   distanceMeters: number,
   accuracyMeters: number | null,
-  maxAccuracyMeters = 50
+  maxAccuracyMeters = 50,
 ) {
   const okAccuracy = accuracyMeters == null || accuracyMeters <= maxAccuracyMeters;
   return distanceMeters <= checkpoint.radiusMeters && okAccuracy;

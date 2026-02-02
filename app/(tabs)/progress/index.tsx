@@ -25,14 +25,18 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
 import { goBadges, goCone, goProgressHome } from "@/lib/routes";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";  
 
 export default function ProgressScreen() {
+  const { uid } = useAuthUser();
   const { cones, loading: conesLoading, err: conesErr } = useCones();
 
   // live user state
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [shareBonusCount, setShareBonusCount] = useState(0);
-  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
+  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>(
+    {},
+  );
   const [reviewedConeIds, setReviewedConeIds] = useState<Set<string>>(new Set());
 
   const { loc, err: locErr } = useUserLocation();
@@ -51,12 +55,11 @@ export default function ProgressScreen() {
       setErr("");
 
       try {
-        const user = auth.currentUser;
-        if (!user) throw new Error("Not signed in.");
+        if (!uid) throw new Error("Not signed in.");
 
         // user completions (live via service)
         unsubCompletions = completionService.watchMyCompletions(
-          user.uid,
+          uid,
           (state) => {
             if (!mounted) return;
             setCompletedIds(state.completedConeIds);
@@ -67,11 +70,14 @@ export default function ProgressScreen() {
             console.error(e);
             if (!mounted) return;
             setErr(e?.message ?? "Failed to load completions");
-          }
+          },
         );
 
         // user reviews (live) — used only for “cones to review”
-        const revQ = query(collection(db, COL.coneReviews), where("userId", "==", user.uid));
+        const revQ = query(
+          collection(db, COL.coneReviews),
+          where("userId", "==", uid),
+        );
         unsubReviews = onSnapshot(
           revQ,
           (snap) => {
@@ -85,7 +91,7 @@ export default function ProgressScreen() {
           (e) => {
             console.error(e);
             setReviewedConeIds(new Set());
-          }
+          },
         );
       } catch (e: any) {
         if (!mounted) return;
@@ -161,7 +167,13 @@ export default function ProgressScreen() {
           }}
         >
           {/* Header */}
-          <View style={{ flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "flex-start",
+              justifyContent: "space-between",
+            }}
+          >
             <View style={{ flex: 1, paddingRight: 12 }}>
               <Text category="h4" style={{ fontWeight: "900" }}>
                 Progress
@@ -183,7 +195,10 @@ export default function ProgressScreen() {
 
               <View style={{ flex: 1, gap: 10 }}>
                 <StatRow label="Completed" value={`${totals.completed}`} />
-                <StatRow label="Remaining" value={`${Math.max(0, totals.total - totals.completed)}`} />
+                <StatRow
+                  label="Remaining"
+                  value={`${Math.max(0, totals.total - totals.completed)}`}
+                />
                 <StatRow label="Share bonuses" value={`${shareBonusCount}`} />
               </View>
             </View>
@@ -215,7 +230,11 @@ export default function ProgressScreen() {
 
           {/* Cones to review */}
           <ConesToReviewCard
-            cones={conesToReview.map((c) => ({ id: c.id, name: c.name, description: c.description }))}
+            cones={conesToReview.map((c) => ({
+              id: c.id,
+              name: c.name,
+              description: c.description,
+            }))}
             onOpenCone={openCone}
           />
 

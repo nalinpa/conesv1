@@ -1,11 +1,8 @@
 import { useMemo, useState } from "react";
 import { KeyboardAvoidingView, Platform, View } from "react-native";
-import { router } from "expo-router";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { auth } from "../lib/firebase";
-import { goProgressHome } from "../lib/routes";
-
 import { Layout, Card, Text, Input, Button } from "@ui-kitten/components";
 
 export default function LoginPage() {
@@ -17,7 +14,7 @@ export default function LoginPage() {
 
   const canSubmit = useMemo(
     () => email.trim().length > 0 && password.length > 0,
-    [email, password]
+    [email, password],
   );
 
   async function login() {
@@ -25,7 +22,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      goProgressHome();
+      // No navigation here — AuthGate will route you into (tabs)
     } catch (e: any) {
       setErr(e?.message ?? "Login failed");
     } finally {
@@ -40,7 +37,6 @@ export default function LoginPage() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 20 }}>
-          {/* Brand header */}
           <Text category="h1" style={{ marginBottom: 6 }}>
             Cones
           </Text>
@@ -48,25 +44,16 @@ export default function LoginPage() {
             Sign in to track your Auckland volcanic cone progress.
           </Text>
 
-          {/* Error */}
           {err ? (
-            <Card
-              status="danger"
-              style={{
-                marginBottom: 12,
-                borderRadius: 16,
-              }}
-            >
+            <Card status="danger" style={{ marginBottom: 12, borderRadius: 16 }}>
               <Text status="danger">{err}</Text>
             </Card>
           ) : null}
 
-          {/* Form */}
           <Card
             style={{
               padding: 16,
               borderRadius: 18,
-              // subtle “Surf Green” accent (optional but feels premium)
               borderColor: "#5FB3A2",
               borderWidth: 1,
             }}

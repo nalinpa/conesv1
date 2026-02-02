@@ -14,7 +14,13 @@ export function ReviewsSummaryCard({
 }) {
   return (
     <CardShell>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Text category="h6" style={{ fontWeight: "900" }}>
           Reviews
         </Text>

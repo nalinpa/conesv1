@@ -26,9 +26,7 @@ export function ConeListItem({
   onPress,
 }: ConeListItemProps) {
   return (
-    <CardShell
-      onPress={() => onPress(id)}
-    >
+    <CardShell onPress={() => onPress(id)}>
       <View style={{ gap: 10 }}>
         {/* Header */}
         <View
@@ -58,7 +56,9 @@ export function ConeListItem({
         {/* Meta row */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
           {radiusMeters != null ? <Pill>Radius {radiusMeters}m</Pill> : null}
-          {distanceMeters != null ? <Pill>{formatDistanceMeters(distanceMeters)}</Pill> : null}
+          {distanceMeters != null ? (
+            <Pill>{formatDistanceMeters(distanceMeters)}</Pill>
+          ) : null}
         </View>
       </View>
     </CardShell>
