@@ -25,7 +25,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
 import { goBadges, goCone, goProgressHome } from "@/lib/routes";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";  
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 export default function ProgressScreen() {
   const { uid } = useAuthUser();
@@ -74,10 +74,7 @@ export default function ProgressScreen() {
         );
 
         // user reviews (live) — used only for “cones to review”
-        const revQ = query(
-          collection(db, COL.coneReviews),
-          where("userId", "==", uid),
-        );
+        const revQ = query(collection(db, COL.coneReviews), where("userId", "==", uid));
         unsubReviews = onSnapshot(
           revQ,
           (snap) => {

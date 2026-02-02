@@ -95,7 +95,7 @@ export default function ConeReviewsPage() {
         setErr(e?.message ?? "Failed to load reviews");
       } finally {
         if (mounted) {
-            setLoading(false);
+          setLoading(false);
         }
       }
     })();

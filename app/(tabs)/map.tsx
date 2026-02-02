@@ -23,7 +23,12 @@ export default function MapScreen() {
   const { user, loading: authLoading, uid } = useAuthUser();
 
   const { cones, loading, err } = useCones();
-  const { loc, err: locErr } = useUserLocation();
+  const {
+    loc,
+    err: locErr,
+    status: locStatus,
+    request: requestLocation,
+  } = useUserLocation();
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
@@ -106,10 +111,13 @@ export default function MapScreen() {
         {nearestUnclimbed ? (
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
             <MapOverlayCard
-              title="Nearest unclimbed"
-              subtitle={nearestUnclimbed.cone.name}
-              distanceMeters={nearestUnclimbed.distanceMeters ?? null}
+              title={nearestUnclimbed?.cone.name ?? "Nearest cone"}
+              subtitle={nearestUnclimbed ? "Tap to view details" : undefined}
+              distanceMeters={nearestUnclimbed?.distanceMeters ?? null}
               onOpen={() => goCone(nearestUnclimbed.cone.id)}
+              locStatus={locStatus}
+              hasLoc={!!loc}
+              onRefreshGPS={() => void requestLocation()}
             />
           </View>
         ) : null}

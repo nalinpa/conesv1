@@ -30,7 +30,9 @@ function cleanText(t: any, maxLen = 280): string | null {
   return s.length > maxLen ? s.slice(0, maxLen) : s;
 }
 
-export function useConeReviewsSummary(coneId: string | null | undefined): ReviewsSummaryState {
+export function useConeReviewsSummary(
+  coneId: string | null | undefined,
+): ReviewsSummaryState {
   const { uid, loading: authLoading } = useAuthUser();
 
   const [avgRating, setAvgRating] = useState<number | null>(null);

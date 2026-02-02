@@ -26,7 +26,7 @@ export function ConeCompletionCard({
   myReviewText: string | null;
   onLeaveReview: () => void;
 }) {
-    const { hasReview, roundedRating, stars, reviewText } = useMemo(() => {
+  const { hasReview, roundedRating, stars, reviewText } = useMemo(() => {
     const hasReview = myReviewRating != null;
     const roundedRating = hasReview
       ? Math.max(0, Math.min(5, Math.round(myReviewRating as number)))
@@ -39,7 +39,7 @@ export function ConeCompletionCard({
       reviewText: (myReviewText ?? "").trim(),
     };
   }, [myReviewRating, myReviewText]);
-  
+
   if (!completed) {
     return (
       <View style={{ marginTop: 16 }}>
