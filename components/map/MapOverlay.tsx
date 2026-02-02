@@ -18,8 +18,8 @@ export function MapOverlayCard({
     distanceMeters == null
       ? "Distance —"
       : distanceMeters < 1000
-      ? `${Math.round(distanceMeters)} m away`
-      : `${(distanceMeters / 1000).toFixed(1)} km away`;
+        ? `${Math.round(distanceMeters)} m away`
+        : `${(distanceMeters / 1000).toFixed(1)} km away`;
 
   return (
     <CardShell>

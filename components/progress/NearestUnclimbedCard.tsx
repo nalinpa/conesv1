@@ -24,16 +24,28 @@ export function NearestUnclimbedCard({
   onOpenCone: (coneId: string) => void;
 }) {
   const distanceLabel =
-    distanceMeters == null && locErr ? "Distance — (no GPS)" : formatDistanceMeters(distanceMeters);
+    distanceMeters == null && locErr
+      ? "Distance — (no GPS)"
+      : formatDistanceMeters(distanceMeters);
 
   return (
     <CardShell>
       <View style={{ gap: 10 }}>
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Text category="h6">Nearest unclimbed</Text>
 
           <Pill status={distanceMeters == null ? "basic" : "success"}>
-            {distanceMeters == null ? "—" : distanceMeters < 1000 ? `${Math.round(distanceMeters)}m` : `${(distanceMeters / 1000).toFixed(1)}km`}
+            {distanceMeters == null
+              ? "—"
+              : distanceMeters < 1000
+                ? `${Math.round(distanceMeters)}m`
+                : `${(distanceMeters / 1000).toFixed(1)}km`}
           </Pill>
         </View>
 

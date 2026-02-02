@@ -21,7 +21,7 @@ export const completionService = {
   watchMyCompletions(
     userId: string,
     onChange: (res: WatchMyCompletionsResult) => void,
-    onError?: (err: unknown) => void
+    onError?: (err: unknown) => void,
   ) {
     const qy = query(collection(db, COL.coneCompletions), where("userId", "==", userId));
 
@@ -44,7 +44,8 @@ export const completionService = {
           // If duplicates ever exist, keep the latest timestamp
           if (c.completedAtMs != null) {
             const prev = completedAtByConeId[c.coneId];
-            if (prev == null || c.completedAtMs > prev) completedAtByConeId[c.coneId] = c.completedAtMs;
+            if (prev == null || c.completedAtMs > prev)
+              completedAtByConeId[c.coneId] = c.completedAtMs;
           }
         }
 
@@ -57,7 +58,7 @@ export const completionService = {
       },
       (e) => {
         if (onError) onError(e);
-      }
+      },
     );
   },
 };

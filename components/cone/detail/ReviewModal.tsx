@@ -36,7 +36,9 @@ export function ReviewModal({
           </Text>
 
           <View style={{ height: 8 }} />
-          <Text appearance="hint">One-time only. Choose a rating and (optionally) add a short note.</Text>
+          <Text appearance="hint">
+            One-time only. Choose a rating and (optionally) add a short note.
+          </Text>
 
           <View style={{ height: 14 }} />
 
@@ -52,7 +54,9 @@ export function ReviewModal({
                     paddingVertical: 10,
                     borderRadius: 999,
                     borderWidth: 1,
-                    borderColor: selected ? "rgba(95,179,162,0.55)" : "rgba(100,116,139,0.25)",
+                    borderColor: selected
+                      ? "rgba(95,179,162,0.55)"
+                      : "rgba(100,116,139,0.25)",
                     backgroundColor: selected ? "rgba(95,179,162,0.16)" : "transparent",
                   }}
                 >
@@ -90,11 +94,20 @@ export function ReviewModal({
           <View style={{ height: 14 }} />
 
           <View style={{ flexDirection: "row", gap: 10 }}>
-            <Button appearance="outline" style={{ flex: 1 }} disabled={saving} onPress={onClose}>
+            <Button
+              appearance="outline"
+              style={{ flex: 1 }}
+              disabled={saving}
+              onPress={onClose}
+            >
               Cancel
             </Button>
 
-            <Button style={{ flex: 1 }} disabled={saving || draftRating == null} onPress={onSave}>
+            <Button
+              style={{ flex: 1 }}
+              disabled={saving || draftRating == null}
+              onPress={onSave}
+            >
               {saving ? "Saving…" : "Save review"}
             </Button>
           </View>

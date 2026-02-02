@@ -7,7 +7,7 @@
  */
 export function formatDistanceMeters(
   distanceMeters: number | null,
-  mode: "short" | "label" = "short"
+  mode: "short" | "label" = "short",
 ): string {
   if (distanceMeters == null) {
     return mode === "label" ? "Distance —" : "—";

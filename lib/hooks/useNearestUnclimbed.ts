@@ -12,7 +12,7 @@ export type NearestUnclimbedResult = {
 export function useNearestUnclimbed(
   cones: Cone[],
   completedConeIds: Set<string>,
-  loc: Location.LocationObject | null
+  loc: Location.LocationObject | null,
 ): NearestUnclimbedResult | null {
   return useMemo(() => {
     const unclimbed = cones.filter((c) => !completedConeIds.has(c.id));

@@ -51,7 +51,9 @@ export function PieChart({
         />
       </Svg>
 
-      <View style={{ position: "absolute", alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{ position: "absolute", alignItems: "center", justifyContent: "center" }}
+      >
         <Text category="h5">{Math.round(clamped * 100)}%</Text>
         <Text appearance="hint" category="c1">
           complete

@@ -22,13 +22,19 @@ export function useUserLocation({
   }, []);
 
   const safeSet = useCallback(
-    (next: Partial<{ loc: Location.LocationObject | null; status: LocationStatus; err: string }>) => {
+    (
+      next: Partial<{
+        loc: Location.LocationObject | null;
+        status: LocationStatus;
+        err: string;
+      }>,
+    ) => {
       if (!aliveRef.current) return;
       if ("loc" in next) setLoc(next.loc ?? null);
       if ("status" in next && next.status) setStatus(next.status);
       if ("err" in next) setErr(next.err ?? "");
     },
-    []
+    [],
   );
 
   /**
@@ -109,6 +115,6 @@ export function useUserLocation({
       request, // permission + balanced fetch
       refresh, // high accuracy fetch
     }),
-    [loc, status, err, request, refresh]
+    [loc, status, err, request, refresh],
   );
 }

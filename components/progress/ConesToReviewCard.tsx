@@ -27,12 +27,20 @@ export function ConesToReviewCard({
     <CardShell>
       <View style={{ gap: 10 }}>
         {/* Header */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <Text category="h6">Cones to review</Text>
           <Pill status="info">{cones.length}</Pill>
         </View>
 
-        <Text appearance="hint">You’ve completed these — leave a quick public review.</Text>
+        <Text appearance="hint">
+          You’ve completed these — leave a quick public review.
+        </Text>
 
         {/* List */}
         <View style={{ gap: 12 }}>

@@ -7,7 +7,7 @@ import { nearestCheckpoint } from "@/lib/checkpoints";
 export function useGPSGate(
   cone: Cone | null,
   loc: Location.LocationObject | null,
-  opts?: { maxAccuracyMeters?: number }
+  opts?: { maxAccuracyMeters?: number },
 ): {
   distanceMeters: number | null;
   accuracyMeters: number | null;

@@ -14,7 +14,13 @@ export function ProgressHeader({
 
   return (
     <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <Text category="h4" style={{ fontWeight: "900" }}>
           Progress
         </Text>

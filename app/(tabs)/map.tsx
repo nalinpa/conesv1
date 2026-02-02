@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { auth } from "@/lib/firebase";
 import { goCone } from "@/lib/routes";
 import { completionService } from "@/lib/services/completionService";
 
@@ -15,29 +14,42 @@ import { Text } from "@ui-kitten/components";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 import { ConesMapView } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 
 export default function MapScreen() {
+  const { user, loading: authLoading, uid } = useAuthUser();
+
   const { cones, loading, err } = useCones();
   const { loc, err: locErr } = useUserLocation();
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
 
-  // Live completions listener
+  // Live completions listener (auth-safe)
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+    let unsub: (() => void) | null = null;
 
-    const unsub = completionService.watchMyCompletions(
-      user.uid,
+    // while auth hydrates, do nothing (avoid racing currentUser)
+    if (authLoading) return;
+
+    // logged out -> clear state
+    if (!uid) {
+      setCompletedIds(new Set());
+      return;
+    }
+
+    unsub = completionService.watchMyCompletions(
+      uid,
       ({ completedConeIds }) => setCompletedIds(completedConeIds),
-      (e) => console.error(e)
+      (e) => console.error(e),
     );
 
-    return () => unsub();
-  }, []);
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [authLoading, user]);
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
@@ -53,6 +65,16 @@ export default function MapScreen() {
       radiusMeters: c.radiusMeters,
     }));
   }, [cones]);
+
+  // Optional: if you want Map to be “quiet” during auth hydration
+  // (AuthGate should handle routing anyway)
+  if (authLoading) {
+    return (
+      <Screen>
+        <LoadingState label="Signing you in…" />
+      </Screen>
+    );
+  }
 
   if (loading) {
     return (
@@ -81,7 +103,6 @@ export default function MapScreen() {
           onPressCone={(coneId) => goCone(coneId)}
         />
 
-        {/* Nearest unclimbed overlay */}
         {nearestUnclimbed ? (
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
             <MapOverlayCard
@@ -93,7 +114,6 @@ export default function MapScreen() {
           </View>
         ) : null}
 
-        {/* Location error toast */}
         {locErr ? (
           <View style={{ position: "absolute", left: 16, right: 16, top: 16 }}>
             <CardShell status="warning" style={{ borderRadius: 16 }}>

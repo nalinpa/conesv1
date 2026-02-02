@@ -46,7 +46,9 @@ export function StatusCard({
         <LoadingState
           fullScreen={false}
           size="small"
-          label={locStatus === "denied" ? "Location permission denied" : "Getting your GPS…"}
+          label={
+            locStatus === "denied" ? "Location permission denied" : "Getting your GPS…"
+          }
           style={{ paddingVertical: 6 }}
         />
       ) : (
@@ -72,7 +74,13 @@ export function StatusCard({
 
           <Divider />
 
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text appearance="hint">Range check</Text>
             <Pill status={gate.inRange ? "success" : "danger"}>
               {gate.inRange ? "✅ In range" : "❌ Not in range"}

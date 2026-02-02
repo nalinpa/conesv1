@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 export function useConeCompletion(coneId: string | null | undefined): {
   completedId: string | null;
@@ -14,28 +15,33 @@ export function useConeCompletion(coneId: string | null | undefined): {
   refresh: () => Promise<void>;
   setShareBonusLocal: (next: boolean) => void;
 } {
+  const { user, loading: authLoading, uid } = useAuthUser();
+
   const [completedId, setCompletedId] = useState<string | null>(null);
   const [shareBonus, setShareBonus] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  const reset = useCallback(() => {
+    setCompletedId(null);
+    setShareBonus(false);
+  }, []);
+
   const refresh = useCallback(async () => {
     setErr("");
-    try {
-      const user = auth.currentUser;
-      if (!user) {
-        setCompletedId(null);
-        setShareBonus(false);
-        return;
-      }
-      if (!coneId) {
-        setCompletedId(null);
-        setShareBonus(false);
-        return;
-      }
 
-      const completionId = `${user.uid}_${String(coneId)}`;
+    // Auth not ready yet → don't flip to "not completed" prematurely
+    if (authLoading) return;
+
+    // Not logged in or no cone → clear state
+    if (!uid || !coneId) {
+      reset();
+      return;
+    }
+
+    try {
+      const completionId = `${user?.uid}_${String(coneId)}`;
       const snap = await getDoc(doc(db, COL.coneCompletions, completionId));
 
       if (snap.exists()) {
@@ -43,30 +49,39 @@ export function useConeCompletion(coneId: string | null | undefined): {
         setCompletedId(snap.id);
         setShareBonus(!!data.shareBonus);
       } else {
-        setCompletedId(null);
-        setShareBonus(false);
+        reset();
       }
     } catch (e: any) {
       setErr(e?.message ?? "Failed to refresh completion.");
     }
-  }, [coneId]);
+  }, [authLoading, uid, coneId, reset]);
 
   // Live watch (preferred)
   useEffect(() => {
     let mounted = true;
 
-    const user = auth.currentUser;
-    if (!user || !coneId) {
-      setCompletedId(null);
-      setShareBonus(false);
+    // While auth is loading, keep the hook loading
+    if (authLoading) {
+      setLoading(true);
+      return () => {
+        mounted = false;
+      };
+    }
+
+    // No uid or coneId → nothing to watch
+    if (!uid || !coneId) {
+      reset();
       setLoading(false);
-      return;
+      setErr("");
+      return () => {
+        mounted = false;
+      };
     }
 
     setLoading(true);
     setErr("");
 
-    const completionId = `${user.uid}_${String(coneId)}`;
+    const completionId = `${uid}_${String(coneId)}`;
     const ref = doc(db, COL.coneCompletions, completionId);
 
     const unsub = onSnapshot(
@@ -79,8 +94,7 @@ export function useConeCompletion(coneId: string | null | undefined): {
           setCompletedId(snap.id);
           setShareBonus(!!data.shareBonus);
         } else {
-          setCompletedId(null);
-          setShareBonus(false);
+          reset();
         }
 
         setLoading(false);
@@ -89,14 +103,14 @@ export function useConeCompletion(coneId: string | null | undefined): {
         if (!mounted) return;
         setErr((e as any)?.message ?? "Failed to watch completion.");
         setLoading(false);
-      }
+      },
     );
 
     return () => {
       mounted = false;
       unsub();
     };
-  }, [coneId]);
+  }, [authLoading, uid, coneId, reset]);
 
   return {
     completedId,

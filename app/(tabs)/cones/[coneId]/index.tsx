@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { View, ScrollView, Modal, TextInput, Pressable, Share } from "react-native";
+import { View, ScrollView, Share } from "react-native";
 import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import {
@@ -13,20 +13,17 @@ import {
   where,
 } from "firebase/firestore";
 
-import { auth, db } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 
 import { Screen } from "@/components/screen";
 import type { ConeCompletionWrite } from "@/lib/models";
-import { formatMeters } from "@/lib/formatters";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 
-import { Text, Button, Divider, Layout } from "@ui-kitten/components";
-import { CardShell } from "@/components/ui/CardShell";
-import { Pill } from "@/components/ui/Pill";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
@@ -50,7 +47,10 @@ type PublicReviewDoc = {
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
 
-  // 4A
+  // Auth (avoid auth.currentUser races)
+  const { loading: authLoading, uid } = useAuthUser();
+
+  // Cone
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
 
   // Shared location flow
@@ -62,16 +62,16 @@ export default function ConeDetailRoute() {
     request: requestLocation,
   } = useUserLocation();
 
-  // 4B
+  // Completion
   const {
     completedId,
     shareBonus,
-    loading: completionLoading,
+    // loading: completionLoading, // you can keep if you want to show it, but it's unused
     err: completionErr,
     setShareBonusLocal,
   } = useConeCompletion(coneId);
 
-  // 4C
+  // GPS gate
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: 50 });
 
   const [err, setErr] = useState<string>("");
@@ -95,12 +95,15 @@ export default function ConeDetailRoute() {
   // Reviews (live): my review + aggregate
   // ---------------------------------
   useEffect(() => {
-    if (!cone) return;
+    if (!cone?.id) return;
+    if (authLoading) return;
 
-    const user = auth.currentUser;
-    const myId = user ? `${user.uid}_${cone.id}` : null;
+    const myId = uid ? `${uid}_${cone.id}` : null;
 
-    const reviewsQ = query(collection(db, COL.coneReviews), where("coneId", "==", cone.id));
+    const reviewsQ = query(
+      collection(db, COL.coneReviews),
+      where("coneId", "==", cone.id),
+    );
 
     const unsub = onSnapshot(
       reviewsQ,
@@ -121,7 +124,8 @@ export default function ConeDetailRoute() {
           }
 
           if (myId && d.id === myId) {
-            mineRating = typeof data?.reviewRating === "number" ? data.reviewRating : null;
+            mineRating =
+              typeof data?.reviewRating === "number" ? data.reviewRating : null;
             mineText = typeof data?.reviewText === "string" ? data.reviewText : null;
           }
         });
@@ -136,11 +140,11 @@ export default function ConeDetailRoute() {
         console.error(e);
         setAvgRating(null);
         setRatingCount(0);
-      }
+      },
     );
 
     return () => unsub();
-  }, [cone?.id]);
+  }, [cone?.id, cone?.id && cone.id, uid, authLoading]);
 
   // ---------------------------------
   // Auto-refresh GPS on focus (skip if completed)
@@ -149,7 +153,7 @@ export default function ConeDetailRoute() {
     useCallback(() => {
       if (!completedId) void refreshLocation();
       return () => {};
-    }, [completedId, refreshLocation])
+    }, [completedId, refreshLocation]),
   );
 
   // ---------------------------------
@@ -161,8 +165,11 @@ export default function ConeDetailRoute() {
 
     setErr("");
 
-    const user = auth.currentUser;
-    if (!user) {
+    if (authLoading) {
+      setErr("Signing you in…");
+      return;
+    }
+    if (!uid) {
       setErr("Not signed in.");
       return;
     }
@@ -175,7 +182,10 @@ export default function ConeDetailRoute() {
     if (!loc) {
       try {
         await requestLocation?.();
-      } catch {}
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Something went wrong");
+        return;
+      }
       setErr("Location not available yet. Try refresh.");
       return;
     }
@@ -192,7 +202,9 @@ export default function ConeDetailRoute() {
       }
       if (gate.accuracyMeters != null && gate.accuracyMeters > 50) {
         setErr(
-          `GPS accuracy too low (${Math.round(gate.accuracyMeters)}m). Try refresh in a clearer spot.`
+          `GPS accuracy too low (${Math.round(
+            gate.accuracyMeters,
+          )}m). Try refresh in a clearer spot.`,
         );
         return;
       }
@@ -202,13 +214,13 @@ export default function ConeDetailRoute() {
 
     setSaving(true);
     try {
-      const completionId = `${user.uid}_${cone.id}`;
+      const completionId = `${uid}_${cone.id}`;
 
       const payload: ConeCompletionWrite = {
         coneId: cone.id,
         coneSlug: cone.slug,
         coneName: cone.name,
-        userId: user.uid,
+        userId: uid,
         completedAt: serverTimestamp(),
 
         deviceLat: loc.coords.latitude,
@@ -245,14 +257,14 @@ export default function ConeDetailRoute() {
     if (!completedId) return;
     if (shareBonus) return;
 
-    const user = auth.currentUser;
-    if (!user) return;
+    if (authLoading) return;
+    if (!uid) return;
 
     try {
       const text = `I just completed ${cone.name} 🌋 #AucklandCones #cones`;
       await Share.share({ message: text });
 
-      const completionId = `${user.uid}_${cone.id}`;
+      const completionId = `${uid}_${cone.id}`;
 
       await updateDoc(doc(db, COL.coneCompletions, completionId), {
         shareBonus: true,
@@ -279,8 +291,11 @@ export default function ConeDetailRoute() {
   async function saveReview() {
     if (!cone) return;
 
-    const user = auth.currentUser;
-    if (!user) {
+    if (authLoading) {
+      setErr("Signing you in…");
+      return;
+    }
+    if (!uid) {
       setErr("Not signed in.");
       return;
     }
@@ -301,12 +316,12 @@ export default function ConeDetailRoute() {
     setReviewSaving(true);
 
     try {
-      const reviewId = `${user.uid}_${cone.id}`;
+      const reviewId = `${uid}_${cone.id}`;
 
       const publicPayload: PublicReviewDoc = {
         coneId: cone.id,
         coneName: cone.name,
-        userId: user.uid,
+        userId: uid,
         reviewRating: draftRating,
         reviewText: draftText.trim() ? draftText.trim() : null,
         reviewCreatedAt: serverTimestamp(),
@@ -330,6 +345,15 @@ export default function ConeDetailRoute() {
   // Loading / error states
   // ---------------------------------
   const headerTitle = cone?.name ?? "Cone";
+
+  if (authLoading) {
+    return (
+      <Screen>
+        <Stack.Screen options={{ title: "Loading…" }} />
+        <LoadingState fullScreen={false} label="Signing you in…" />
+      </Screen>
+    );
+  }
 
   if (coneLoading) {
     return (
@@ -358,70 +382,73 @@ export default function ConeDetailRoute() {
   // ---------------------------------
   const completed = !!completedId;
   const hasReview = myReviewRating != null;
-  const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
 
   // One “top” error string for UI
   const topErr = err || completionErr || locErr || "";
 
-    return (
-      <Screen padded={false}>
-        <Stack.Screen options={{ title: headerTitle }} />
+  return (
+    <Screen padded={false}>
+      <Stack.Screen options={{ title: headerTitle }} />
 
-        <ScrollView
-          contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* HERO */}
-          <ConeHero cone={cone} completed={completed} />
+      <ScrollView
+        contentContainerStyle={{
+          paddingHorizontal: 16,
+          paddingTop: 16,
+          paddingBottom: 24,
+        }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* HERO */}
+        <ConeHero cone={cone} completed={completed} />
 
-          <View style={{ height: 14 }} />
+        <View style={{ height: 14 }} />
 
-          {/* REVIEWS SUMMARY */}
-          <ReviewsSummaryCard
-            ratingCount={ratingCount}
-            avgRating={avgRating}
-            onViewAll={() => goConeReviews(cone.id, cone.name)}
-          />
-
-          <View style={{ height: 14 }} />
-
-          {/* STATUS */}
-          <StatusCard
-            hasLoc={!!loc}
-            locStatus={locStatus}
-            locErr={locErr || null}
-            topErr={topErr}
-            gate={gate as any}
-            onRefreshGPS={() => void refreshLocation()}
-          />
-
-          <View style={{ height: 14 }} />
-
-          {/* ACTIONS */}
-          <ActionsCard
-            completed={completed}
-            saving={saving}
-            hasLoc={!!loc}
-            onComplete={() => void completeCone()}
-            hasReview={hasReview}
-            myReviewRating={myReviewRating}
-            myReviewText={myReviewText}
-            onOpenReview={openReview}
-            shareBonus={shareBonus}
-            onShareBonus={() => void doShareBonus()}
-          />
-        </ScrollView>
-
-        <ReviewModal
-          visible={reviewOpen}
-          saving={reviewSaving}
-          draftRating={draftRating}
-          draftText={draftText}
-          onChangeRating={setDraftRating}
-          onChangeText={setDraftText}
-          onClose={() => setReviewOpen(false)}
-          onSave={() => void saveReview()}
+        {/* REVIEWS SUMMARY */}
+        <ReviewsSummaryCard
+          ratingCount={ratingCount}
+          avgRating={avgRating}
+          onViewAll={() => goConeReviews(cone.id, cone.name)}
         />
-      </Screen>
-    );
+
+        <View style={{ height: 14 }} />
+
+        {/* STATUS */}
+        <StatusCard
+          hasLoc={!!loc}
+          locStatus={locStatus}
+          locErr={locErr || null}
+          topErr={topErr}
+          gate={gate as any}
+          onRefreshGPS={() => void refreshLocation()}
+        />
+
+        <View style={{ height: 14 }} />
+
+        {/* ACTIONS */}
+        <ActionsCard
+          completed={completed}
+          saving={saving}
+          hasLoc={!!loc}
+          onComplete={() => void completeCone()}
+          hasReview={hasReview}
+          myReviewRating={myReviewRating}
+          myReviewText={myReviewText}
+          onOpenReview={openReview}
+          shareBonus={shareBonus}
+          onShareBonus={() => void doShareBonus()}
+        />
+      </ScrollView>
+
+      <ReviewModal
+        visible={reviewOpen}
+        saving={reviewSaving}
+        draftRating={draftRating}
+        draftText={draftText}
+        onChangeRating={setDraftRating}
+        onChangeText={setDraftText}
+        onClose={() => setReviewOpen(false)}
+        onSave={() => void saveReview()}
+      />
+    </Screen>
+  );
 }

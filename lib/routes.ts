@@ -1,3 +1,4 @@
+// lib/routes.ts
 import { router } from "expo-router";
 
 /**
@@ -42,6 +43,9 @@ export function goMapHome() {
   router.replace("/(tabs)/map");
 }
 
-export function goLogin(router: { replace: (path: string) => void }) {
-  router.replace("login");
+/**
+ * Auth
+ */
+export function goLogin() {
+  router.replace("/login");
 }

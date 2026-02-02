@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View } from "react-native";
 import { Text, Button, Divider } from "@ui-kitten/components";
 import { Pill } from "@/components/ui/Pill";
 import { CardShell } from "../ui/CardShell";
@@ -33,12 +33,23 @@ export function ConeStatusCard({
       <View style={{ height: 12 }} />
 
       {loadingLocation ? (
-        <LoadingState fullScreen={false} size="small" label={null as any} style={{ paddingVertical: 12 }} />
+        <LoadingState
+          fullScreen={false}
+          size="small"
+          label={null as any}
+          style={{ paddingVertical: 12 }}
+        />
       ) : (
         <View style={{ gap: 12 }}>
           {/* Checkpoint */}
           {checkpointLabel ? (
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Text appearance="hint">Checkpoint</Text>
               <Pill>{checkpointLabel}</Pill>
             </View>
@@ -46,7 +57,13 @@ export function ConeStatusCard({
 
           {/* Distance */}
           {showDistance ? (
-            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
               <Text appearance="hint">Distance</Text>
               <Text style={{ fontWeight: "800" }}>
                 {distanceMeters == null ? "—" : `${Math.round(distanceMeters)} m`}
@@ -55,7 +72,13 @@ export function ConeStatusCard({
           ) : null}
 
           {/* Accuracy */}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text appearance="hint">Accuracy</Text>
             <Text style={{ fontWeight: "800" }}>
               {accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`}
@@ -65,7 +88,13 @@ export function ConeStatusCard({
           <Divider />
 
           {/* Range check */}
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text appearance="hint">Range</Text>
             <Pill status={inRange ? "success" : "danger"}>
               {inRange ? "In range" : "Not in range"}

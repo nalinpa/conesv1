@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { auth } from "@/lib/firebase";
 
 import type { ConeMeta, BadgeProgress } from "@/lib/badges";
 import { BADGES, getBadgeState } from "@/lib/badges";
@@ -7,6 +6,7 @@ import { BADGES, getBadgeState } from "@/lib/badges";
 import type { Cone } from "@/lib/models";
 import { coneService } from "@/lib/services/coneService";
 import { completionService } from "@/lib/services/completionService";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 export type BadgeTileItem = {
   id: string;
@@ -20,7 +20,6 @@ type BadgesData = {
   loading: boolean;
   err: string;
 
-  // base (existing)
   conesMeta: ConeMeta[];
   completedConeIds: Set<string>;
   shareBonusCount: number;
@@ -39,48 +38,54 @@ type BadgesData = {
 };
 
 export function useBadgesData(): BadgesData {
+  const { user, loading: authLoading, uid } = useAuthUser();
+
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
   const [cones, setCones] = useState<Cone[]>([]);
   const [completedConeIds, setCompletedConeIds] = useState<Set<string>>(new Set());
   const [shareBonusCount, setShareBonusCount] = useState(0);
-  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>({});
+  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>(
+    {},
+  );
 
+  // 1) Cones: one-time load after auth is ready + logged in
   useEffect(() => {
     let mounted = true;
-    let unsub: (() => void) | null = null;
+
+    // While auth hydrates, keep loading but don't error
+    if (authLoading) {
+      setLoading(true);
+      setErr("");
+      return () => {
+        mounted = false;
+      };
+    }
+
+    // Not logged in -> clear data (AuthGate should route away anyway)
+    if (!user) {
+      setCones([]);
+      setCompletedConeIds(new Set());
+      setShareBonusCount(0);
+      setCompletedAtByConeId({});
+      setLoading(false);
+      setErr("");
+      return () => {
+        mounted = false;
+      };
+    }
 
     (async () => {
       setLoading(true);
       setErr("");
-
       try {
-        const user = auth.currentUser;
-        if (!user) throw new Error("Not signed in.");
-
-        // 1) cones (one-time)
         const list = await coneService.listActiveCones();
         if (!mounted) return;
         setCones(list);
-
-        // 2) completions (live)
-        unsub = completionService.watchMyCompletions(
-          user.uid,
-          (state) => {
-            if (!mounted) return;
-            setCompletedConeIds(state.completedConeIds);
-            setShareBonusCount(state.shareBonusCount);
-            setCompletedAtByConeId(state.completedAtByConeId);
-          },
-          (e) => {
-            if (!mounted) return;
-            setErr((e as any)?.message ?? "Failed to load completions");
-          }
-        );
       } catch (e: any) {
         if (!mounted) return;
-        setErr(e?.message ?? "Failed to load badges data");
+        setErr(e?.message ?? "Failed to load cones");
       } finally {
         if (!mounted) return;
         setLoading(false);
@@ -89,9 +94,46 @@ export function useBadgesData(): BadgesData {
 
     return () => {
       mounted = false;
+    };
+  }, [authLoading, user]);
+
+  // 2) Completions: live subscription after auth is ready + logged in
+  useEffect(() => {
+    let mounted = true;
+    let unsub: (() => void) | null = null;
+
+    // Don’t subscribe until auth is settled
+    if (authLoading) return () => void (mounted = false);
+
+    // If logged out, clear completion-derived state
+    if (!user) {
+      setCompletedConeIds(new Set());
+      setShareBonusCount(0);
+      setCompletedAtByConeId({});
+      return () => void (mounted = false);
+    }
+
+    setErr("");
+
+    unsub = completionService.watchMyCompletions(
+      uid,
+      (state) => {
+        if (!mounted) return;
+        setCompletedConeIds(state.completedConeIds);
+        setShareBonusCount(state.shareBonusCount);
+        setCompletedAtByConeId(state.completedAtByConeId);
+      },
+      (e) => {
+        if (!mounted) return;
+        setErr((e as any)?.message ?? "Failed to load completions");
+      },
+    );
+
+    return () => {
+      mounted = false;
       if (unsub) unsub();
     };
-  }, []);
+  }, [authLoading, user]);
 
   const conesMeta: ConeMeta[] = useMemo(() => {
     return cones.map((c) => ({
@@ -125,7 +167,7 @@ export function useBadgesData(): BadgesData {
         name: b.name,
         unlockText: b.unlockText,
         unlocked,
-        progressLabel: unlocked ? null : progress?.progressLabel ?? null,
+        progressLabel: unlocked ? null : (progress?.progressLabel ?? null),
       };
     });
   }, [badgeState.earnedIds, badgeState.progressById]);

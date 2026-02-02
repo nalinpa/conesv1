@@ -39,7 +39,7 @@ export function ConesMapView({
         latitudeDelta: 0.08,
         longitudeDelta: 0.08,
       },
-      600
+      600,
     );
   }, [userLat, userLng]);
 

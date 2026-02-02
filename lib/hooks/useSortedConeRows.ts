@@ -26,10 +26,12 @@ export function useSortedConeRows(cones: Cone[], loc: Location.LocationObject | 
     }));
 
     rows.sort((a, b) => {
-      if (a.distanceMeters == null && b.distanceMeters == null) return a.cone.name.localeCompare(b.cone.name);
+      if (a.distanceMeters == null && b.distanceMeters == null)
+        return a.cone.name.localeCompare(b.cone.name);
       if (a.distanceMeters == null) return 1;
       if (b.distanceMeters == null) return -1;
-      if (a.distanceMeters !== b.distanceMeters) return a.distanceMeters - b.distanceMeters;
+      if (a.distanceMeters !== b.distanceMeters)
+        return a.distanceMeters - b.distanceMeters;
       return a.cone.name.localeCompare(b.cone.name);
     });
 

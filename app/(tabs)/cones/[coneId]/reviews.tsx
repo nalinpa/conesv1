@@ -47,7 +47,10 @@ function clampRating(n: any): number {
 }
 
 export default function ConeReviewsPage() {
-  const { coneId, coneName } = useLocalSearchParams<{ coneId: string; coneName?: string }>();
+  const { coneId, coneName } = useLocalSearchParams<{
+    coneId: string;
+    coneName?: string;
+  }>();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
@@ -67,7 +70,7 @@ export default function ConeReviewsPage() {
         const qy = query(
           collection(db, COL.coneReviews),
           where("coneId", "==", String(coneId)),
-          orderBy("reviewCreatedAt", "desc")
+          orderBy("reviewCreatedAt", "desc"),
         );
 
         const snap = await getDocs(qy);
@@ -91,8 +94,9 @@ export default function ConeReviewsPage() {
         if (!mounted) return;
         setErr(e?.message ?? "Failed to load reviews");
       } finally {
-        if (!mounted) return;
-        setLoading(false);
+        if (mounted) {
+            setLoading(false);
+        }
       }
     })();
 
@@ -118,7 +122,8 @@ export default function ConeReviewsPage() {
     return { avg: count > 0 ? sum / count : null, count };
   }, [reviews]);
 
-  const title = typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
+  const title =
+    typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
 
   function goBack() {
     if (router.canGoBack()) router.back();
@@ -132,7 +137,13 @@ export default function ConeReviewsPage() {
 
     return (
       <CardShell style={{ marginBottom: 12 }}>
-        <View style={{ flexDirection: "row", alignItems: "baseline", justifyContent: "space-between" }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+          }}
+        >
           <Text category="s1" style={{ fontWeight: "800" }}>
             {stars}
           </Text>
@@ -163,7 +174,11 @@ export default function ConeReviewsPage() {
           <LoadingState label="Loading reviews…" />
         ) : err ? (
           <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
-            <ErrorCard title="Couldn’t load reviews" message={err} action={{ label: "Back", onPress: goBack }} />
+            <ErrorCard
+              title="Couldn’t load reviews"
+              message={err}
+              action={{ label: "Back", onPress: goBack }}
+            />
           </View>
         ) : (
           <List
@@ -171,10 +186,20 @@ export default function ConeReviewsPage() {
             keyExtractor={(item) => item.id}
             renderItem={renderItem}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 }}
+            contentContainerStyle={{
+              paddingHorizontal: 16,
+              paddingTop: 16,
+              paddingBottom: 24,
+            }}
             ListHeaderComponent={
               <View style={{ marginBottom: 14 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
                   <View>
                     <Text category="h4" style={{ fontWeight: "900" }}>
                       Reviews

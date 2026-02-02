@@ -26,7 +26,7 @@ type Props = {
 
 function getStatusColors(
   theme: Record<string, any>,
-  status: CardStatus
+  status: CardStatus,
 ): { borderColor: string; backgroundColor: string } {
   // These theme keys exist in Eva themes; if you use custom tokens, adjust here.
   // Fallbacks are intentionally conservative.
