@@ -1,13 +1,8 @@
-import { useCallback, useState } from "react";
-import { View, ScrollView, Share } from "react-native";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppState, View, ScrollView, Share } from "react-native";
 import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
 
-import {
-  doc,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-} from "firebase/firestore";
+import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -41,6 +36,11 @@ type PublicReviewDoc = {
   reviewCreatedAt: any;
 };
 
+const MAX_ACCURACY_METERS = 50;
+
+// Minimum time between “Refresh GPS” calls (prevents spamming)
+const GPS_REFRESH_DEBOUNCE_MS = 2500;
+
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
 
@@ -63,14 +63,14 @@ export default function ConeDetailRoute() {
   const {
     completedId,
     shareBonus,
-    // loading: completionLoading, // you can keep if you want to show it, but it's unused
     err: completionErr,
     setShareBonusLocal,
   } = useConeCompletion(coneId);
 
   // GPS gate
-  const gate = useGPSGate(cone, loc, { maxAccuracyMeters: 50 });
+  const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
 
+  // Reviews summary
   const {
     avgRating,
     ratingCount,
@@ -79,6 +79,7 @@ export default function ConeDetailRoute() {
     err: reviewsErr,
   } = useConeReviewsSummary(coneId);
 
+  // UI state
   const [err, setErr] = useState<string>("");
   const [saving, setSaving] = useState(false);
 
@@ -89,13 +90,75 @@ export default function ConeDetailRoute() {
   const [reviewSaving, setReviewSaving] = useState(false);
 
   // ---------------------------------
-  // Auto-refresh GPS on focus (skip if completed)
+  // Battery-friendly GPS refresh guard
+  // ---------------------------------
+  const [refreshingGPS, setRefreshingGPS] = useState(false);
+  const lastGPSRefreshAtRef = useRef<number>(0);
+
+  const refreshGPSGuarded = useCallback(async () => {
+    // prevent concurrent refreshes
+    if (refreshingGPS) return;
+
+    // debounce
+    const now = Date.now();
+    if (now - lastGPSRefreshAtRef.current < GPS_REFRESH_DEBOUNCE_MS) return;
+
+    lastGPSRefreshAtRef.current = now;
+    setRefreshingGPS(true);
+
+    try {
+      // If permission is unknown, request (updates hook state)
+      if (locStatus === "unknown") {
+        await requestLocation();
+      }
+
+      // Refresh high-accuracy fix (will also update status if denied)
+      await refreshLocation();
+    } finally {
+      setRefreshingGPS(false);
+    }
+  }, [refreshingGPS, locStatus, requestLocation, refreshLocation]);
+
+  // ---------------------------------
+  // App returns from Settings → re-check permission + refresh fix
+  // ---------------------------------
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", async (state) => {
+      if (state !== "active") return;
+
+      // Re-check permission + get a location if possible (fast path)
+      const perm = await requestLocation();
+
+      // If granted, also try a high-accuracy refresh (guarded)
+      if (perm.ok) {
+        await refreshGPSGuarded();
+      }
+    });
+
+    return () => sub.remove();
+  }, [requestLocation, refreshGPSGuarded]);
+
+  // ---------------------------------
+  // Auto-refresh GPS on focus (skip if completed; avoid loops)
+  // Only refresh when we actually "need help":
+  //  - no loc yet, or
+  //  - accuracy is too low
   // ---------------------------------
   useFocusEffect(
     useCallback(() => {
-      if (!completedId) void refreshLocation();
+      if (completedId) return () => {};
+
+      const accuracyOk =
+        gate.accuracyMeters == null || gate.accuracyMeters <= MAX_ACCURACY_METERS;
+
+      const needsHelp = !loc || !accuracyOk;
+
+      if (needsHelp) {
+        void refreshGPSGuarded();
+      }
+
       return () => {};
-    }, [completedId, refreshLocation]),
+    }, [completedId, loc, gate.accuracyMeters, refreshGPSGuarded]),
   );
 
   // ---------------------------------
@@ -141,7 +204,7 @@ export default function ConeDetailRoute() {
         setErr(`Not in range yet. You are ~${Math.round(gate.distanceMeters)}m away.`);
         return;
       }
-      if (gate.accuracyMeters != null && gate.accuracyMeters > 50) {
+      if (gate.accuracyMeters != null && gate.accuracyMeters > MAX_ACCURACY_METERS) {
         setErr(
           `GPS accuracy too low (${Math.round(
             gate.accuracyMeters,
@@ -324,8 +387,9 @@ export default function ConeDetailRoute() {
   const completed = !!completedId;
   const hasReview = myReviewRating != null;
 
-  // One “top” error string for UI
+  // One “top” error string for UI (if you want to show it in a banner later)
   const topErr = err || completionErr || locErr || reviewsErr || "";
+  void topErr; // keeps TS happy if unused
 
   return (
     <Screen padded={false}>
@@ -355,12 +419,14 @@ export default function ConeDetailRoute() {
 
         {/* STATUS */}
         <StatusCard
-          hasLoc={!!loc}
+          completed={completed}
+          loc={loc}
           locStatus={locStatus}
-          locErr={locErr || null}
-          topErr={topErr}
-          gate={gate as any}
-          onRefreshGPS={() => void refreshLocation()}
+          accuracyMeters={gate.accuracyMeters}
+          inRange={gate.inRange}
+          onRefreshGPS={refreshGPSGuarded}
+          refreshingGPS={refreshingGPS}
+          maxAccuracyMeters={MAX_ACCURACY_METERS}
         />
 
         <View style={{ height: 14 }} />
