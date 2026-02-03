@@ -64,6 +64,7 @@ export function MapOverlayCard({
               status="danger"
               onPress={() => Linking.openSettings()}
               disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               Open Settings
             </Button>
@@ -75,6 +76,7 @@ export function MapOverlayCard({
                 status="basic"
                 onPress={onRefreshGPS}
                 disabled={refreshingGPS}
+                accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
               >
                 {refreshingGPS ? "Please wait…" : "Try again"}
               </Button>
@@ -112,6 +114,7 @@ export function MapOverlayCard({
               appearance="outline"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               {refreshingGPS ? "Refreshing…" : "Try again"}
             </Button>
@@ -145,7 +148,7 @@ export function MapOverlayCard({
 
         <Text appearance="hint">{distanceLabel}</Text>
 
-        <Button appearance="outline" onPress={onOpen} disabled={refreshingGPS}>
+        <Button appearance="outline" onPress={onOpen} disabled={refreshingGPS} accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}>
           View cone
         </Button>
 

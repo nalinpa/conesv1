@@ -86,12 +86,18 @@ export default function ConeDetailRoute() {
   const [draftRating, setDraftRating] = useState<number | null>(null);
   const [draftText, setDraftText] = useState("");
   const [reviewSaving, setReviewSaving] = useState(false);
+  const [optimisticReviewRating, setOptimisticReviewRating] = useState<number | null>(null);
+  const [optimisticReviewText, setOptimisticReviewText] = useState<string | null>(null);
 
   const refreshGPS = useCallback(async () => {
     // If permission is unknown, request first (updates hook state)
     if (locStatus === "unknown") {
-      await requestLocation();
+      const res = await requestLocation();
+      if (!res.ok) return;
     }
+
+    // If denied, don't keep trying
+    if (locStatus === "denied") return;
 
     // Guarded inside the hook (single-flight + min interval)
     await refreshLocation();
@@ -104,32 +110,29 @@ export default function ConeDetailRoute() {
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
 
-      (async () => {
-        // Re-check permission + grab a quick fix
-        const perm = await requestLocation();
+      // Only re-check when we might benefit:
+      // - permission unknown (first run / just returned from Settings)
+      // - no location yet (need a fix)
+      // - accuracy currently too low
+      const accuracyOk =
+        gate.accuracyMeters == null || gate.accuracyMeters <= MAX_ACCURACY_METERS;
 
-        // If granted, also try a high-accuracy refresh (GUARDED in hook)
-        if (perm.ok) {
-          await refreshLocation();
-        }
-      })();
+      const needsHelp = locStatus === "unknown" || !loc || !accuracyOk;
+
+      if (needsHelp) {
+        void refreshGPS();
+      }
     });
 
     return () => sub.remove();
-  }, [requestLocation, refreshLocation]);
+  }, [locStatus, loc, gate.accuracyMeters, refreshGPS]);
 
-  const onRefreshGPS = useCallback(async () => {
-    // If permission state is unknown, prompt first.
-    // (If already granted/denied, request() is not needed.)
-    if (locStatus === "unknown") {
-      const res = await requestLocation();
-      if (!res.ok) return; // denied or failed -> hook sets err/status
+  useEffect(() => {
+    if (myReviewRating != null) {
+      setOptimisticReviewRating(null);
+      setOptimisticReviewText(null);
     }
-
-    // High accuracy refresh (already single-flight + throttled inside the hook)
-    await refreshLocation();
-  }, [locStatus, requestLocation, refreshLocation]);
-
+  }, [myReviewRating]);
 
   // ---------------------------------
   // Auto-refresh GPS on focus (skip if completed; avoid loops)
@@ -283,6 +286,7 @@ export default function ConeDetailRoute() {
     setDraftRating(null);
     setDraftText("");
     setReviewOpen(true);
+    setErr("");
   }
 
   async function saveReview() {
@@ -328,7 +332,8 @@ export default function ConeDetailRoute() {
 
       await setDoc(doc(db, COL.coneReviews, reviewId), publicPayload);
 
-      // Optional: local optimism (hook snapshot will confirm anyway)
+      setOptimisticReviewRating(draftRating);
+      setOptimisticReviewText(cleanedText);
       setReviewOpen(false);
     } catch (e: any) {
       console.error(e);
@@ -378,7 +383,10 @@ export default function ConeDetailRoute() {
   // Main UI
   // ---------------------------------
   const completed = !!completedId;
-  const hasReview = myReviewRating != null;
+  const displayReviewRating = optimisticReviewRating ?? myReviewRating;
+  const displayReviewText = optimisticReviewText ?? myReviewText;
+
+  const hasReview = displayReviewRating != null;
 
   // One “top” error string for UI (if you want to show it in a banner later)
   const topErr = err || completionErr || locErr || reviewsErr || "";
@@ -401,6 +409,13 @@ export default function ConeDetailRoute() {
 
         <View style={{ height: 14 }} />
 
+        {err ? (
+          <>
+            <ErrorCard title="Can’t save review" message={err} status="warning" />
+            <View style={{ height: 14 }} />
+          </>
+        ) : null}
+
         {/* REVIEWS SUMMARY */}
         <ReviewsSummaryCard
           ratingCount={ratingCount}
@@ -417,7 +432,7 @@ export default function ConeDetailRoute() {
           locStatus={locStatus}
           accuracyMeters={gate.accuracyMeters}
           inRange={gate.inRange}
-          onRefreshGPS={onRefreshGPS}
+          onRefreshGPS={refreshGPS}
           refreshingGPS={isRefreshing}
           maxAccuracyMeters={MAX_ACCURACY_METERS}
         />
@@ -431,8 +446,8 @@ export default function ConeDetailRoute() {
           hasLoc={!!loc}
           onComplete={() => void completeCone()}
           hasReview={hasReview}
-          myReviewRating={myReviewRating}
-          myReviewText={myReviewText}
+          myReviewRating={displayReviewRating}
+          myReviewText={displayReviewText}
           onOpenReview={openReview}
           shareBonus={shareBonus}
           onShareBonus={() => void doShareBonus()}
