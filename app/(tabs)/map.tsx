@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { View } from "react-native";
 
 import { goCone } from "@/lib/routes";
@@ -20,14 +20,17 @@ import { ConesMapView } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 
 export default function MapScreen() {
-  const { user, loading: authLoading, uid } = useAuthUser();
+  const { loading: authLoading, uid } = useAuthUser();
 
   const { cones, loading, err } = useCones();
+
   const {
     loc,
     err: locErr,
     status: locStatus,
     request: requestLocation,
+    refresh: refreshLocation, // ✅ guarded (Highest)
+    isRefreshing, // ✅ disable buttons / show spinner
   } = useUserLocation();
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -54,7 +57,7 @@ export default function MapScreen() {
     return () => {
       if (unsub) unsub();
     };
-  }, [authLoading, user]);
+  }, [authLoading, uid]);
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
@@ -70,6 +73,18 @@ export default function MapScreen() {
       radiusMeters: c.radiusMeters,
     }));
   }, [cones]);
+
+  // ✅ single refresh handler used by overlay
+  const refreshGPS = useCallback(async () => {
+    // If permission is unknown, request first (shows prompt).
+    if (locStatus === "unknown") {
+      const res = await requestLocation();
+      if (!res.ok) return;
+    }
+
+    // Then always try a high-accuracy fix (guarded + throttled in hook)
+    await refreshLocation();
+  }, [locStatus, requestLocation, refreshLocation]);
 
   // Optional: if you want Map to be “quiet” during auth hydration
   // (AuthGate should handle routing anyway)
@@ -111,13 +126,14 @@ export default function MapScreen() {
         {nearestUnclimbed ? (
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
             <MapOverlayCard
-              title={nearestUnclimbed?.cone.name ?? "Nearest cone"}
-              subtitle={nearestUnclimbed ? "Tap to view details" : undefined}
-              distanceMeters={nearestUnclimbed?.distanceMeters ?? null}
+              title={nearestUnclimbed.cone.name}
+              subtitle="Tap to view details"
+              distanceMeters={nearestUnclimbed.distanceMeters ?? null}
               onOpen={() => goCone(nearestUnclimbed.cone.id)}
               locStatus={locStatus}
               hasLoc={!!loc}
-              onRefreshGPS={() => void requestLocation()}
+              onRefreshGPS={() => void refreshGPS()} // ✅ guarded + high accuracy
+              refreshingGPS={isRefreshing} // ✅ disable / spinner
             />
           </View>
         ) : null}

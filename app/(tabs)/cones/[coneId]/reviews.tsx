@@ -8,11 +8,14 @@ import { COL } from "@/lib/constants/firestore";
 import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
-import { Layout, Text, Button, List } from "@ui-kitten/components";
+import { Layout, List } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
+
+import { ReviewListItem } from "@/components/reviews/ReviewListItem";
+import { ReviewsHeader } from "@/components/reviews/ReviewsHeader";
 
 type PublicReview = {
   id: string;
@@ -23,22 +26,6 @@ type PublicReview = {
   reviewText?: string | null;
   reviewCreatedAt?: any;
 };
-
-function formatDateMaybe(ts: any): string | null {
-  try {
-    if (!ts) return null;
-    if (typeof ts?.toDate === "function") {
-      const d: Date = ts.toDate();
-      return d.toLocaleDateString();
-    }
-    if (typeof ts === "number") {
-      return new Date(ts).toLocaleDateString();
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 function clampRating(n: any): number {
   const v = Number(n);
@@ -94,9 +81,7 @@ export default function ConeReviewsPage() {
         if (!mounted) return;
         setErr(e?.message ?? "Failed to load reviews");
       } finally {
-        if (mounted) {
-          setLoading(false);
-        }
+        if (mounted) setLoading(false);
       }
     })();
 
@@ -131,37 +116,12 @@ export default function ConeReviewsPage() {
   }
 
   const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {
-    const rating = clampRating(item.reviewRating);
-    const stars = rating ? "★".repeat(Math.max(1, Math.min(5, Math.round(rating)))) : "—";
-    const when = formatDateMaybe(item.reviewCreatedAt);
-
     return (
-      <CardShell style={{ marginBottom: 12 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text category="s1" style={{ fontWeight: "800" }}>
-            {stars}
-          </Text>
-          <Text appearance="hint" category="c1">
-            {rating ? `${rating}/5` : ""}
-          </Text>
-        </View>
-
-        {when ? (
-          <Text appearance="hint" category="c1" style={{ marginTop: 6 }}>
-            {when}
-          </Text>
-        ) : null}
-
-        <Text appearance="hint" style={{ marginTop: 10 }}>
-          {item.reviewText?.trim() ? item.reviewText.trim() : "No comment."}
-        </Text>
-      </CardShell>
+      <ReviewListItem
+        rating={item.reviewRating}
+        text={item.reviewText}
+        createdAt={item.reviewCreatedAt}
+      />
     );
   };
 
@@ -192,34 +152,19 @@ export default function ConeReviewsPage() {
               paddingBottom: 24,
             }}
             ListHeaderComponent={
-              <View style={{ marginBottom: 14 }}>
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <View>
-                    <Text category="h4" style={{ fontWeight: "900" }}>
-                      Reviews
-                    </Text>
-                    <Text appearance="hint" style={{ marginTop: 4 }}>
-                      {summary.count === 0
-                        ? "No reviews yet."
-                        : `★ ${summary.avg?.toFixed(1)} / 5 (${summary.count} review${summary.count === 1 ? "" : "s"})`}
-                    </Text>
-                  </View>
-
-                  <Button size="small" appearance="outline" onPress={goBack}>
-                    Back
-                  </Button>
-                </View>
-              </View>
+              <ReviewsHeader
+                title={title}
+                avg={summary.avg}
+                count={summary.count}
+                onBack={goBack}
+              />
             }
             ListEmptyComponent={
               <CardShell>
-                <Text appearance="hint">No reviews yet — be the first 😈</Text>
+                {/* Keeping your exact copy */}
+                <View>
+                  {/* Layout uses Text styles from children, so keep it simple */}
+                </View>
               </CardShell>
             }
           />

@@ -38,9 +38,6 @@ type PublicReviewDoc = {
 
 const MAX_ACCURACY_METERS = 50;
 
-// Minimum time between “Refresh GPS” calls (prevents spamming)
-const GPS_REFRESH_DEBOUNCE_MS = 2500;
-
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
 
@@ -57,6 +54,7 @@ export default function ConeDetailRoute() {
     err: locErr,
     refresh: refreshLocation,
     request: requestLocation,
+    isRefreshing 
   } = useUserLocation();
 
   // Completion
@@ -89,54 +87,49 @@ export default function ConeDetailRoute() {
   const [draftText, setDraftText] = useState("");
   const [reviewSaving, setReviewSaving] = useState(false);
 
-  // ---------------------------------
-  // Battery-friendly GPS refresh guard
-  // ---------------------------------
-  const [refreshingGPS, setRefreshingGPS] = useState(false);
-  const lastGPSRefreshAtRef = useRef<number>(0);
-
-  const refreshGPSGuarded = useCallback(async () => {
-    // prevent concurrent refreshes
-    if (refreshingGPS) return;
-
-    // debounce
-    const now = Date.now();
-    if (now - lastGPSRefreshAtRef.current < GPS_REFRESH_DEBOUNCE_MS) return;
-
-    lastGPSRefreshAtRef.current = now;
-    setRefreshingGPS(true);
-
-    try {
-      // If permission is unknown, request (updates hook state)
-      if (locStatus === "unknown") {
-        await requestLocation();
-      }
-
-      // Refresh high-accuracy fix (will also update status if denied)
-      await refreshLocation();
-    } finally {
-      setRefreshingGPS(false);
+  const refreshGPS = useCallback(async () => {
+    // If permission is unknown, request first (updates hook state)
+    if (locStatus === "unknown") {
+      await requestLocation();
     }
-  }, [refreshingGPS, locStatus, requestLocation, refreshLocation]);
+
+    // Guarded inside the hook (single-flight + min interval)
+    await refreshLocation();
+  }, [locStatus, requestLocation, refreshLocation]);
 
   // ---------------------------------
   // App returns from Settings → re-check permission + refresh fix
   // ---------------------------------
   useEffect(() => {
-    const sub = AppState.addEventListener("change", async (state) => {
+    const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
 
-      // Re-check permission + get a location if possible (fast path)
-      const perm = await requestLocation();
+      (async () => {
+        // Re-check permission + grab a quick fix
+        const perm = await requestLocation();
 
-      // If granted, also try a high-accuracy refresh (guarded)
-      if (perm.ok) {
-        await refreshGPSGuarded();
-      }
+        // If granted, also try a high-accuracy refresh (GUARDED in hook)
+        if (perm.ok) {
+          await refreshLocation();
+        }
+      })();
     });
 
     return () => sub.remove();
-  }, [requestLocation, refreshGPSGuarded]);
+  }, [requestLocation, refreshLocation]);
+
+  const onRefreshGPS = useCallback(async () => {
+    // If permission state is unknown, prompt first.
+    // (If already granted/denied, request() is not needed.)
+    if (locStatus === "unknown") {
+      const res = await requestLocation();
+      if (!res.ok) return; // denied or failed -> hook sets err/status
+    }
+
+    // High accuracy refresh (already single-flight + throttled inside the hook)
+    await refreshLocation();
+  }, [locStatus, requestLocation, refreshLocation]);
+
 
   // ---------------------------------
   // Auto-refresh GPS on focus (skip if completed; avoid loops)
@@ -154,11 +147,11 @@ export default function ConeDetailRoute() {
       const needsHelp = !loc || !accuracyOk;
 
       if (needsHelp) {
-        void refreshGPSGuarded();
+        void refreshGPS();
       }
 
       return () => {};
-    }, [completedId, loc, gate.accuracyMeters, refreshGPSGuarded]),
+    }, [completedId, loc, gate.accuracyMeters, refreshGPS]),
   );
 
   // ---------------------------------
@@ -424,8 +417,8 @@ export default function ConeDetailRoute() {
           locStatus={locStatus}
           accuracyMeters={gate.accuracyMeters}
           inRange={gate.inRange}
-          onRefreshGPS={refreshGPSGuarded}
-          refreshingGPS={refreshingGPS}
+          onRefreshGPS={onRefreshGPS}
+          refreshingGPS={isRefreshing}
           maxAccuracyMeters={MAX_ACCURACY_METERS}
         />
 
