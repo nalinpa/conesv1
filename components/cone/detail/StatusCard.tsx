@@ -40,7 +40,7 @@ export function StatusCard({
   completed: boolean;
 
   loc: any | null;
-  locStatus: "unknown" | "granted" | "denied";
+  locStatus: unknown; // ✅ tolerant input
 
   accuracyMeters: number | null;
   inRange: boolean;
@@ -49,7 +49,8 @@ export function StatusCard({
   distanceMeters?: number | null;
   checkpointRadiusMeters?: number | null;
 
-  onRefreshGPS?: () => void;
+  // ✅ allow async handler
+  onRefreshGPS?: () => void | Promise<void>;
 
   /** Battery-friendly refresh UI: disable buttons while refreshing */
   refreshingGPS?: boolean;

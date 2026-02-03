@@ -1,6 +1,6 @@
 import React from "react";
 import { View } from "react-native";
-import { Text, Button } from "@ui-kitten/components";
+import { Text, Button, Spinner } from "@ui-kitten/components";
 import * as Linking from "expo-linking";
 
 import { CardShell } from "../ui/CardShell";
@@ -20,19 +20,25 @@ export function MapOverlayCard({
   distanceMeters,
   onOpen,
 
-  // ✅ now tolerant
+  // tolerant
   locStatus,
   hasLoc,
   onRefreshGPS,
+
+  // ✅ new: battery-friendly refresh UI state
+  refreshingGPS = false,
 }: {
   title: string;
   subtitle?: string;
   distanceMeters: number | null;
   onOpen: () => void;
 
-  locStatus: unknown; // ✅ changed from LocStatus to unknown
+  locStatus: unknown;
   hasLoc: boolean;
   onRefreshGPS?: () => void;
+
+  /** Disable buttons / show spinner while refresh is running */
+  refreshingGPS?: boolean;
 }) {
   const status = normalizeLocStatus(locStatus);
 
@@ -57,6 +63,7 @@ export function MapOverlayCard({
               appearance="outline"
               status="danger"
               onPress={() => Linking.openSettings()}
+              disabled={refreshingGPS}
             >
               Open Settings
             </Button>
@@ -67,11 +74,21 @@ export function MapOverlayCard({
                 appearance="ghost"
                 status="basic"
                 onPress={onRefreshGPS}
+                disabled={refreshingGPS}
               >
-                Try again
+                {refreshingGPS ? "Please wait…" : "Try again"}
               </Button>
             ) : null}
           </View>
+
+          {refreshingGPS ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Spinner size="tiny" />
+              <Text appearance="hint" category="c1">
+                Re-checking…
+              </Text>
+            </View>
+          ) : null}
         </View>
       </CardShell>
     );
@@ -90,9 +107,23 @@ export function MapOverlayCard({
           </Text>
 
           {onRefreshGPS ? (
-            <Button size="small" appearance="outline" onPress={onRefreshGPS}>
-              Try again
+            <Button
+              size="small"
+              appearance="outline"
+              onPress={onRefreshGPS}
+              disabled={refreshingGPS}
+            >
+              {refreshingGPS ? "Refreshing…" : "Try again"}
             </Button>
+          ) : null}
+
+          {refreshingGPS ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Spinner size="tiny" />
+              <Text appearance="hint" category="c1">
+                Getting a better fix…
+              </Text>
+            </View>
           ) : null}
         </View>
       </CardShell>
@@ -114,9 +145,18 @@ export function MapOverlayCard({
 
         <Text appearance="hint">{distanceLabel}</Text>
 
-        <Button appearance="outline" onPress={onOpen}>
+        <Button appearance="outline" onPress={onOpen} disabled={refreshingGPS}>
           View cone
         </Button>
+
+        {refreshingGPS ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Spinner size="tiny" />
+            <Text appearance="hint" category="c1">
+              Refreshing GPS…
+            </Text>
+          </View>
+        ) : null}
       </View>
     </CardShell>
   );
