@@ -12,6 +12,7 @@ import { formatDistanceMeters, formatMeters } from "@/lib/formatters";
 type GPSState =
   | "completed"
   | "denied"
+  | "unknown_permission"
   | "requesting"
   | "low_accuracy"
   | "too_far"
@@ -62,6 +63,7 @@ export function StatusCard({
   const gpsState: GPSState = useMemo(() => {
     if (completed) return "completed";
     if (status === "denied") return "denied";
+    if (status === "unknown") return "unknown_permission";
     if (!loc) return "requesting";
     if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters)
       return "low_accuracy";
@@ -117,6 +119,7 @@ export function StatusCard({
               status="danger"
               onPress={() => Linking.openSettings()}
               disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               Open Settings
             </Button>
@@ -129,19 +132,41 @@ export function StatusCard({
                 status="basic"
                 onPress={onRefreshGPS}
                 disabled={refreshingGPS}
+                accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
               >
-                {refreshingGPS ? "Please wait…" : "Try again"}
+                {refreshingGPS ? "Re-checking…" : "Re-check"}
               </Button>
             ) : null}
           </View>
+        </View>
+      </CardShell>
+    );
+  }
 
-          {refreshingGPS ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Spinner size="tiny" />
-              <Text appearance="hint" category="c1">
-                Re-checking permission…
-              </Text>
-            </View>
+  // --- UNKNOWN PERMISSION ---
+  if (gpsState === "unknown_permission") {
+    return (
+      <CardShell status="basic">
+        <View style={{ gap: 10 }}>
+          <Text category="h6" style={{ fontWeight: "900" }}>
+            Enable location to continue
+          </Text>
+
+          <Text appearance="hint">
+            Cones needs location access to show your distance and verify completion.
+          </Text>
+
+          {onRefreshGPS ? (
+            <Button
+              size="small"
+              appearance="outline"
+              status="basic"
+              onPress={onRefreshGPS}
+              disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+            >
+              {refreshingGPS ? "Requesting…" : "Enable location"}
+            </Button>
           ) : null}
         </View>
       </CardShell>
@@ -169,6 +194,7 @@ export function StatusCard({
               status="basic"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               {refreshLabel}
             </Button>
@@ -210,6 +236,7 @@ export function StatusCard({
               status="warning"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               {refreshLabel}
             </Button>
@@ -264,6 +291,7 @@ export function StatusCard({
               status="warning"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               {refreshLabel}
             </Button>

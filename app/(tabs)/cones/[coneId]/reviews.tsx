@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { View, ListRenderItemInfo } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 
@@ -8,7 +8,7 @@ import { COL } from "@/lib/constants/firestore";
 import { goCone } from "@/lib/routes";
 
 import { Screen } from "@/components/screen";
-import { Layout, List } from "@ui-kitten/components";
+import { Layout, List, Text, Button } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -42,6 +42,19 @@ export default function ConeReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string>("");
   const [reviews, setReviews] = useState<PublicReview[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const title =
+    typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
+
+  const goBack = useCallback(() => {
+    if (router.canGoBack()) router.back();
+    else goCone(String(coneId));
+  }, [coneId]);
+
+  const retry = useCallback(() => {
+    setReloadKey((k) => k + 1);
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -49,7 +62,6 @@ export default function ConeReviewsPage() {
     (async () => {
       setLoading(true);
       setErr("");
-      setReviews([]);
 
       try {
         if (!coneId) throw new Error("Missing coneId.");
@@ -88,7 +100,7 @@ export default function ConeReviewsPage() {
     return () => {
       mounted = false;
     };
-  }, [coneId]);
+  }, [coneId, reloadKey]);
 
   const summary = useMemo(() => {
     if (reviews.length === 0) return { avg: null as number | null, count: 0 };
@@ -107,14 +119,6 @@ export default function ConeReviewsPage() {
     return { avg: count > 0 ? sum / count : null, count };
   }, [reviews]);
 
-  const title =
-    typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Cone";
-
-  function goBack() {
-    if (router.canGoBack()) router.back();
-    else goCone(String(coneId));
-  }
-
   const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {
     return (
       <ReviewListItem
@@ -125,50 +129,78 @@ export default function ConeReviewsPage() {
     );
   };
 
-  return (
-    <Screen padded={false}>
-      <Stack.Screen options={{ title: `${title} Reviews` }} />
+  const header = (
+    <ReviewsHeader title={title} avg={summary.avg} count={summary.count} onBack={goBack} />
+  );
 
-      <Layout style={{ flex: 1 }}>
-        {loading ? (
+  if (loading) {
+    return (
+      <Screen padded={false}>
+        <Stack.Screen options={{ title: `${title} Reviews` }} />
+        <Layout style={{ flex: 1 }}>
           <LoadingState label="Loading reviews…" />
-        ) : err ? (
+        </Layout>
+      </Screen>
+    );
+  }
+
+  if (err) {
+    return (
+      <Screen padded={false}>
+        <Stack.Screen options={{ title: `${title} Reviews` }} />
+        <Layout style={{ flex: 1 }}>
           <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
             <ErrorCard
               title="Couldn’t load reviews"
               message={err}
               action={{ label: "Back", onPress: goBack }}
+              secondaryAction={{ label: "Retry", onPress: retry }}
             />
           </View>
-        ) : (
-          <List
-            data={reviews}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingHorizontal: 16,
-              paddingTop: 16,
-              paddingBottom: 24,
-            }}
-            ListHeaderComponent={
-              <ReviewsHeader
-                title={title}
-                avg={summary.avg}
-                count={summary.count}
-                onBack={goBack}
-              />
-            }
-            ListEmptyComponent={
-              <CardShell>
-                {/* Keeping your exact copy */}
-                <View>
-                  {/* Layout uses Text styles from children, so keep it simple */}
+        </Layout>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen padded={false}>
+      <Stack.Screen options={{ title: `${title} Reviews` }} />
+
+      <Layout style={{ flex: 1 }}>
+        <List
+          data={reviews}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 16,
+            paddingTop: 16,
+            paddingBottom: 24,
+          }}
+          ListHeaderComponent={header}
+          ListEmptyComponent={
+            <CardShell>
+              <View style={{ gap: 10 }}>
+                <Text category="s1" style={{ fontWeight: "900" }}>
+                  No reviews yet
+                </Text>
+
+                <Text appearance="hint">
+                  Be the first to leave a rating after you complete this cone.
+                </Text>
+
+                <View style={{ flexDirection: "row", gap: 10 }}>
+                  <Button appearance="outline" onPress={goBack} style={{ flex: 1 }}>
+                    Back
+                  </Button>
+                  <Button appearance="ghost" onPress={retry} style={{ flex: 1 }}>
+                    Refresh
+                  </Button>
                 </View>
-              </CardShell>
-            }
-          />
-        )}
+              </View>
+            </CardShell>
+          }
+        />
       </Layout>
     </Screen>
   );
