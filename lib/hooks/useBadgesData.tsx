@@ -5,8 +5,8 @@ import { BADGES, getBadgeState } from "@/lib/badges";
 
 import type { Cone } from "@/lib/models";
 import { coneService } from "@/lib/services/coneService";
-import { completionService } from "@/lib/services/completionService";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 
 export type BadgeTileItem = {
   id: string;
@@ -25,6 +25,7 @@ type BadgesData = {
   shareBonusCount: number;
   completedAtByConeId: Record<string, number>;
   cones: Cone[];
+  uncompletedCones: Cone[];
 
   badgeState: {
     earnedIds: Set<string>;
@@ -38,17 +39,18 @@ type BadgesData = {
 };
 
 export function useBadgesData(): BadgesData {
-  const { user, loading: authLoading, uid } = useAuthUser();
+  const { user, loading: authLoading } = useAuthUser();
 
-  const [loading, setLoading] = useState(true);
+  const [conesLoading, setConesLoading] = useState(true);
   const [err, setErr] = useState("");
 
   const [cones, setCones] = useState<Cone[]>([]);
-  const [completedConeIds, setCompletedConeIds] = useState<Set<string>>(new Set());
-  const [shareBonusCount, setShareBonusCount] = useState(0);
-  const [completedAtByConeId, setCompletedAtByConeId] = useState<Record<string, number>>(
-    {},
-  );
+
+  // Completions (live)
+  const my = useMyCompletions();
+  const completedConeIds = my.completedConeIds;
+  const shareBonusCount = my.shareBonusCount;
+  const completedAtByConeId = my.completedAtByConeId;
 
   // 1) Cones: one-time load after auth is ready + logged in
   useEffect(() => {
@@ -56,7 +58,7 @@ export function useBadgesData(): BadgesData {
 
     // While auth hydrates, keep loading but don't error
     if (authLoading) {
-      setLoading(true);
+      setConesLoading(true);
       setErr("");
       return () => {
         mounted = false;
@@ -66,10 +68,7 @@ export function useBadgesData(): BadgesData {
     // Not logged in -> clear data (AuthGate should route away anyway)
     if (!user) {
       setCones([]);
-      setCompletedConeIds(new Set());
-      setShareBonusCount(0);
-      setCompletedAtByConeId({});
-      setLoading(false);
+      setConesLoading(false);
       setErr("");
       return () => {
         mounted = false;
@@ -77,7 +76,7 @@ export function useBadgesData(): BadgesData {
     }
 
     (async () => {
-      setLoading(true);
+      setConesLoading(true);
       setErr("");
       try {
         const list = await coneService.listActiveCones();
@@ -88,7 +87,7 @@ export function useBadgesData(): BadgesData {
         setErr(e?.message ?? "Failed to load cones");
       } finally {
         if (!mounted) return;
-        setLoading(false);
+        setConesLoading(false);
       }
     })();
 
@@ -97,52 +96,26 @@ export function useBadgesData(): BadgesData {
     };
   }, [authLoading, user]);
 
-  // 2) Completions: live subscription after auth is ready + logged in
-  useEffect(() => {
-    let mounted = true;
-    let unsub: (() => void) | null = null;
+  // Prefer showing an error if either cones or completions fail
+  const mergedErr = useMemo(() => {
+    return err || my.err;
+  }, [err, my.err]);
 
-    // Don’t subscribe until auth is settled
-    if (authLoading) return () => void (mounted = false);
-
-    // If logged out, clear completion-derived state
-    if (!user) {
-      setCompletedConeIds(new Set());
-      setShareBonusCount(0);
-      setCompletedAtByConeId({});
-      return () => void (mounted = false);
-    }
-
-    setErr("");
-
-    unsub = completionService.watchMyCompletions(
-      uid,
-      (state) => {
-        if (!mounted) return;
-        setCompletedConeIds(state.completedConeIds);
-        setShareBonusCount(state.shareBonusCount);
-        setCompletedAtByConeId(state.completedAtByConeId);
-      },
-      (e) => {
-        if (!mounted) return;
-        setErr((e as any)?.message ?? "Failed to load completions");
-      },
-    );
-
-    return () => {
-      mounted = false;
-      if (unsub) unsub();
-    };
-  }, [authLoading, user]);
+  const loading = conesLoading || my.loading;
 
   const conesMeta: ConeMeta[] = useMemo(() => {
     return cones.map((c) => ({
       id: c.id,
       active: c.active,
-      type: c.type,
+      category: c.category,
       region: c.region,
     }));
   }, [cones]);
+
+  const uncompletedCones = useMemo(() => {
+    if (!completedConeIds.size) return cones;
+    return cones.filter((c) => !completedConeIds.has(c.id));
+  }, [cones, completedConeIds]);
 
   const badgeState = useMemo(() => {
     return getBadgeState(BADGES, {
@@ -174,10 +147,11 @@ export function useBadgesData(): BadgesData {
 
   return {
     loading,
-    err,
+    err: mergedErr,
 
     cones,
     conesMeta,
+    uncompletedCones,
     completedConeIds,
     shareBonusCount,
     completedAtByConeId,

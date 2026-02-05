@@ -1,5 +1,5 @@
-export type ConeType = "cone" | "crater";
-export type ConeRegion = "north" | "central" | "south" | "harbour";
+export type ConeCategory = "cone" | "crater" | "lake" | "other";
+export type ConeRegion = "north" | "central" | "east" | "south" | "harbour";
 
 export type Checkpoint = {
   id?: string; // stable string (recommended)
@@ -19,8 +19,8 @@ export type Cone = {
   checkpoints?: Checkpoint[];
   description?: string;
   active: boolean;
-  type?: ConeType;
-  region?: ConeRegion;
+  category: ConeCategory;
+  region: ConeRegion;
 };
 
 export type ConeCompletionWrite = {

@@ -1,35 +1,82 @@
-import { useMemo } from "react";
-import { View, FlatList } from "react-native";
+import { useMemo, useState } from "react";
+import { View } from "react-native";
 
-import { Layout, Text, Button } from "@ui-kitten/components";
+import { Layout, Text } from "@ui-kitten/components";
 
 import { Screen } from "@/components/screen";
-import { CardShell } from "@/components/ui/CardShell";
-import { Pill } from "@/components/ui/Pill";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
+import { CardShell } from "@/components/ui/CardShell";
 
-import { formatDistanceMeters } from "@/lib/formatters";
-import { goCone, goConesHome } from "@/lib/routes";
+import { goCone } from "@/lib/routes";
 
 import { useCones } from "@/lib/hooks/useCones";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
+import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
+
+import type { ConeCategory, ConeRegion } from "@/lib/models";
+
+import { ConesListView } from "@/components/cone/list/ConesListView";
+import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
+import {
+  ConeFiltersCard,
+  type ConeFiltersValue,
+} from "@/components/cone/list/ConeFiltersCard";
+
+const DEFAULT_FILTERS: ConeFiltersValue = {
+  hideCompleted: true,
+  region: "all",
+  category: "all",
+};
 
 export default function ConeListPage() {
   // Data
   const { cones, loading, err, reload } = useCones();
 
   // Location
-  const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
+  const { loc, status, err: locErr, request, refresh: refreshGPS } =
+    useUserLocation();
+
+  // Completions (live)
+  const {
+    completedConeIds,
+    loading: completionsLoading,
+    err: completionsErr,
+  } = useMyCompletions();
+
+  const [filters, setFilters] = useState<ConeFiltersValue>(DEFAULT_FILTERS);
+
+  // Active cones count (for empty state correctness)
+  const activeCones = useMemo(() => {
+    // If useCones() already returns only active, this still works.
+    return cones.filter((c) => !!c.active);
+  }, [cones]);
+
+  const totalActiveCount = activeCones.length;
+
+  const filteredCones = useMemo(() => {
+    let list = activeCones;
+
+    if (filters.hideCompleted && completedConeIds.size) {
+      list = list.filter((c) => !completedConeIds.has(c.id));
+    }
+
+    if (filters.region !== "all") {
+      list = list.filter((c) => c.region === (filters.region as ConeRegion));
+    }
+
+    if (filters.category !== "all") {
+      list = list.filter(
+        (c) => c.category === (filters.category as ConeCategory)
+      );
+    }
+
+    return list;
+  }, [activeCones, filters, completedConeIds]);
 
   // Sorted rows (distance-aware when loc exists)
-  const rows = useSortedConeRows(cones, loc);
-
-  const gpsButtonLabel = useMemo(() => {
-    if (status === "denied") return "Enable GPS";
-    return loc ? "Refresh GPS" : "Enable GPS";
-  }, [loc, status]);
+  const rows = useSortedConeRows(filteredCones, loc);
 
   // ----------------------------
   // Loading / error states
@@ -62,111 +109,71 @@ export default function ConeListPage() {
     );
   }
 
+  const header = (
+    <View style={{ gap: 12 }}>
+      <ConesListHeader
+        status={status}
+        hasLoc={!!loc}
+        locErr={locErr}
+        onPressGPS={() => void (loc ? refreshGPS() : request())}
+      />
+
+      <ConeFiltersCard
+        value={filters}
+        onChange={setFilters}
+        completedCount={completedConeIds.size}
+        completionsLoading={completionsLoading}
+        completionsErr={completionsErr}
+        shownCount={rows.length}
+      />
+    </View>
+  );
+
   // ----------------------------
-  // Main UI (canonical list pattern)
-  // Screen padded={false}
-  // FlatList owns padding via contentContainerStyle
-  // Header lives in ListHeaderComponent
+  // Empty states (correct + distinct)
   // ----------------------------
+  const showNoActive = totalActiveCount === 0;
+  const showNoMatch = !showNoActive && rows.length === 0;
+
+  if (showNoActive || showNoMatch) {
+    return (
+      <Screen padded={false}>
+        <Layout style={{ flex: 1 }}>
+          <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}>
+            {header}
+
+            <CardShell>
+              {showNoActive ? (
+                <>
+                  <Text category="s1">No active cones exist</Text>
+                  <Text appearance="hint" style={{ marginTop: 6 }}>
+                    Add cones in the admin app, or activate some cones to show them here.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text category="s1">No cones match your filters</Text>
+                  <Text appearance="hint" style={{ marginTop: 6 }}>
+                    Try clearing filters or adjusting region/category.
+                  </Text>
+                </>
+              )}
+            </CardShell>
+          </View>
+        </Layout>
+      </Screen>
+    );
+  }
+
   return (
     <Screen padded={false}>
       <Layout style={{ flex: 1 }}>
-        <FlatList
-          data={rows}
-          keyExtractor={(item) => item.cone.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 16,
-            paddingBottom: 24,
-          }}
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
-          ListHeaderComponent={
-            <View style={{ marginBottom: 14 }}>
-              {/* Header */}
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                }}
-              >
-                <Text category="h4" style={{ fontWeight: "900" }}>
-                  Cones
-                </Text>
-
-                <Button
-                  size="small"
-                  appearance="outline"
-                  onPress={() => void (loc ? refreshGPS() : request())}
-                >
-                  {gpsButtonLabel}
-                </Button>
-              </View>
-
-              <Text appearance="hint" style={{ marginTop: 6 }}>
-                Tap a cone to view details and complete it when you’re in range.
-              </Text>
-
-              {/* GPS warnings */}
-              {status === "denied" ? (
-                <View style={{ marginTop: 12 }}>
-                  <CardShell status="warning">
-                    <Text>Location permission denied — distances won’t be shown.</Text>
-                  </CardShell>
-                </View>
-              ) : null}
-
-              {locErr ? (
-                <View style={{ marginTop: 12 }}>
-                  <CardShell status="danger">
-                    <Text>{locErr}</Text>
-                  </CardShell>
-                </View>
-              ) : null}
-            </View>
-          }
-          renderItem={({ item }) => {
-            const { cone, distanceMeters } = item;
-
-            return (
-              <CardShell onPress={() => goCone(cone.id)}>
-                <Text category="s1" style={{ fontWeight: "800" }}>
-                  {cone.name}
-                </Text>
-
-                <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
-                  {cone.description?.trim()
-                    ? cone.description.trim()
-                    : "Tap to view details"}
-                </Text>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    flexWrap: "wrap",
-                    gap: 8,
-                    marginTop: 12,
-                  }}
-                >
-                  {cone.radiusMeters != null ? (
-                    <Pill status="basic">Radius {cone.radiusMeters}m</Pill>
-                  ) : null}
-
-                  <Pill status="basic">
-                    {formatDistanceMeters(distanceMeters, "label")}
-                  </Pill>
-                </View>
-
-                <Text style={{ marginTop: 10, fontWeight: "700" }}>Open →</Text>
-              </CardShell>
-            );
-          }}
-          ListEmptyComponent={
-            <CardShell>
-              <Text appearance="hint">No cones found — check admin “active” flags.</Text>
-            </CardShell>
-          }
+        <ConesListView
+          rows={rows}
+          header={header}
+          onPressCone={(coneId: string) => goCone(coneId)}
+          completedIds={completedConeIds}
+          hideCompleted={false} // already filtered at source
         />
       </Layout>
     </Screen>

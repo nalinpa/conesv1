@@ -1,5 +1,15 @@
 import type { DocumentSnapshot } from "firebase/firestore";
-import type { Cone } from "@/lib/models";
+import type { Cone, ConeCategory, ConeRegion } from "@/lib/models";
+
+function parseCategory(v: unknown): ConeCategory {
+  return v === "cone" || v === "crater" || v === "lake" || v === "other" ? v : "cone";
+}
+
+function parseRegion(v: unknown): ConeRegion {
+  return v === "north" || v === "central" || v === "east" || v === "south" || v === "harbour"
+    ? v
+    : "central";
+}
 
 export function coneFromDoc(doc: DocumentSnapshot): Cone {
   const data = (doc.data() ?? {}) as any;
@@ -14,13 +24,7 @@ export function coneFromDoc(doc: DocumentSnapshot): Cone {
     checkpoints: Array.isArray(data.checkpoints) ? data.checkpoints : undefined,
     description: typeof data.description === "string" ? data.description : "",
     active: !!data.active,
-    type: data.type === "crater" ? "crater" : data.type === "cone" ? "cone" : undefined,
-    region:
-      data.region === "north" ||
-      data.region === "central" ||
-      data.region === "south" ||
-      data.region === "harbour"
-        ? data.region
-        : undefined,
+    category: parseCategory(data.category),
+    region: parseRegion(data.region),
   };
 }
