@@ -1,11 +1,10 @@
-export type ConeRegion = "north" | "central" | "south" | "harbour";
-export type ConeType = "cone" | "crater";
+import type { ConeCategory, ConeRegion } from "./models";
 
 export type ConeMeta = {
   id: string;
   active: boolean;
-  type?: ConeType;
-  region?: ConeRegion;
+  category: ConeCategory;
+  region: ConeRegion;
 };
 
 export type BadgeDefinition = {
@@ -116,6 +115,12 @@ export const BADGES: BadgeDefinition[] = [
     section: "Regions",
   },
   {
+    id: "east_master",
+    name: "East Master",
+    unlockText: "Complete every cone in the East region.",
+    section: "Regions",
+  },
+  {
     id: "south_master",
     name: "South Master",
     unlockText: "Complete every cone in the South region.",
@@ -202,45 +207,39 @@ export function getBadgeState(
   const totalAll = activeCones.length;
   const doneAll = countCompleted(activeCones, completedConeIds);
 
-  const totalConesType = filterTotal(activeCones, (c) => c.type === "cone").length;
+  const totalConesType = filterTotal(activeCones, (c) => c.category === "cone").length;
   const doneConesType = countCompletedWhere(
     activeCones,
     completedConeIds,
-    (c) => c.type === "cone",
+    (c) => c.category === "cone",
   );
 
-  const totalCraters = filterTotal(activeCones, (c) => c.type === "crater").length;
+  const totalCraters = filterTotal(activeCones, (c) => c.category === "crater").length;
   const doneCraters = countCompletedWhere(
     activeCones,
     completedConeIds,
-    (c) => c.type === "crater",
+    (c) => c.category === "crater",
   );
 
-  const regions: ConeRegion[] = ["north", "central", "south", "harbour"];
+  const regions: ConeRegion[] = ["north", "central", "east", "south", "harbour"];
 
   const regionTotals: Record<ConeRegion, number> = {
     north: filterTotal(activeCones, (c) => c.region === "north").length,
     central: filterTotal(activeCones, (c) => c.region === "central").length,
+    east: filterTotal(activeCones, (c) => c.region === "east").length,
     south: filterTotal(activeCones, (c) => c.region === "south").length,
     harbour: filterTotal(activeCones, (c) => c.region === "harbour").length,
   };
 
   const regionDone: Record<ConeRegion, number> = {
-    north: countCompletedWhere(
-      activeCones,
-      completedConeIds,
-      (c) => c.region === "north",
-    ),
+    north: countCompletedWhere(activeCones, completedConeIds, (c) => c.region === "north"),
     central: countCompletedWhere(
       activeCones,
       completedConeIds,
       (c) => c.region === "central",
     ),
-    south: countCompletedWhere(
-      activeCones,
-      completedConeIds,
-      (c) => c.region === "south",
-    ),
+    east: countCompletedWhere(activeCones, completedConeIds, (c) => c.region === "east"),
+    south: countCompletedWhere(activeCones, completedConeIds, (c) => c.region === "south"),
     harbour: countCompletedWhere(
       activeCones,
       completedConeIds,
@@ -314,13 +313,13 @@ export function getBadgeState(
     "first_cone",
     doneConesType >= 1,
     doneConesType >= 1 ? null : `${doneConesType} / 1`,
-    1 - doneConesType,
+    doneConesType >= 1 ? 0 : 1 - doneConesType,
   );
   setProgress(
     "first_crater",
     doneCraters >= 1,
     doneCraters >= 1 ? null : `${doneCraters} / 1`,
-    1 - doneCraters,
+    doneCraters >= 1 ? 0 : 1 - doneCraters,
   );
 
   {
@@ -332,13 +331,15 @@ export function getBadgeState(
     const earned = totalConesType > 0 && doneConesType >= totalConesType;
     const label =
       !earned && totalConesType > 0 ? `${doneConesType} / ${totalConesType}` : null;
-    setProgress("all_cones_type", earned, label, totalConesType - doneConesType);
+    const dist = earned ? 0 : totalConesType > 0 ? totalConesType - doneConesType : null;
+    setProgress("all_cones_type", earned, label, dist);
   }
 
   {
     const earned = totalCraters > 0 && doneCraters >= totalCraters;
     const label = !earned && totalCraters > 0 ? `${doneCraters} / ${totalCraters}` : null;
-    setProgress("all_craters_type", earned, label, totalCraters - doneCraters);
+    const dist = earned ? 0 : totalCraters > 0 ? totalCraters - doneCraters : null;
+    setProgress("all_craters_type", earned, label, dist);
   }
 
   /* ---------------- Regions ---------------- */
@@ -353,6 +354,7 @@ export function getBadgeState(
 
     if (r === "north") setProgress("north_master", earned, label, dist);
     if (r === "central") setProgress("central_master", earned, label, dist);
+    if (r === "east") setProgress("east_master", earned, label, dist);
     if (r === "south") setProgress("south_master", earned, label, dist);
     if (r === "harbour") setProgress("harbour_master", earned, label, dist);
   }
@@ -374,20 +376,13 @@ export function getBadgeState(
 
   let recentlyUnlocked: BadgeProgress[] = [];
 
-  if (completedAtByConeId) {
-    const candidates = badges.filter((b) => earnedIds.has(b.id)).map((b) => b.id);
-
-    recentlyUnlocked = candidates
-      .slice(0, 4)
-      .map((id) => progressById[id])
-      .filter(Boolean);
-  } else {
-    recentlyUnlocked = badges
-      .filter((b) => earnedIds.has(b.id))
-      .slice(0, 4)
-      .map((b) => progressById[b.id])
-      .filter(Boolean);
-  }
+  // Keep existing behavior: deterministic list, not time-based yet.
+  // (You can improve this later using completedAtByConeId + thresholds per badge.)
+  recentlyUnlocked = badges
+    .filter((b) => earnedIds.has(b.id))
+    .slice(0, 4)
+    .map((b) => progressById[b.id])
+    .filter(Boolean);
 
   return { earnedIds, progressById, nextUp, recentlyUnlocked };
 }

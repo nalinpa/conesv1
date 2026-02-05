@@ -4,11 +4,24 @@ import type { Cone } from "@/lib/models";
 import { Pill } from "@/components/ui/Pill";
 
 export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }) {
+  const metaParts = [cone.region, cone.category]
+    .map((v) => (typeof v === "string" ? v.trim() : ""))
+    .filter(Boolean);
+
+  const metaLabel = metaParts.length ? metaParts.join(" • ") : null;
+
   return (
     <View style={{ gap: 10 }}>
       <Text category="h4" style={{ fontWeight: "900" }}>
         {cone.name}
       </Text>
+
+      {/* ✅ Region • Type (hero meta) */}
+      {metaLabel ? (
+        <Text appearance="hint" category="c1" numberOfLines={1}>
+          {metaLabel}
+        </Text>
+      ) : null}
 
       <Text appearance="hint">
         {cone.description?.trim() ? cone.description.trim() : "No description yet."}
