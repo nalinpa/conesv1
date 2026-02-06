@@ -34,12 +34,12 @@ export function ConesToReviewCard({
             justifyContent: "space-between",
           }}
         >
-          <Text category="h6">Cones to review</Text>
+          <Text category="h6">Reviews to write</Text>
           <Pill status="info">{cones.length}</Pill>
         </View>
 
         <Text appearance="hint">
-          You’ve completed these — leave a quick public review.
+          You’ve been to these volcanoes — add a quick public review.
         </Text>
 
         {/* List */}
@@ -69,7 +69,7 @@ export function ConesToReviewCard({
                 }}
               >
                 <Text status="primary" style={{ fontWeight: "800" }}>
-                  Leave review
+                  Add a review
                 </Text>
               </Pressable>
             </View>
@@ -79,7 +79,7 @@ export function ConesToReviewCard({
         {/* Overflow hint */}
         {remaining > 0 ? (
           <Text appearance="hint" category="c1">
-            + {remaining} more completed cones
+            + {remaining} more visited volcano{remaining === 1 ? "" : "es"}
           </Text>
         ) : null}
       </View>

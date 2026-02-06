@@ -43,9 +43,7 @@ export function ActionsCard({
     );
   }
 
-  const stars = "⭐".repeat(
-    Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0)))
-  );
+  const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
 
   return (
     <CardShell>
@@ -69,9 +67,7 @@ export function ActionsCard({
 
           {!hasReview ? (
             <View style={{ gap: 10 }}>
-              <Text appearance="hint">
-                Drop a quick rating — you can only leave one.
-              </Text>
+              <Text appearance="hint">Drop a quick rating — you can only leave one.</Text>
               <Button appearance="outline" onPress={onOpenReview}>
                 Add a review
               </Button>
@@ -96,9 +92,7 @@ export function ActionsCard({
 
         {/* Share bonus */}
         <View style={{ gap: 8 }}>
-          <Text appearance="hint">
-            Optional: share a photo for a little bonus credit.
-          </Text>
+          <Text appearance="hint">Optional: share a photo for a little bonus credit.</Text>
 
           <Button
             appearance={shareBonus ? "filled" : "outline"}

@@ -37,7 +37,7 @@ export function ReviewsSummaryCard({
       <View style={{ height: 10 }} />
 
       {ratingCount === 0 ? (
-        <Text appearance="hint">No reviews yet.</Text>
+        <Text appearance="hint">No reviews yet — be the first.</Text>
       ) : (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Pill status="info">⭐ {avgRating?.toFixed(1)} / 5</Pill>
@@ -49,7 +49,7 @@ export function ReviewsSummaryCard({
 
       <View style={{ height: 10 }} />
       <Text appearance="hint" style={{ fontSize: 12 }}>
-        Reviews are public. You can leave one review per cone after completing it.
+        Reviews are public. After you’ve visited, you can leave one review for this volcano.
       </Text>
     </CardShell>
   );

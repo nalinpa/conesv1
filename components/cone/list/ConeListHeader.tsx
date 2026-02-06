@@ -16,8 +16,8 @@ export function ConesListHeader({
   onPressGPS: () => void;
 }) {
   const gpsButtonLabel = useMemo(() => {
-    if (status === "denied") return "Enable GPS";
-    return hasLoc ? "Refresh GPS" : "Enable GPS";
+    if (status === "denied") return "Enable location";
+    return hasLoc ? "Refresh location" : "Enable location";
   }, [hasLoc, status]);
 
   return (
@@ -31,7 +31,7 @@ export function ConesListHeader({
           }}
         >
           <Text category="h4" style={{ fontWeight: "900" }}>
-            Volcanos
+            Volcanoes
           </Text>
 
           <Button size="small" appearance="outline" onPress={onPressGPS}>
@@ -46,7 +46,7 @@ export function ConesListHeader({
         {status === "denied" ? (
           <View style={{ marginTop: 12 }}>
             <CardShell status="warning">
-              <Text>Location permission denied — distances won’t be shown.</Text>
+              <Text>Turn on location to see distances.</Text>
             </CardShell>
           </View>
         ) : null}
@@ -54,7 +54,7 @@ export function ConesListHeader({
         {locErr ? (
           <View style={{ marginTop: 12 }}>
             <CardShell status="danger">
-              <Text>{locErr}</Text>
+              <Text>We couldn’t get your location. Try again in a moment.</Text>
             </CardShell>
           </View>
         ) : null}

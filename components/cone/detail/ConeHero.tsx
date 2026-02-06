@@ -25,10 +25,8 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
       <Text appearance="hint">{desc ? desc : "No description yet."}</Text>
 
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        <Pill>Radius {Math.round(cone.radiusMeters)} m</Pill>
-        {cone.slug ? <Pill>{cone.slug}</Pill> : null}
-        <Pill status={completed ? "success" : "danger"}>
-          {completed ? "Completed" : "Not completed"}
+        <Pill status={completed ? "success" : "basic"}>
+          {completed ? "You’ve been here" : "Not visited yet"}
         </Pill>
       </View>
     </View>

@@ -24,35 +24,36 @@ export type BadgeProgress = {
 export type BadgeProgressMap = Record<string, BadgeProgress>;
 
 export const BADGES: BadgeDefinition[] = [
-  { id: "first_steps", name: "First Steps", unlockText: "Complete your first cone.", section: "Core" },
-  { id: "explorer", name: "Explorer", unlockText: "Complete 5 cones.", section: "Core" },
-  { id: "wayfinder", name: "Wayfinder", unlockText: "Complete 10 cones.", section: "Core" },
-  { id: "halfway_there", name: "Halfway There", unlockText: "Complete 20 cones.", section: "Core" },
-  { id: "cone_collector", name: "Cone Collector", unlockText: "Complete all active cones.", section: "Core" },
+  { id: "first_steps", name: "First Steps", unlockText: "Visit your first volcano.", section: "Core" },
+  { id: "explorer", name: "Explorer", unlockText: "Visit 5 volcanoes.", section: "Core" },
+  { id: "wayfinder", name: "Wayfinder", unlockText: "Visit 10 volcanoes.", section: "Core" },
+  { id: "halfway_there", name: "Halfway There", unlockText: "Visit 20 volcanoes.", section: "Core" },
+  { id: "cone_collector", name: "Cone Collector", unlockText: "Visit every active volcano.", section: "Core" },
 
   { id: "shared_the_view", name: "Shared the View", unlockText: "Get a share bonus once.", section: "Social" },
   { id: "show_off", name: "Show-Off", unlockText: "Get 5 share bonuses.", section: "Social" },
 
-  { id: "first_cone", name: "First Cone", unlockText: "Complete your first cone-type volcano.", section: "Types" },
-  { id: "first_crater", name: "First Crater", unlockText: "Complete your first crater.", section: "Types" },
-  { id: "five_craters", name: "Crater Fan", unlockText: "Complete 5 craters.", section: "Types" },
-  { id: "all_cones_type", name: "All Cones", unlockText: "Complete all cone-type entries.", section: "Types" },
-  { id: "all_craters_type", name: "All Craters", unlockText: "Complete all crater entries.", section: "Types" },
-  { id: "first_lake", name: "First Lake", unlockText: "Complete your first lake.", section: "Types" },
-  { id: "all_lakes_type", name: "All Lakes", unlockText: "Complete all lake entries.", section: "Types" },
+  // “Cone” here is a TYPE, so it’s fine to keep the word cone — but clarify it’s a type.
+  { id: "first_cone", name: "First Cone", unlockText: "Visit your first cone-type volcano.", section: "Types" },
+  { id: "first_crater", name: "First Crater", unlockText: "Visit your first crater.", section: "Types" },
+  { id: "five_craters", name: "Crater Fan", unlockText: "Visit 5 craters.", section: "Types" },
+  { id: "all_cones_type", name: "All Cones", unlockText: "Visit every cone-type volcano.", section: "Types" },
+  { id: "all_craters_type", name: "All Craters", unlockText: "Visit every crater.", section: "Types" },
+  { id: "first_lake", name: "First Lake", unlockText: "Visit your first lake.", section: "Types" },
+  { id: "all_lakes_type", name: "All Lakes", unlockText: "Visit every lake.", section: "Types" },
 
-  { id: "north_master", name: "North Master", unlockText: "Complete every cone in the North region.", section: "Regions" },
-  { id: "central_master", name: "Central Master", unlockText: "Complete every cone in the Central region.", section: "Regions" },
-  { id: "east_master", name: "East Master", unlockText: "Complete every cone in the East region.", section: "Regions" },
-  { id: "south_master", name: "South Master", unlockText: "Complete every cone in the South region.", section: "Regions" },
-  { id: "harbour_master", name: "Harbour Master", unlockText: "Complete every cone in the Harbour region.", section: "Regions" },
+  { id: "north_master", name: "North Master", unlockText: "Visit every volcano in the North region.", section: "Regions" },
+  { id: "central_master", name: "Central Master", unlockText: "Visit every volcano in the Central region.", section: "Regions" },
+  { id: "east_master", name: "East Master", unlockText: "Visit every volcano in the East region.", section: "Regions" },
+  { id: "south_master", name: "South Master", unlockText: "Visit every volcano in the South region.", section: "Regions" },
+  { id: "harbour_master", name: "Harbour Master", unlockText: "Visit every volcano in the Harbour region.", section: "Regions" },
 
-  { id: "first_review", name: "First Review", unlockText: "Review your first cone.", section: "Reviews" },
+  { id: "first_review", name: "First Review", unlockText: "Write your first review.", section: "Reviews" },
   { id: "critic", name: "Critic", unlockText: "Write 5 reviews.", section: "Reviews" },
   { id: "trusted_reviewer", name: "Trusted Reviewer", unlockText: "Write 10 reviews.", section: "Reviews" },
-  { id: "review_every_cone", name: "Reviewed Everything", unlockText: "Review every active cone.", section: "Reviews" },
+  { id: "review_every_cone", name: "Reviewed Everything", unlockText: "Review every active volcano you’ve visited.", section: "Reviews" },
 
-  { id: "completionist", name: "Completionist", unlockText: "Complete, share, and review every active cone.", section: "Completionist" },
+  { id: "completionist", name: "Completionist", unlockText: "Visit, share, and review every active volcano.", section: "Completionist" },
 ];
 
 function indexBadges(badges: BadgeDefinition[]) {
@@ -71,7 +72,11 @@ function filterTotal(cones: ConeMeta[], pred: (c: ConeMeta) => boolean) {
   return cones.filter(pred);
 }
 
-function countCompletedWhere(cones: ConeMeta[], completedIds: Set<string>, pred: (c: ConeMeta) => boolean) {
+function countCompletedWhere(
+  cones: ConeMeta[],
+  completedIds: Set<string>,
+  pred: (c: ConeMeta) => boolean,
+) {
   let n = 0;
   for (const c of cones) if (pred(c) && completedIds.has(c.id)) n++;
   return n;
@@ -80,7 +85,7 @@ function countCompletedWhere(cones: ConeMeta[], completedIds: Set<string>, pred:
 function progressToThreshold(current: number, target: number) {
   if (current >= target) return { earned: true, label: null as string | null, dist: 0 };
   const left = target - current;
-  return { earned: false, label: `${current} / ${target} (need ${left} more)`, dist: left };
+  return { earned: false, label: `${current} / ${target} (${left} to go)`, dist: left };
 }
 
 function timesForCones(
@@ -209,7 +214,12 @@ export function getBadgeState(
   const progressById: BadgeProgressMap = {};
   const earnedIds = new Set<string>();
 
-  function setProgress(id: string, earned: boolean, progressLabel?: string | null, distanceToEarn?: number | null) {
+  function setProgress(
+    id: string,
+    earned: boolean,
+    progressLabel?: string | null,
+    distanceToEarn?: number | null,
+  ) {
     const badge = badgeById[id];
     if (!badge) return;
 
@@ -256,8 +266,18 @@ export function getBadgeState(
     setProgress("show_off", p.earned, p.label, p.dist);
   }
 
-  setProgress("first_cone", doneConesType >= 1, doneConesType >= 1 ? null : `${doneConesType} / 1`, doneConesType >= 1 ? 0 : 1 - doneConesType);
-  setProgress("first_crater", doneCraters >= 1, doneCraters >= 1 ? null : `${doneCraters} / 1`, doneCraters >= 1 ? 0 : 1 - doneCraters);
+  setProgress(
+    "first_cone",
+    doneConesType >= 1,
+    doneConesType >= 1 ? null : `${doneConesType} / 1`,
+    doneConesType >= 1 ? 0 : 1 - doneConesType,
+  );
+  setProgress(
+    "first_crater",
+    doneCraters >= 1,
+    doneCraters >= 1 ? null : `${doneCraters} / 1`,
+    doneCraters >= 1 ? 0 : 1 - doneCraters,
+  );
 
   {
     const p = progressToThreshold(doneCraters, 5);
@@ -276,7 +296,12 @@ export function getBadgeState(
     setProgress("all_craters_type", earned, label, dist);
   }
 
-  setProgress("first_lake", doneLakes >= 1, doneLakes >= 1 ? null : `${doneLakes} / 1`, doneLakes >= 1 ? 0 : 1 - doneLakes);
+  setProgress(
+    "first_lake",
+    doneLakes >= 1,
+    doneLakes >= 1 ? null : `${doneLakes} / 1`,
+    doneLakes >= 1 ? 0 : 1 - doneLakes,
+  );
 
   {
     const earned = totalLakes > 0 && doneLakes >= totalLakes;
@@ -359,14 +384,26 @@ export function getBadgeState(
   unlockAtByBadgeId["cone_collector"] = maxTimeForAllRequired(activeCones, completedConeIds, completedAtByConeId);
 
   unlockAtByBadgeId["first_cone"] = nthTime(coneTimes, 1);
-  unlockAtByBadgeId["all_cones_type"] = maxTimeForAllRequired(activeCones.filter((c) => c.category === "cone"), completedConeIds, completedAtByConeId);
+  unlockAtByBadgeId["all_cones_type"] = maxTimeForAllRequired(
+    activeCones.filter((c) => c.category === "cone"),
+    completedConeIds,
+    completedAtByConeId,
+  );
 
   unlockAtByBadgeId["first_crater"] = nthTime(craterTimes, 1);
   unlockAtByBadgeId["five_craters"] = nthTime(craterTimes, 5);
-  unlockAtByBadgeId["all_craters_type"] = maxTimeForAllRequired(activeCones.filter((c) => c.category === "crater"), completedConeIds, completedAtByConeId);
+  unlockAtByBadgeId["all_craters_type"] = maxTimeForAllRequired(
+    activeCones.filter((c) => c.category === "crater"),
+    completedConeIds,
+    completedAtByConeId,
+  );
 
   unlockAtByBadgeId["first_lake"] = nthTime(lakeTimes, 1);
-  unlockAtByBadgeId["all_lakes_type"] = maxTimeForAllRequired(activeCones.filter((c) => c.category === "lake"), completedConeIds, completedAtByConeId);
+  unlockAtByBadgeId["all_lakes_type"] = maxTimeForAllRequired(
+    activeCones.filter((c) => c.category === "lake"),
+    completedConeIds,
+    completedAtByConeId,
+  );
 
   for (const r of regions) {
     const id =
@@ -376,7 +413,11 @@ export function getBadgeState(
       r === "south" ? "south_master" :
       "harbour_master";
 
-    unlockAtByBadgeId[id] = maxTimeForAllRequired(activeCones.filter((c) => c.region === r), completedConeIds, completedAtByConeId);
+    unlockAtByBadgeId[id] = maxTimeForAllRequired(
+      activeCones.filter((c) => c.region === r),
+      completedConeIds,
+      completedAtByConeId,
+    );
   }
 
   unlockAtByBadgeId["first_review"] = nthTime(reviewTimes, 1);
