@@ -17,7 +17,7 @@ export type Cone = {
   lng: number;
   radiusMeters: number;
   checkpoints?: Checkpoint[];
-  description?: string;
+  description: string;
   active: boolean;
   category: ConeCategory;
   region: ConeRegion;

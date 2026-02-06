@@ -8,10 +8,13 @@ import { formatDistanceMeters } from "@/lib/formatters";
 
 type LocStatus = "unknown" | "granted" | "denied";
 
-/** Accept whatever comes in and normalize */
 function normalizeLocStatus(v: unknown): LocStatus {
   if (v === "granted" || v === "denied" || v === "unknown") return v;
   return "unknown";
+}
+
+function titleCase(s: string): string {
+  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
 export function MapOverlayCard({
@@ -19,14 +22,13 @@ export function MapOverlayCard({
   subtitle,
   distanceMeters,
   onOpen,
-
-  // tolerant
   locStatus,
   hasLoc,
   onRefreshGPS,
-
-  // ✅ new: battery-friendly refresh UI state
   refreshingGPS = false,
+
+  checkpointLabel,
+  checkpointRadiusMeters,
 }: {
   title: string;
   subtitle?: string;
@@ -37,8 +39,10 @@ export function MapOverlayCard({
   hasLoc: boolean;
   onRefreshGPS?: () => void;
 
-  /** Disable buttons / show spinner while refresh is running */
   refreshingGPS?: boolean;
+
+  checkpointLabel?: string | null;
+  checkpointRadiusMeters?: number | null;
 }) {
   const status = normalizeLocStatus(locStatus);
 
@@ -135,6 +139,14 @@ export function MapOverlayCard({
 
   const distanceLabel = formatDistanceMeters(distanceMeters, "label");
 
+  const cpLabelRaw = typeof checkpointLabel === "string" ? checkpointLabel.trim() : "";
+  const cpLabel = cpLabelRaw ? titleCase(cpLabelRaw) : "Main point";
+
+  const cpRadius =
+    typeof checkpointRadiusMeters === "number" && Number.isFinite(checkpointRadiusMeters)
+      ? Math.round(checkpointRadiusMeters)
+      : null;
+
   return (
     <CardShell>
       <View style={{ gap: 8 }}>
@@ -146,9 +158,18 @@ export function MapOverlayCard({
           </Text>
         ) : null}
 
+        <Text appearance="hint" category="c1" numberOfLines={1}>
+          {cpRadius != null ? `${cpLabel} • Radius ${cpRadius} m` : cpLabel}
+        </Text>
+
         <Text appearance="hint">{distanceLabel}</Text>
 
-        <Button appearance="outline" onPress={onOpen} disabled={refreshingGPS} accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}>
+        <Button
+          appearance="outline"
+          onPress={onOpen}
+          disabled={refreshingGPS}
+          accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+        >
           View cone
         </Button>
 
