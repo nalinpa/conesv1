@@ -7,6 +7,7 @@ import type { Cone } from "@/lib/models";
 import { coneService } from "@/lib/services/coneService";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
+import { useMyReviews } from "@/lib/hooks/useMyReviews";
 
 export type BadgeTileItem = {
   id: string;
@@ -23,7 +24,13 @@ type BadgesData = {
   conesMeta: ConeMeta[];
   completedConeIds: Set<string>;
   shareBonusCount: number;
+  sharedConeIds: Set<string>;
   completedAtByConeId: Record<string, number>;
+
+  reviewedConeIds: Set<string>;
+  reviewCount: number;
+  reviewedAtByConeId: Record<string, number>;
+
   cones: Cone[];
   uncompletedCones: Cone[];
 
@@ -46,17 +53,21 @@ export function useBadgesData(): BadgesData {
 
   const [cones, setCones] = useState<Cone[]>([]);
 
-  // Completions (live)
   const my = useMyCompletions();
+  const reviews = useMyReviews();
+
   const completedConeIds = my.completedConeIds;
   const shareBonusCount = my.shareBonusCount;
+  const sharedConeIds = my.sharedConeIds;
   const completedAtByConeId = my.completedAtByConeId;
 
-  // 1) Cones: one-time load after auth is ready + logged in
+  const reviewedConeIds = reviews.reviewedConeIds;
+  const reviewCount = reviews.reviewCount;
+  const reviewedAtByConeId = reviews.reviewedAtByConeId;
+
   useEffect(() => {
     let mounted = true;
 
-    // While auth hydrates, keep loading but don't error
     if (authLoading) {
       setConesLoading(true);
       setErr("");
@@ -65,7 +76,6 @@ export function useBadgesData(): BadgesData {
       };
     }
 
-    // Not logged in -> clear data (AuthGate should route away anyway)
     if (!user) {
       setCones([]);
       setConesLoading(false);
@@ -96,12 +106,11 @@ export function useBadgesData(): BadgesData {
     };
   }, [authLoading, user]);
 
-  // Prefer showing an error if either cones or completions fail
   const mergedErr = useMemo(() => {
-    return err || my.err;
-  }, [err, my.err]);
+    return err || my.err || reviews.err;
+  }, [err, my.err, reviews.err]);
 
-  const loading = conesLoading || my.loading;
+  const loading = conesLoading || my.loading || reviews.loading;
 
   const conesMeta: ConeMeta[] = useMemo(() => {
     return cones.map((c) => ({
@@ -122,9 +131,22 @@ export function useBadgesData(): BadgesData {
       cones: conesMeta,
       completedConeIds,
       shareBonusCount,
+      sharedConeIds,
       completedAtByConeId,
+      reviewedConeIds,
+      reviewCount,
+      reviewedAtByConeId,
     });
-  }, [conesMeta, completedConeIds, shareBonusCount, completedAtByConeId]);
+  }, [
+    conesMeta,
+    completedConeIds,
+    shareBonusCount,
+    sharedConeIds,
+    completedAtByConeId,
+    reviewedConeIds,
+    reviewCount,
+    reviewedAtByConeId,
+  ]);
 
   const badgeTotals = useMemo(() => {
     return { unlocked: badgeState.earnedIds.size, total: BADGES.length };
@@ -152,9 +174,15 @@ export function useBadgesData(): BadgesData {
     cones,
     conesMeta,
     uncompletedCones,
+
     completedConeIds,
     shareBonusCount,
+    sharedConeIds,
     completedAtByConeId,
+
+    reviewedConeIds,
+    reviewCount,
+    reviewedAtByConeId,
 
     badgeState,
     badgeTotals,

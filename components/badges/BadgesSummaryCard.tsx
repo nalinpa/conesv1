@@ -16,11 +16,12 @@ export function BadgesSummaryCard({
   recentlyUnlocked: BadgeProgress[];
   onViewAll: () => void;
 }) {
-  const hasRecent = Array.isArray(recentlyUnlocked) && recentlyUnlocked.length > 0;
+  const recent = Array.isArray(recentlyUnlocked) ? recentlyUnlocked.filter(Boolean) : [];
+  const recentTop = recent.slice(0, 3);
+  const extraCount = Math.max(0, recent.length - recentTop.length);
 
   return (
     <CardShell>
-      {/* Header */}
       <View
         style={{
           flexDirection: "row",
@@ -39,17 +40,18 @@ export function BadgesSummaryCard({
 
       <View style={{ height: 12 }} />
 
-      {/* Next up */}
       {nextUp?.badge ? (
         <View style={{ gap: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Pill status="info">Next up</Pill>
-            <Text category="s1" style={{ fontWeight: "800", flexShrink: 1 }}>
+            <Text category="s1" style={{ fontWeight: "800", flexShrink: 1 }} numberOfLines={1}>
               {nextUp.badge.name}
             </Text>
           </View>
 
-          <Text appearance="hint">{nextUp.badge.unlockText}</Text>
+          <Text appearance="hint" numberOfLines={2}>
+            {nextUp.badge.unlockText}
+          </Text>
 
           {nextUp.progressLabel ? (
             <Text appearance="hint" category="c1">
@@ -58,24 +60,32 @@ export function BadgesSummaryCard({
           ) : null}
         </View>
       ) : (
-        <Text appearance="hint">You’re all caught up — more badges coming soon.</Text>
+        <Text appearance="hint">No next badge right now.</Text>
       )}
 
-      {/* Recently unlocked */}
-      {hasRecent ? (
+      {recentTop.length ? (
         <>
           <View style={{ height: 16 }} />
 
-          <Text category="s2" appearance="hint" style={{ marginBottom: 8 }}>
-            Recently unlocked
-          </Text>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginBottom: 8,
+            }}
+          >
+            <Text category="s2" appearance="hint">
+              Recently unlocked
+            </Text>
+
+            {extraCount > 0 ? <Pill status="basic">+{extraCount} more</Pill> : null}
+          </View>
 
           <View style={{ gap: 8 }}>
-            {recentlyUnlocked.slice(0, 3).map((u, idx) => {
-              // ✅ Keys must be unique and stable enough. We suffix with idx to avoid collisions.
+            {recentTop.map((u, idx) => {
               const baseId = u?.badge?.id != null ? String(u.badge.id) : "recent";
               const key = `${baseId}_${idx}`;
-
               const name = u?.badge?.name ?? "Badge";
 
               return (
@@ -88,7 +98,7 @@ export function BadgesSummaryCard({
                     gap: 10,
                   }}
                 >
-                  <Text category="s1" style={{ flexShrink: 1 }}>
+                  <Text category="s1" style={{ flexShrink: 1 }} numberOfLines={1}>
                     {name}
                   </Text>
                   <Pill status="success">Unlocked</Pill>

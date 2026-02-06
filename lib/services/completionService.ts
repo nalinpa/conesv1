@@ -13,6 +13,7 @@ export type CompletionMeta = {
 export type WatchMyCompletionsResult = {
   completedConeIds: Set<string>;
   shareBonusCount: number;
+  sharedConeIds: Set<string>;
   completedAtByConeId: Record<string, number>;
   completions: CompletionMeta[];
 };
@@ -31,6 +32,8 @@ export const completionService = {
         const completions = snap.docs.map(completionFromDoc);
 
         const completedConeIds = new Set<string>();
+        const sharedConeIds = new Set<string>();
+
         let shareBonusCount = 0;
         const completedAtByConeId: Record<string, number> = {};
 
@@ -39,19 +42,21 @@ export const completionService = {
 
           completedConeIds.add(c.coneId);
 
-          if (c.shareBonus) shareBonusCount += 1;
+          if (c.shareBonus) {
+            shareBonusCount += 1;
+            sharedConeIds.add(c.coneId);
+          }
 
-          // If duplicates ever exist, keep the latest timestamp
           if (c.completedAtMs != null) {
             const prev = completedAtByConeId[c.coneId];
-            if (prev == null || c.completedAtMs > prev)
-              completedAtByConeId[c.coneId] = c.completedAtMs;
+            if (prev == null || c.completedAtMs > prev) completedAtByConeId[c.coneId] = c.completedAtMs;
           }
         }
 
         onChange({
           completedConeIds,
           shareBonusCount,
+          sharedConeIds,
           completedAtByConeId,
           completions,
         });

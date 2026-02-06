@@ -1,6 +1,8 @@
 import { View } from "react-native";
 import { Text } from "@ui-kitten/components";
 
+import { Pill } from "@/components/ui/Pill";
+
 export function BadgeTile({
   name,
   unlockText,
@@ -13,7 +15,7 @@ export function BadgeTile({
   progressLabel?: string | null;
 }) {
   return (
-    <View style={{ width: "50%", padding: 6 }}>
+    <View style={{ width: "100%", paddingVertical: 6 }}>
       <View
         style={{
           borderWidth: 1,
@@ -32,17 +34,13 @@ export function BadgeTile({
 
         <View style={{ marginTop: 10 }}>
           {unlocked ? (
-            <Text category="c1" style={{ fontWeight: "800" }}>
-              Unlocked ✓
-            </Text>
+            <Pill status="success">Unlocked</Pill>
           ) : progressLabel ? (
             <Text appearance="hint" category="c1">
               {progressLabel}
             </Text>
           ) : (
-            <Text appearance="hint" category="c1">
-              Locked
-            </Text>
+            <></>
           )}
         </View>
       </View>
