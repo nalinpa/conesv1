@@ -10,6 +10,24 @@ import { Screen } from "@/components/screen";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { BadgeTile } from "@/components/badges/BadgeTile";
 
+const SECTION_ORDER = ["Core", "Social", "Types", "Regions", "Reviews", "Completionist"];
+
+type BadgeGroup = {
+  section: string;
+  items: Array<{
+    id: string;
+    name: string;
+    unlockText: string;
+    unlocked: boolean;
+    progressLabel: string | null;
+  }>;
+};
+
+function sectionRank(section: string) {
+  const idx = SECTION_ORDER.indexOf(section);
+  return idx === -1 ? 999 : idx;
+}
+
 export default function BadgesScreen() {
   const { loading, err, badgeState, badgeTotals, badgeItems } = useBadgesData();
 
@@ -36,6 +54,50 @@ export default function BadgesScreen() {
       </Screen>
     );
   }
+
+  const groups: BadgeGroup[] = (() => {
+    const map = new Map<string, BadgeGroup>();
+
+    for (const b of badgeItems) {
+      const p = badgeState.progressById[b.id];
+      const section = p?.badge.section ?? "Other";
+
+      const g = map.get(section) ?? { section, items: [] };
+      g.items.push(b);
+      map.set(section, g);
+    }
+
+    const arr = Array.from(map.values());
+
+    for (const g of arr) {
+      g.items.sort((a, b) => {
+        if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+
+        const pa = badgeState.progressById[a.id];
+        const pb = badgeState.progressById[b.id];
+
+        const da = pa?.distanceToEarn;
+        const db = pb?.distanceToEarn;
+
+        const aHas = typeof da === "number" && Number.isFinite(da);
+        const bHas = typeof db === "number" && Number.isFinite(db);
+
+        if (aHas && bHas && da !== db) return da - db;
+        if (aHas !== bHas) return aHas ? -1 : 1;
+
+        return a.name.localeCompare(b.name);
+      });
+    }
+
+    arr.sort((a, b) => {
+      const ra = sectionRank(a.section);
+      const rb = sectionRank(b.section);
+      if (ra !== rb) return ra - rb;
+      return a.section.localeCompare(b.section);
+    });
+
+    return arr;
+  })();
 
   return (
     <Screen padded={false}>
@@ -67,14 +129,13 @@ export default function BadgesScreen() {
             </Button>
           </View>
 
-          {/* Next up */}
           <View style={{ marginTop: 14 }}>
             <CardShell>
               <Text category="h6">Next up</Text>
 
               {!badgeState.nextUp ? (
                 <Text appearance="hint" style={{ marginTop: 8 }}>
-                  Nothing queued — you might already have everything that’s configured.
+                  No next badge right now.
                 </Text>
               ) : (
                 <View
@@ -86,14 +147,16 @@ export default function BadgesScreen() {
                     paddingVertical: 12,
                   }}
                 >
-                  <Text category="s1" style={{ fontWeight: "800" }}>
+                  <Text category="s1" style={{ fontWeight: "800" }} numberOfLines={1}>
                     {badgeState.nextUp.badge.name}
                   </Text>
-                  <Text appearance="hint" style={{ marginTop: 6 }}>
+
+                  <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
                     {badgeState.nextUp.badge.unlockText}
                   </Text>
+
                   {badgeState.nextUp.progressLabel ? (
-                    <Text appearance="hint" style={{ marginTop: 10 }}>
+                    <Text appearance="hint" style={{ marginTop: 10 }} numberOfLines={2}>
                       {badgeState.nextUp.progressLabel}
                     </Text>
                   ) : null}
@@ -102,29 +165,26 @@ export default function BadgesScreen() {
             </CardShell>
           </View>
 
-          {/* Grid */}
-          <View style={{ marginTop: 14 }}>
-            <CardShell>
-              <Text category="h6" style={{ marginBottom: 10 }}>
-                All badges
-              </Text>
+          <View style={{ marginTop: 14, gap: 12 }}>
+            {groups.map((g) => (
+              <CardShell key={g.section}>
+                <Text category="h6" style={{ marginBottom: 10 }}>
+                  {g.section}
+                </Text>
 
-              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                {badgeItems.map((b) => (
-                  <BadgeTile
-                    key={b.id}
-                    name={b.name}
-                    unlockText={b.unlockText}
-                    unlocked={b.unlocked}
-                    progressLabel={b.progressLabel}
-                  />
-                ))}
-              </View>
-
-              <Text appearance="hint" style={{ marginTop: 10 }}>
-                Tip: unlocked badges are full opacity; locked badges are faded.
-              </Text>
-            </CardShell>
+                <View>
+                  {g.items.map((b) => (
+                    <BadgeTile
+                      key={b.id}
+                      name={b.name}
+                      unlockText={b.unlockText}
+                      unlocked={b.unlocked}
+                      progressLabel={b.progressLabel}
+                    />
+                  ))}
+                </View>
+              </CardShell>
+            ))}
           </View>
         </ScrollView>
       </Layout>

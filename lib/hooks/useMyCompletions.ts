@@ -11,6 +11,7 @@ const EMPTY: WatchMyCompletionsResult = {
   shareBonusCount: 0,
   completedAtByConeId: {},
   completions: [],
+  sharedConeIds: new Set<string>(),
 };
 
 export function useMyCompletions(): {
@@ -20,6 +21,8 @@ export function useMyCompletions(): {
   completedConeIds: Set<string>;
   shareBonusCount: number;
   completedAtByConeId: Record<string, number>;
+  sharedConeIds: Set<string>;
+
   completions: WatchMyCompletionsResult["completions"];
 } {
   const { user, loading: authLoading, uid } = useAuthUser();
@@ -32,13 +35,11 @@ export function useMyCompletions(): {
   useEffect(() => {
     let unsub: (() => void) | null = null;
 
-    // Don’t subscribe until auth is settled
     if (authLoading) {
       setLoading(true);
       return;
     }
 
-    // Logged out -> clear
     if (!user || !uid) {
       setState(EMPTY);
       setErr("");
@@ -72,6 +73,7 @@ export function useMyCompletions(): {
     completedConeIds: state.completedConeIds,
     shareBonusCount: state.shareBonusCount,
     completedAtByConeId: state.completedAtByConeId,
+    sharedConeIds: state.sharedConeIds,
     completions: state.completions,
   };
 }
