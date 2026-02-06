@@ -15,12 +15,14 @@ export function ConesMapView({
   userLat,
   userLng,
   onPressCone,
+  selectedConeId = null,
 }: {
   cones: ConeLite[];
   completedIds: Set<string>;
   userLat: number | null;
   userLng: number | null;
   onPressCone: (coneId: string) => void;
+  selectedConeId?: string | null;
 }) {
   const mapRef = useRef<MapView | null>(null);
   const hasCenteredRef = useRef(false);
@@ -57,15 +59,18 @@ export function ConesMapView({
     >
       {cones.map((cone) => {
         const completed = completedIds.has(cone.id);
+        const isSelected = selectedConeId != null && cone.id === selectedConeId;
 
         return (
           <React.Fragment key={cone.id}>
-            <Circle
-              center={{ latitude: cone.lat, longitude: cone.lng }}
-              radius={cone.radiusMeters}
-              strokeColor={completed ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}
-              fillColor={completed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}
-            />
+            {isSelected ? (
+              <Circle
+                center={{ latitude: cone.lat, longitude: cone.lng }}
+                radius={cone.radiusMeters}
+                strokeColor={completed ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}
+                fillColor={completed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}
+              />
+            ) : null}
 
             <Marker
               coordinate={{ latitude: cone.lat, longitude: cone.lng }}

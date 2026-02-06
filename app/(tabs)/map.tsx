@@ -15,9 +15,14 @@ import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useGPSGate } from "@/lib/hooks/useGPSGate";
 
 import { ConesMapView } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
+
+function titleCase(s: string): string {
+  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
+}
 
 export default function MapScreen() {
   const { loading: authLoading, uid } = useAuthUser();
@@ -34,6 +39,7 @@ export default function MapScreen() {
   } = useUserLocation();
 
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
 
   // Live completions listener (auth-safe)
   useEffect(() => {
@@ -74,7 +80,13 @@ export default function MapScreen() {
     }));
   }, [cones]);
 
-  // ✅ single refresh handler used by overlay
+  const selectedCone = useMemo(() => {
+    if (!selectedConeId) return null;
+    return cones.find((c) => c.id === selectedConeId) ?? null;
+  }, [cones, selectedConeId]);
+
+  const gate = useGPSGate(selectedCone, loc);
+
   const refreshGPS = useCallback(async () => {
     // If permission is unknown, request first (shows prompt).
     if (locStatus === "unknown") {
@@ -112,6 +124,23 @@ export default function MapScreen() {
     );
   }
 
+  const activeCone = selectedCone ?? nearestUnclimbed?.cone ?? null;
+
+  // If nothing selected, we can still show nearest-unclimbed overlay (your existing behavior)
+  // Once user selects a cone, selection takes precedence.
+  const overlayTitle = activeCone?.name ?? "";
+  const overlaySubtitle = activeCone
+    ? `${titleCase(activeCone.region)} • ${titleCase(activeCone.category)}`
+    : undefined;
+
+  // distance: use gate distance for selected; otherwise nearest-unclimbed distance
+  const overlayDistanceMeters =
+    selectedCone && gate ? gate.distanceMeters ?? null : nearestUnclimbed?.distanceMeters ?? null;
+
+  // checkpoint info: only meaningful for selected cone (gate)
+  const overlayCheckpointLabel = selectedCone && gate ? gate.checkpointLabel ?? null : null;
+  const overlayCheckpointRadius = selectedCone && gate ? gate.checkpointRadius ?? null : null;
+
   return (
     <Screen padded={false}>
       <View style={{ flex: 1 }}>
@@ -120,20 +149,23 @@ export default function MapScreen() {
           completedIds={completedIds}
           userLat={userLat}
           userLng={userLng}
-          onPressCone={(coneId) => goCone(coneId)}
+          selectedConeId={selectedConeId}
+          onPressCone={(coneId) => setSelectedConeId(coneId)}
         />
 
-        {nearestUnclimbed ? (
+        {activeCone ? (
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
             <MapOverlayCard
-              title={nearestUnclimbed.cone.name}
-              subtitle="Tap to view details"
-              distanceMeters={nearestUnclimbed.distanceMeters ?? null}
-              onOpen={() => goCone(nearestUnclimbed.cone.id)}
+              title={overlayTitle}
+              subtitle={overlaySubtitle}
+              distanceMeters={overlayDistanceMeters}
+              onOpen={() => goCone(activeCone.id)}
               locStatus={locStatus}
               hasLoc={!!loc}
-              onRefreshGPS={() => void refreshGPS()} // ✅ guarded + high accuracy
-              refreshingGPS={isRefreshing} // ✅ disable / spinner
+              onRefreshGPS={() => void refreshGPS()}
+              refreshingGPS={isRefreshing} 
+              checkpointLabel={overlayCheckpointLabel}
+              checkpointRadiusMeters={overlayCheckpointRadius}
             />
           </View>
         ) : null}

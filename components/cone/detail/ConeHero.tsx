@@ -3,12 +3,13 @@ import { Text } from "@ui-kitten/components";
 import type { Cone } from "@/lib/models";
 import { Pill } from "@/components/ui/Pill";
 
-export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }) {
-  const metaParts = [cone.region, cone.category]
-    .map((v) => (typeof v === "string" ? v.trim() : ""))
-    .filter(Boolean);
+function prettyLabel(s: string) {
+  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
+}
 
-  const metaLabel = metaParts.length ? metaParts.join(" • ") : null;
+export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }) {
+  const metaLabel = `${prettyLabel(cone.region)} • ${prettyLabel(cone.category)}`;
+  const desc = cone.description.trim();
 
   return (
     <View style={{ gap: 10 }}>
@@ -16,19 +17,15 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
         {cone.name}
       </Text>
 
-      {/* ✅ Region • Type (hero meta) */}
-      {metaLabel ? (
-        <Text appearance="hint" category="c1" numberOfLines={1}>
-          {metaLabel}
-        </Text>
-      ) : null}
-
-      <Text appearance="hint">
-        {cone.description?.trim() ? cone.description.trim() : "No description yet."}
+      {/* ✅ Region • Category (hero meta) */}
+      <Text appearance="hint" category="c1" numberOfLines={1}>
+        {metaLabel}
       </Text>
 
+      <Text appearance="hint">{desc ? desc : "No description yet."}</Text>
+
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-        <Pill>Radius {cone.radiusMeters}m</Pill>
+        <Pill>Radius {Math.round(cone.radiusMeters)} m</Pill>
         {cone.slug ? <Pill>{cone.slug}</Pill> : null}
         <Pill status={completed ? "success" : "danger"}>
           {completed ? "Completed" : "Not completed"}
