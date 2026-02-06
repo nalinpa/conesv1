@@ -31,7 +31,7 @@ export function ConesListHeader({
           }}
         >
           <Text category="h4" style={{ fontWeight: "900" }}>
-            Cones
+            Volcanos
           </Text>
 
           <Button size="small" appearance="outline" onPress={onPressGPS}>
@@ -40,7 +40,7 @@ export function ConesListHeader({
         </View>
 
         <Text appearance="hint" style={{ marginTop: 6 }}>
-          Tap a cone to view details and complete it when you’re in range.
+          Choose a volcano to explore across the Auckland Volcanic Field.
         </Text>
 
         {status === "denied" ? (
