@@ -25,12 +25,11 @@ export function NearestUnclimbedCard({
 }) {
   const hasDistance = distanceMeters != null;
 
-  const distanceLabel =
-    !hasDistance && locErr
-      ? "Distance — (no GPS)"
-      : hasDistance
-        ? `Distance ${formatDistanceMeters(distanceMeters)}`
-        : "Distance —";
+  const distanceLabel = hasDistance
+    ? `About ${formatDistanceMeters(distanceMeters)} away`
+    : locErr
+      ? "Turn on location to see what’s closest"
+      : "Finding what’s closest…";
 
   const pillLabel = hasDistance ? formatDistanceMeters(distanceMeters) : "—";
 
@@ -44,13 +43,15 @@ export function NearestUnclimbedCard({
             justifyContent: "space-between",
           }}
         >
-          <Text category="h6">Nearest unclimbed</Text>
+          <Text category="h6">Nearby volcano</Text>
 
           <Pill status={hasDistance ? "success" : "basic"}>{pillLabel}</Pill>
         </View>
 
         {!cone ? (
-          <Text appearance="hint">No cones found — check admin “active” flags.</Text>
+          <Text appearance="hint">
+            {locErr ? "Turn on location to see a nearby volcano." : "No volcanoes to show yet."}
+          </Text>
         ) : (
           <View style={{ gap: 8 }}>
             <View style={{ gap: 4 }}>
@@ -82,7 +83,7 @@ export function NearestUnclimbedCard({
               }}
             >
               <Text status="primary" style={{ fontWeight: "800" }}>
-                Open cone
+                View details
               </Text>
             </Pressable>
           </View>

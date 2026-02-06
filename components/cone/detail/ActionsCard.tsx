@@ -38,12 +38,14 @@ export function ActionsCard({
         disabled={saving || !hasLoc}
         style={{ borderRadius: 14 }}
       >
-        {saving ? "Saving…" : "Complete cone"}
+        {saving ? "Marking…" : "I’m here"}
       </Button>
     );
   }
 
-  const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
+  const stars = "⭐".repeat(
+    Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0)))
+  );
 
   return (
     <CardShell>
@@ -56,7 +58,7 @@ export function ActionsCard({
           }}
         >
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Completed
+            You’ve been here
           </Text>
           <Pill status="success">✅</Pill>
         </View>
@@ -68,10 +70,10 @@ export function ActionsCard({
           {!hasReview ? (
             <View style={{ gap: 10 }}>
               <Text appearance="hint">
-                Leave a quick rating (once only) after you’ve done the cone.
+                Drop a quick rating — you can only leave one.
               </Text>
               <Button appearance="outline" onPress={onOpenReview}>
-                Leave a review
+                Add a review
               </Button>
             </View>
           ) : (
@@ -86,7 +88,7 @@ export function ActionsCard({
               </View>
 
               <Text appearance="hint">
-                {myReviewText?.trim() ? myReviewText.trim() : "No comment."}
+                {myReviewText?.trim() ? myReviewText.trim() : "No comment yet."}
               </Text>
             </View>
           )}
@@ -95,7 +97,7 @@ export function ActionsCard({
         {/* Share bonus */}
         <View style={{ gap: 8 }}>
           <Text appearance="hint">
-            Optional: share a pic on socials for bonus credit.
+            Optional: share a photo for a little bonus credit.
           </Text>
 
           <Button
@@ -104,7 +106,7 @@ export function ActionsCard({
             onPress={onShareBonus}
             disabled={shareBonus}
           >
-            {shareBonus ? "Share bonus saved ✅" : "Share for bonus"}
+            {shareBonus ? "Bonus credit added ✅" : "Share for bonus credit"}
           </Button>
         </View>
       </View>

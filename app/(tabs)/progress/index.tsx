@@ -11,17 +11,15 @@ import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useMyReviews } from "@/lib/hooks/useMyReviews";
 
 import { Screen } from "@/components/screen";
-import { PieChart } from "@/components/progress/PieChart";
-import { StatRow } from "@/components/progress/StatRow";
 import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/badges/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 
-import { CardShell } from "@/components/ui/CardShell";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
-import { goBadges, goCone, goProgressHome } from "@/lib/routes";
+import { goBadges, goCone, goConesHome, goProgressHome } from "@/lib/routes";
+import { ProgressHeaderCard } from "@/components/progress/ProgressHeader";
 
 export default function ProgressScreen() {
   const { cones, loading: conesLoading, err: conesErr } = useCones();
@@ -95,49 +93,15 @@ export default function ProgressScreen() {
             gap: 12,
           }}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-            }}
-          >
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text category="h4" style={{ fontWeight: "900" }}>
-                Progress
-              </Text>
-              <Text appearance="hint" style={{ marginTop: 4 }}>
-                {totals.completed} / {totals.total} completed
-              </Text>
-            </View>
-
-            <Button size="small" appearance="outline" onPress={goBadges}>
-              Badges
-            </Button>
-          </View>
-
-          <CardShell>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-              <PieChart percent={totals.percent} />
-
-              <View style={{ flex: 1, gap: 10 }}>
-                <StatRow label="Completed" value={`${totals.completed}`} />
-                <StatRow
-                  label="Remaining"
-                  value={`${Math.max(0, totals.total - totals.completed)}`}
-                />
-                <StatRow label="Share bonuses" value={`${shareBonusCount}`} />
-              </View>
-            </View>
-
-            {allDone ? (
-              <View style={{ marginTop: 12 }}>
-                <Text category="s1" style={{ fontWeight: "900" }}>
-                  You’ve completed everything ✅
-                </Text>
-              </View>
-            ) : null}
-          </CardShell>
+          <ProgressHeaderCard
+            completed={totals.completed}
+            total={totals.total}
+            percent={totals.percent}
+            shareBonusCount={shareBonusCount}
+            allDone={allDone}
+            onOpenBadges={goBadges}
+            onBrowseVolcanoes={goConesHome}
+          />
 
           <NearestUnclimbedCard
             cone={
