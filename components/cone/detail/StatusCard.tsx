@@ -61,11 +61,9 @@ export function StatusCard({
       <CardShell status="success">
         <View style={{ gap: 10 }}>
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Completed ✅
+            You’ve been here ✅
           </Text>
-          <Text appearance="hint">
-            You’ve already completed this cone.
-          </Text>
+          <Text appearance="hint">This volcano is already marked as visited.</Text>
         </View>
       </CardShell>
     );
@@ -77,26 +75,14 @@ export function StatusCard({
     if (status === "denied") return "denied";
     if (status === "unknown") return "unknown_permission";
     if (!loc) return "requesting";
-    if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters)
-      return "low_accuracy";
+    if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters) return "low_accuracy";
     if (!inRange) return "too_far";
     return "ready";
   }, [status, loc, accuracyMeters, maxAccuracyMeters, inRange]);
 
-  const accuracyLabel =
-    accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`;
+  const accuracyLabel = accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`;
 
-  const distanceLabel =
-    distanceMeters == null
-      ? "—"
-      : formatDistanceMeters(distanceMeters, "short");
-
-  const radiusLabel =
-    checkpointRadiusMeters == null
-      ? "—"
-      : formatMeters(checkpointRadiusMeters);
-
-  const refreshLabel = refreshingGPS ? "Refreshing…" : "Refresh GPS";
+  const refreshLabel = refreshingGPS ? "Checking…" : "Refresh location";
 
   // --- DENIED ---
   if (gpsState === "denied") {
@@ -104,14 +90,12 @@ export function StatusCard({
       <CardShell status="danger">
         <View style={{ gap: 10 }}>
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Location permission denied
+            Turn on location
           </Text>
 
           <Text appearance="hint">
-            To complete cones, Cones needs location access. Tap{" "}
-            <Text style={{ fontWeight: "800" }}>Open Settings</Text> → set
-            Location to{" "}
-            <Text style={{ fontWeight: "800" }}>While using the app</Text>.
+            We use location to show your distance and let you tap{" "}
+            <Text style={{ fontWeight: "800" }}>I’m here</Text> when you’re nearby.
           </Text>
 
           <View style={{ flexDirection: "row", gap: 10 }}>
@@ -121,9 +105,7 @@ export function StatusCard({
               status="danger"
               onPress={() => Linking.openSettings()}
               disabled={refreshingGPS}
-              accessoryLeft={
-                refreshingGPS ? () => <Spinner size="tiny" /> : undefined
-              }
+              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
             >
               Open Settings
             </Button>
@@ -136,7 +118,7 @@ export function StatusCard({
                 onPress={onRefreshGPS}
                 disabled={refreshingGPS}
               >
-                Re-check
+                Try again
               </Button>
             ) : null}
           </View>
@@ -151,21 +133,15 @@ export function StatusCard({
       <CardShell>
         <View style={{ gap: 10 }}>
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Enable location to continue
+            Turn on location
           </Text>
 
           <Text appearance="hint">
-            Cones needs location access to show your distance and verify
-            completion.
+            Turn on location to see your distance and verify visits.
           </Text>
 
           {onRefreshGPS ? (
-            <Button
-              size="small"
-              appearance="outline"
-              onPress={onRefreshGPS}
-              disabled={refreshingGPS}
-            >
+            <Button size="small" appearance="outline" onPress={onRefreshGPS} disabled={refreshingGPS}>
               Enable location
             </Button>
           ) : null}
@@ -180,21 +156,15 @@ export function StatusCard({
       <CardShell>
         <View style={{ gap: 10 }}>
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Waiting for GPS…
+            Finding your location…
           </Text>
 
           <Text appearance="hint">
-            We’re trying to get a location fix. If it’s taking ages, step
-            outside or tap refresh.
+            If it’s taking a while, step outside or tap refresh.
           </Text>
 
           {onRefreshGPS ? (
-            <Button
-              size="small"
-              appearance="outline"
-              onPress={onRefreshGPS}
-              disabled={refreshingGPS}
-            >
+            <Button size="small" appearance="outline" onPress={onRefreshGPS} disabled={refreshingGPS}>
               {refreshLabel}
             </Button>
           ) : null}
@@ -209,16 +179,12 @@ export function StatusCard({
       <CardShell status="warning">
         <View style={{ gap: 10 }}>
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Accuracy too low
+            Location isn’t accurate yet
           </Text>
 
           <Text appearance="hint">
-            Current accuracy:{" "}
-            <Text style={{ fontWeight: "800" }}>{accuracyLabel}</Text>. We
-            need ≤{" "}
-            <Text style={{ fontWeight: "800" }}>
-              {Math.round(maxAccuracyMeters)} m
-            </Text>.
+            Current accuracy: <Text style={{ fontWeight: "800" }}>{accuracyLabel}</Text>.{" "}
+            Try standing still for a moment, then refresh.
           </Text>
 
           {onRefreshGPS ? (
@@ -243,23 +209,10 @@ export function StatusCard({
       <CardShell status="warning">
         <View style={{ gap: 10 }}>
           <Text category="h6" style={{ fontWeight: "900" }}>
-            Too far away
+            Not quite there yet
           </Text>
 
-          <Text appearance="hint">
-            You’re not in range yet. Move closer to the checkpoint.
-          </Text>
-
-          <View style={{ gap: 6 }}>
-            <Text appearance="hint" category="c1">
-              Distance:{" "}
-              <Text style={{ fontWeight: "800" }}>{distanceLabel}</Text>
-            </Text>
-            <Text appearance="hint" category="c1">
-              Required: within{" "}
-              <Text style={{ fontWeight: "800" }}>{radiusLabel}</Text>
-            </Text>
-          </View>
+          <Text appearance="hint">Head a little closer and you’ll be able to tap I’m here.</Text>
 
           {onRefreshGPS ? (
             <Button
@@ -277,17 +230,15 @@ export function StatusCard({
     );
   }
 
-  // --- READY (ONLY for incomplete cones) ---
   return (
     <CardShell status="success">
       <View style={{ gap: 10 }}>
         <Text category="h6" style={{ fontWeight: "900" }}>
-          In range ✅
+          You’re close enough ✅
         </Text>
 
         <Text appearance="hint">
-          You’re close enough and your GPS accuracy is good. Tap{" "}
-          <Text style={{ fontWeight: "800" }}>Complete</Text> when ready.
+          When you’re ready, tap <Text style={{ fontWeight: "800" }}>I’m here</Text>.
         </Text>
       </View>
     </CardShell>

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppState, View, ScrollView, Share } from "react-native";
-import { Stack, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 
@@ -54,16 +54,12 @@ export default function ConeDetailRoute() {
     err: locErr,
     refresh: refreshLocation,
     request: requestLocation,
-    isRefreshing 
+    isRefreshing,
   } = useUserLocation();
 
   // Completion
-  const {
-    completedId,
-    shareBonus,
-    err: completionErr,
-    setShareBonusLocal,
-  } = useConeCompletion(coneId);
+  const { completedId, shareBonus, err: completionErr, setShareBonusLocal } =
+    useConeCompletion(coneId);
 
   // GPS gate
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
@@ -86,8 +82,12 @@ export default function ConeDetailRoute() {
   const [draftRating, setDraftRating] = useState<number | null>(null);
   const [draftText, setDraftText] = useState("");
   const [reviewSaving, setReviewSaving] = useState(false);
-  const [optimisticReviewRating, setOptimisticReviewRating] = useState<number | null>(null);
-  const [optimisticReviewText, setOptimisticReviewText] = useState<string | null>(null);
+  const [optimisticReviewRating, setOptimisticReviewRating] = useState<number | null>(
+    null,
+  );
+  const [optimisticReviewText, setOptimisticReviewText] = useState<string | null>(
+    null,
+  );
 
   const refreshGPS = useCallback(async () => {
     // If permission is unknown, request first (updates hook state)
@@ -171,22 +171,22 @@ export default function ConeDetailRoute() {
       return;
     }
     if (!uid) {
-      setErr("Not signed in.");
+      setErr("Please sign in to save your visits.");
       return;
     }
 
     if (locStatus === "denied") {
-      setErr("Location permission denied. Please enable it in Settings.");
+      setErr("Turn on location in Settings to mark visits.");
       return;
     }
 
     if (!loc) {
       const res = await requestLocation();
       if (!res.ok) {
-        setErr("Location not available yet. Try refresh.");
+        setErr("We don’t have your location yet. Try refresh.");
         return;
       }
-      setErr("Location acquired — tap Complete again.");
+      setErr("Got your location — tap I’m here again.");
       return;
     }
 
@@ -197,18 +197,18 @@ export default function ConeDetailRoute() {
         gate.checkpointRadius != null &&
         gate.distanceMeters > gate.checkpointRadius
       ) {
-        setErr(`Not in range yet. You are ~${Math.round(gate.distanceMeters)}m away.`);
+        setErr(`Not quite there yet — about ${Math.round(gate.distanceMeters)} m away.`);
         return;
       }
       if (gate.accuracyMeters != null && gate.accuracyMeters > MAX_ACCURACY_METERS) {
         setErr(
-          `GPS accuracy too low (${Math.round(
+          `Location isn’t accurate enough yet (${Math.round(
             gate.accuracyMeters,
-          )}m). Try refresh in a clearer spot.`,
+          )} m). Try again in a clearer spot.`,
         );
         return;
       }
-      setErr("Not in range yet.");
+      setErr("Not quite there yet.");
       return;
     }
 
@@ -246,7 +246,7 @@ export default function ConeDetailRoute() {
       // live snapshot will update completedId + shareBonus
     } catch (e: any) {
       console.error(e);
-      setErr(e?.message ?? "Failed to save completion");
+      setErr(e?.message ?? "We couldn’t mark this visit. Try again.");
     } finally {
       setSaving(false);
     }
@@ -261,7 +261,7 @@ export default function ConeDetailRoute() {
     if (!uid) return;
 
     try {
-      const text = `I just completed ${cone.name} 🌋 #AucklandCones #cones`;
+      const text = `I just visited ${cone.name} 🌋 #AucklandCones`;
       await Share.share({ message: text });
 
       const completionId = `${uid}_${cone.id}`;
@@ -297,12 +297,12 @@ export default function ConeDetailRoute() {
       return;
     }
     if (!uid) {
-      setErr("Not signed in.");
+      setErr("Please sign in to leave a review.");
       return;
     }
 
     if (!completedId) {
-      setErr("Complete the cone first to leave a review.");
+      setErr("Visit this volcano first, then you can leave a review.");
       return;
     }
 
@@ -337,7 +337,7 @@ export default function ConeDetailRoute() {
       setReviewOpen(false);
     } catch (e: any) {
       console.error(e);
-      setErr(e?.message ?? "Failed to save review");
+      setErr(e?.message ?? "We couldn’t save your review. Try again.");
     } finally {
       setReviewSaving(false);
     }
@@ -346,7 +346,7 @@ export default function ConeDetailRoute() {
   // ---------------------------------
   // Loading / error states
   // ---------------------------------
-  const headerTitle = cone?.name ?? "Cone";
+  const headerTitle = cone?.name ?? "Volcano";
 
   if (authLoading) {
     return (
@@ -361,7 +361,7 @@ export default function ConeDetailRoute() {
     return (
       <Screen>
         <Stack.Screen options={{ title: "Loading…" }} />
-        <LoadingState fullScreen={false} label="Loading cone…" />
+        <LoadingState fullScreen={false} label="Loading volcano…" />
       </Screen>
     );
   }
@@ -369,10 +369,10 @@ export default function ConeDetailRoute() {
   if (coneErr || !cone) {
     return (
       <Screen>
-        <Stack.Screen options={{ title: "Cone" }} />
+        <Stack.Screen options={{ title: "Volcano" }} />
         <ErrorCard
-          title="Couldn’t load cone"
-          message={coneErr || "Cone missing."}
+          title="Couldn’t load volcano"
+          message={coneErr || "This volcano couldn’t be found."}
           action={{ label: "Back to list", onPress: goConesHome }}
         />
       </Screen>
@@ -411,7 +411,7 @@ export default function ConeDetailRoute() {
 
         {err ? (
           <>
-            <ErrorCard title="Can’t save review" message={err} status="warning" />
+            <ErrorCard title="Heads up" message={err} status="warning" />
             <View style={{ height: 14 }} />
           </>
         ) : null}

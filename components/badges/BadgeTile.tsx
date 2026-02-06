@@ -34,13 +34,15 @@ export function BadgeTile({
 
         <View style={{ marginTop: 10 }}>
           {unlocked ? (
-            <Pill status="success">Unlocked</Pill>
+            <Pill status="success">Earned</Pill>
           ) : progressLabel ? (
             <Text appearance="hint" category="c1">
               {progressLabel}
             </Text>
           ) : (
-            <></>
+            <Text appearance="hint" category="c1">
+              In progress
+            </Text>
           )}
         </View>
       </View>

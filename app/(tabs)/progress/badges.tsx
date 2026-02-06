@@ -120,12 +120,12 @@ export default function BadgesScreen() {
             <View>
               <Text category="h1">Badges</Text>
               <Text appearance="hint" style={{ marginTop: 4 }}>
-                {badgeTotals.unlocked} / {badgeTotals.total} unlocked
+                {badgeTotals.unlocked} of {badgeTotals.total} earned
               </Text>
             </View>
 
             <Button size="small" appearance="outline" onPress={goProgressHome}>
-              Done
+              Back
             </Button>
           </View>
 
@@ -135,7 +135,7 @@ export default function BadgesScreen() {
 
               {!badgeState.nextUp ? (
                 <Text appearance="hint" style={{ marginTop: 8 }}>
-                  No next badge right now.
+                  Nothing new right now.
                 </Text>
               ) : (
                 <View
