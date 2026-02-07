@@ -1,7 +1,10 @@
 import React from "react";
-import { View } from "react-native";
-import { Button, Text } from "@ui-kitten/components";
+
 import { CardShell } from "@/components/ui/CardShell";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 type Action =
   | {
@@ -15,8 +18,25 @@ type Action =
   | null
   | undefined;
 
+function mapSize(size?: Action extends infer _ ? any : never): "sm" | "md" {
+  // keep it simple: tiny/small -> sm, everything else -> md
+  if (!size) return "sm";
+  return size === "tiny" || size === "small" ? "sm" : "md";
+}
+
+function mapVariant(
+  appearance?: "filled" | "outline" | "ghost",
+  status?: "basic" | "primary" | "success" | "warning" | "danger" | "info",
+): "primary" | "secondary" | "ghost" | "danger" {
+  if (appearance === "ghost") return "ghost";
+  if (status === "danger") return "danger";
+  if (appearance === "outline") return "secondary";
+  // default filled
+  return "primary";
+}
+
 export function ErrorCard({
-  title = "Something went wrong",
+  title = "Couldn’t load that",
   message,
   status = "danger",
   action,
@@ -30,56 +50,67 @@ export function ErrorCard({
 }) {
   const hasActions = !!action || !!secondaryAction;
 
+  const cleanMessage =
+    typeof message === "string" && message.trim()
+      ? message.trim()
+      : "Please try again.";
+
   return (
     <CardShell status={status}>
-      <View style={{ gap: 10 }}>
-        <Text category="h6" style={{ fontWeight: "900" }}>
-          {title}
-        </Text>
+      <Stack gap="md">
+        <AppText variant="sectionTitle">{title}</AppText>
 
-        <Text status={status === "basic" ? "basic" : status} appearance="hint">
-          {message}
-        </Text>
+        <AppText variant="hint">
+          {cleanMessage}
+        </AppText>
 
         {hasActions ? (
-          <View
-            style={{
-              marginTop: 6,
-              flexDirection: secondaryAction ? "row" : "column",
-              gap: 10,
-            }}
-          >
-            {secondaryAction ? (
-              <Button
-                style={{ flex: 1 }}
-                size={secondaryAction.size ?? "small"}
-                appearance={secondaryAction.appearance ?? "outline"}
-                status={
+          secondaryAction ? (
+            <Row gap="sm">
+              <AppButton
+                variant={mapVariant(
+                  secondaryAction.appearance ?? "outline",
                   secondaryAction.status ??
-                  (status === "warning" ? "warning" : "basic")
-                }
+                    (status === "warning" ? "warning" : "basic"),
+                )}
+                size={mapSize(secondaryAction.size ?? "small")}
                 onPress={secondaryAction.onPress}
                 disabled={secondaryAction.disabled}
+                style={{ flex: 1 }}
               >
                 {secondaryAction.label}
-              </Button>
-            ) : null}
+              </AppButton>
 
-            {action ? (
-              <Button
-                style={{ flex: 1 }}
-                size={action.size ?? "small"}
-                appearance={action.appearance ?? "filled"}
-                status={action.status ?? (status === "warning" ? "warning" : "danger")}
-                onPress={action.onPress}
-                disabled={action.disabled}
-              >
-                {action.label}
-              </Button>
-            ) : null}
-          </View>
+              {action ? (
+                <AppButton
+                  variant={mapVariant(
+                    action.appearance ?? "filled",
+                    action.status ?? (status === "warning" ? "warning" : "danger"),
+                  )}
+                  size={mapSize(action.size ?? "small")}
+                  onPress={action.onPress}
+                  disabled={action.disabled}
+                  style={{ flex: 1 }}
+                >
+                  {action.label}
+                </AppButton>
+              ) : null}
+            </Row>
+          ) : action ? (
+            <AppButton
+              variant={mapVariant(
+                action.appearance ?? "filled",
+                action.status ?? (status === "warning" ? "warning" : "danger"),
+              )}
+              size={mapSize(action.size ?? "small")}
+              onPress={action.onPress}
+              disabled={action.disabled}
+            >
+              {action.label}
+            </AppButton>
+          ) : null
         ) : null}
-      </View>
+      </Stack>
     </CardShell>
   );
 }

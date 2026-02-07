@@ -1,23 +1,33 @@
 import React from "react";
 import { View } from "react-native";
-import { Text } from "@ui-kitten/components";
 
-export function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+
+export function StatRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  const isPrimitive =
+    typeof value === "string" || typeof value === "number";
+
   return (
-    <View style={{ flexDirection: "row", alignItems: "baseline" }}>
-      <Text appearance="hint" category="c1">
-        {label}
-      </Text>
+    <Row align="baseline" gap="sm">
+      <AppText variant="hint">{label}</AppText>
 
-      <View style={{ width: 10 }} />
-
-      {typeof value === "string" || typeof value === "number" ? (
-        <Text category="s1" style={{ fontWeight: "800" }}>
+      {isPrimitive ? (
+        <AppText
+          variant="sectionTitle"
+          style={{ fontWeight: "900" }}
+        >
           {value}
-        </Text>
+        </AppText>
       ) : (
         <View>{value}</View>
       )}
-    </View>
+    </Row>
   );
 }

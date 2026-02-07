@@ -67,6 +67,15 @@ export default function MapScreen() {
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
+  // Auto-select nearest cone ONCE (so marker styling matches overlay)
+  useEffect(() => {
+    if (selectedConeId) return; // user already selected something
+    const nearestId = nearestUnclimbed?.cone?.id ?? null;
+    if (!nearestId) return;
+
+    setSelectedConeId(nearestId);
+  }, [nearestUnclimbed?.cone?.id, selectedConeId]);
+
   const userLat = loc?.coords.latitude ?? null;
   const userLng = loc?.coords.longitude ?? null;
 
@@ -129,9 +138,6 @@ export default function MapScreen() {
   // If nothing selected, we can still show nearest-unclimbed overlay (your existing behavior)
   // Once user selects a cone, selection takes precedence.
   const overlayTitle = activeCone?.name ?? "";
-  const overlaySubtitle = activeCone
-    ? `${titleCase(activeCone.region)} • ${titleCase(activeCone.category)}`
-    : undefined;
 
   // distance: use gate distance for selected; otherwise nearest-unclimbed distance
   const overlayDistanceMeters =
@@ -157,7 +163,6 @@ export default function MapScreen() {
           <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
             <MapOverlayCard
               title={overlayTitle}
-              subtitle={overlaySubtitle}
               distanceMeters={overlayDistanceMeters}
               onOpen={() => goCone(activeCone.id)}
               locStatus={locStatus}

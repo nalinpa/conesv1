@@ -1,84 +1,133 @@
-import React, { useEffect, useRef } from "react";
-import MapView, { Marker, Circle } from "react-native-maps";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import { VolcanoMarker } from "@/components/map/VolcanoMarker";
 
-type ConeLite = {
+type ConeMapPoint = {
   id: string;
   name: string;
   lat: number;
   lng: number;
-  radiusMeters: number;
+  radiusMeters?: number;
 };
+
+function initialRegionFrom(
+  userLat: number | null,
+  userLng: number | null,
+  cones: ConeMapPoint[],
+): Region {
+  if (userLat != null && userLng != null) {
+    return {
+      latitude: userLat,
+      longitude: userLng,
+      latitudeDelta: 0.08,
+      longitudeDelta: 0.08,
+    };
+  }
+
+  if (cones.length) {
+    const avgLat = cones.reduce((a, c) => a + c.lat, 0) / cones.length;
+    const avgLng = cones.reduce((a, c) => a + c.lng, 0) / cones.length;
+    return {
+      latitude: avgLat,
+      longitude: avgLng,
+      latitudeDelta: 0.12,
+      longitudeDelta: 0.12,
+    };
+  }
+
+  return {
+    latitude: -36.85,
+    longitude: 174.76,
+    latitudeDelta: 0.12,
+    longitudeDelta: 0.12,
+  };
+}
 
 export function ConesMapView({
   cones,
   completedIds,
   userLat,
   userLng,
+  selectedConeId,
   onPressCone,
-  selectedConeId = null,
 }: {
-  cones: ConeLite[];
+  cones: ConeMapPoint[];
   completedIds: Set<string>;
   userLat: number | null;
   userLng: number | null;
+  selectedConeId: string | null;
   onPressCone: (coneId: string) => void;
-  selectedConeId?: string | null;
 }) {
-  const mapRef = useRef<MapView | null>(null);
-  const hasCenteredRef = useRef(false);
+  const initialRegion = useMemo(
+    () => initialRegionFrom(userLat, userLng, cones),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  // ✅ allow marker children to paint once
+  const [didInitialPaint, setDidInitialPaint] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setDidInitialPaint(true), 350);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ✅ track previous selection so we can “unselect” it visually
+  const prevSelectedRef = useRef<string | null>(null);
+
+  // ✅ ids that should be allowed to update for a brief window
+  const [thawIds, setThawIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (userLat == null || userLng == null) return;
-    if (!mapRef.current) return;
-    if (hasCenteredRef.current) return;
+    const prev = prevSelectedRef.current;
+    const next = selectedConeId;
 
-    hasCenteredRef.current = true;
+    // no change
+    if (prev === next) return;
 
-    mapRef.current.animateToRegion(
-      {
-        latitude: userLat,
-        longitude: userLng,
-        latitudeDelta: 0.08,
-        longitudeDelta: 0.08,
-      },
-      600,
-    );
-  }, [userLat, userLng]);
+    const ids = new Set<string>();
+    if (prev) ids.add(prev);
+    if (next) ids.add(next);
+
+    // thaw old + new so ring moves correctly
+    setThawIds(ids);
+
+    prevSelectedRef.current = next;
+
+    // after a moment, freeze again to prevent flicker
+    const t = setTimeout(() => setThawIds(new Set()), 220);
+    return () => clearTimeout(t);
+  }, [selectedConeId]);
 
   return (
     <MapView
-      ref={mapRef}
+      provider={PROVIDER_GOOGLE}
       style={{ flex: 1 }}
+      initialRegion={initialRegion}
       showsUserLocation
-      initialRegion={{
-        latitude: userLat ?? -36.8485,
-        longitude: userLng ?? 174.7633,
-        latitudeDelta: 0.25,
-        longitudeDelta: 0.25,
-      }}
+      showsMyLocationButton={false}
+      toolbarEnabled={false}
     >
-      {cones.map((cone) => {
-        const completed = completedIds.has(cone.id);
-        const isSelected = selectedConeId != null && cone.id === selectedConeId;
+      {cones.map((c) => {
+        const completed = completedIds.has(c.id);
+        const selected = selectedConeId === c.id;
+
+        // ✅ tracking policy:
+        // - before initial paint: true so markers show up
+        // - after: only thawed ids update (old+new selection), otherwise frozen
+        const tracksViewChanges = !didInitialPaint ? true : thawIds.has(c.id);
 
         return (
-          <React.Fragment key={cone.id}>
-            {isSelected ? (
-              <Circle
-                center={{ latitude: cone.lat, longitude: cone.lng }}
-                radius={cone.radiusMeters}
-                strokeColor={completed ? "rgba(34,197,94,0.4)" : "rgba(239,68,68,0.4)"}
-                fillColor={completed ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)"}
-              />
-            ) : null}
-
-            <Marker
-              coordinate={{ latitude: cone.lat, longitude: cone.lng }}
-              pinColor={completed ? "green" : "red"}
-              title={cone.name}
-              onPress={() => onPressCone(cone.id)}
-            />
-          </React.Fragment>
+          <Marker
+            key={c.id}
+            coordinate={{ latitude: c.lat, longitude: c.lng }}
+            onSelect={() => onPressCone(c.id)}
+            onPress={() => onPressCone(c.id)}
+            hitSlop={{ top: 18, bottom: 18, left: 18, right: 18 }}
+            tracksViewChanges={tracksViewChanges}
+            anchor={{ x: 0.5, y: 0.65 }}
+          >
+            <VolcanoMarker selected={selected} completed={completed} />
+          </Marker>
         );
       })}
     </MapView>

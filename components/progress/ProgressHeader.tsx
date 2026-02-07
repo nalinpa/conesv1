@@ -1,8 +1,16 @@
 import { View } from "react-native";
-import { Text, Button } from "@ui-kitten/components";
+import { Button } from "@ui-kitten/components";
+
 import { CardShell } from "@/components/ui/CardShell";
 import { PieChart } from "@/components/progress/PieChart";
 import { StatRow } from "@/components/progress/StatRow";
+
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+
+import { space } from "@/lib/ui/tokens";
+import { AppButton } from "../ui/AppButton";
 
 function asCount(v: unknown): number {
   const n = typeof v === "number" ? v : Number(v);
@@ -37,65 +45,71 @@ export function ProgressHeaderCard({
   const isEmpty = totalCount > 0 && completedCount <= 0;
 
   return (
-    <>
+    <Stack gap="md">
       {/* Header */}
-      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-        <View style={{ flex: 1, paddingRight: 12 }}>
-          <Text category="h4" style={{ fontWeight: "900" }}>
-            Your journey 
-          </Text>
-          <Text appearance="hint" style={{ marginTop: 4 }}>
+      <Row justify="space-between" align="flex-start" style={{ gap: space.md }}>
+        <View style={{ flex: 1 }}>
+          <AppText variant="sectionTitle">Your journey</AppText>
+          <AppText variant="hint" style={{ marginTop: space.xs }}>
             {completedCount} of {totalCount} volcanoes visited
-          </Text>
+          </AppText>
         </View>
 
-        <Button size="small" appearance="outline" onPress={onOpenBadges}>
-          Badges
-        </Button>
-      </View>
+       <AppButton
+            variant="secondary"
+            size="sm"
+            onPress={onOpenBadges}
+            >
+            Badges
+        </AppButton>
+      </Row>
 
       {isEmpty ? (
         <CardShell>
-          <View style={{ gap: 10 }}>
-            <Text category="s1" style={{ fontWeight: "900" }}>
-              No visits yet
-            </Text>
+          <Stack gap="sm">
+            <AppText variant="sectionTitle">No visits yet</AppText>
 
-            <Text appearance="hint">
-              Pick a volcano, then tap <Text style={{ fontWeight: "900" }}>I’m here</Text>{" "}
+            <AppText variant="body">
+              Pick a volcano, then tap <AppText variant="body" style={{ fontWeight: "800" }}>
+                I’m here
+              </AppText>{" "}
               when you’re nearby.
-            </Text>
+            </AppText>
 
             {onBrowseVolcanoes ? (
-              <View style={{ marginTop: 6 }}>
-                <Button appearance="outline" onPress={onBrowseVolcanoes}>
-                  Browse volcanoes
-                </Button>
+              <View style={{ marginTop: space.xs }}>
+               <AppButton onPress={onBrowseVolcanoes}>
+                    Browse volcanoes
+                </AppButton>
               </View>
             ) : null}
-          </View>
+          </Stack>
         </CardShell>
       ) : (
         <CardShell>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 16 }}>
-            <PieChart percent={percentValue} />
+          <Stack gap="md">
+            <Row align="center" gap="lg">
+              <PieChart percent={percentValue} />
 
-            <View style={{ flex: 1, gap: 10 }}>
-              <StatRow label="Visited" value={`${completedCount}`} />
-              <StatRow label="Still to explore" value={`${remaining}`} />
-              <StatRow label="Bonus credits" value={`${bonusCount}`} />
-            </View>
-          </View>
+              <View style={{ flex: 1 }}>
+                <Stack gap="sm">
+                  <StatRow label="Visited" value={`${completedCount}`} />
+                  <StatRow label="Still to explore" value={`${remaining}`} />
+                  <StatRow label="Bonus credits" value={`${bonusCount}`} />
+                </Stack>
+              </View>
+            </Row>
 
-          {allDone ? (
-            <View style={{ marginTop: 12 }}>
-              <Text category="s1" style={{ fontWeight: "900" }}>
-                You’ve visited every volcano in the Auckland Volcanic Field ✅
-              </Text>
-            </View>
-          ) : null}
+            {allDone ? (
+              <CardShell status="success">
+                <AppText variant="body" style={{ fontWeight: "800" }}>
+                  You’ve visited every volcano in the Auckland Volcanic Field ✅
+                </AppText>
+              </CardShell>
+            ) : null}
+          </Stack>
         </CardShell>
       )}
-    </>
+    </Stack>
   );
 }

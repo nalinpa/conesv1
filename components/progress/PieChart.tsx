@@ -1,12 +1,15 @@
 import React from "react";
 import { View } from "react-native";
-import { Text, useTheme } from "@ui-kitten/components";
+import { useTheme } from "@ui-kitten/components";
 import Svg, { Circle } from "react-native-svg";
+
+import { AppText } from "@/components/ui/AppText";
+import { space } from "@/lib/ui/tokens";
 
 export function PieChart({
   percent,
-  size = 120,
-  strokeWidth = 14,
+  size = 128,
+  strokeWidth = 16,
 }: {
   percent: number; // 0..1
   size?: number;
@@ -19,8 +22,9 @@ export function PieChart({
   const c = 2 * Math.PI * r;
   const dash = c * clamped;
 
-  const track = theme["color-basic-300"] ?? "rgba(0,0,0,0.12)";
-  const progress = theme["color-primary-500"] ?? "#3FAE8F"; // your surf-green-ish primary
+  // Slightly bolder track so it reads on bright UI
+  const track = theme["color-basic-400"] ?? "rgba(0,0,0,0.18)";
+  const progress = theme["color-primary-500"] ?? "#3FAE8F";
 
   return (
     <View style={{ alignItems: "center", justifyContent: "center" }}>
@@ -33,6 +37,7 @@ export function PieChart({
           stroke={track}
           strokeWidth={strokeWidth}
           fill="transparent"
+          strokeLinecap="round"
         />
 
         {/* Progress */}
@@ -51,13 +56,16 @@ export function PieChart({
         />
       </Svg>
 
-      <View
-        style={{ position: "absolute", alignItems: "center", justifyContent: "center" }}
-      >
-        <Text category="h5">{Math.round(clamped * 100)}%</Text>
-        <Text appearance="hint" category="c1">
+      <View style={{ position: "absolute", alignItems: "center" }}>
+        <AppText variant="sectionTitle" style={{ fontWeight: "900" }}>
+          {Math.round(clamped * 100)}%
+        </AppText>
+        <AppText
+          variant="hint"
+          style={{ marginTop: space.xs, fontWeight: "700" }}
+        >
           complete
-        </Text>
+        </AppText>
       </View>
     </View>
   );

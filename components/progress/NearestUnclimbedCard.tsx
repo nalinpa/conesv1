@@ -1,10 +1,16 @@
 import React from "react";
-import { View, Pressable } from "react-native";
-import { Text } from "@ui-kitten/components";
+import { View } from "react-native";
+import { Button } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
 import { formatDistanceMeters } from "@/lib/formatters";
+
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { space } from "@/lib/ui/tokens";
+import { AppButton } from "../ui/AppButton";
 
 type ConeLite = {
   id: string;
@@ -31,64 +37,45 @@ export function NearestUnclimbedCard({
       ? "Turn on location to see what’s closest"
       : "Finding what’s closest…";
 
-  const pillLabel = hasDistance ? formatDistanceMeters(distanceMeters) : "—";
+  const pillLabel =
+    distanceMeters != null ? formatDistanceMeters(distanceMeters) : "—";
 
   return (
     <CardShell>
-      <View style={{ gap: 10 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text category="h6">Nearby volcano</Text>
-
+      <Stack gap="md">
+        <Row justify="space-between" align="center">
+          <AppText variant="sectionTitle">Nearby volcano</AppText>
           <Pill status={hasDistance ? "success" : "basic"}>{pillLabel}</Pill>
-        </View>
+        </Row>
 
         {!cone ? (
-          <Text appearance="hint">
+          <AppText variant="hint">
             {locErr ? "Turn on location to see a nearby volcano." : "No volcanoes to show yet."}
-          </Text>
+          </AppText>
         ) : (
-          <View style={{ gap: 8 }}>
-            <View style={{ gap: 4 }}>
-              <Text category="s1" style={{ fontWeight: "800" }}>
+          <Stack gap="sm">
+            <View style={{ gap: space.xs }}>
+              <AppText variant="sectionTitle" style={{ fontWeight: "800" }}>
                 {cone.name}
-              </Text>
+              </AppText>
 
               {cone.description?.trim() ? (
-                <Text appearance="hint" numberOfLines={2}>
+                <AppText variant="hint" numberOfLines={2}>
                   {cone.description.trim()}
-                </Text>
+                </AppText>
               ) : null}
 
-              <Text appearance="hint" category="c1">
-                {distanceLabel}
-              </Text>
+              <AppText variant="hint">{distanceLabel}</AppText>
             </View>
 
-            <Pressable
-              onPress={() => onOpenCone(cone.id)}
-              hitSlop={10}
-              style={{
-                alignSelf: "flex-start",
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: "rgba(100,116,139,0.25)",
-              }}
-            >
-              <Text status="primary" style={{ fontWeight: "800" }}>
+            <View style={{ marginTop: space.xs }}>
+             <AppButton onPress={() => onOpenCone(cone.id)}>
                 View details
-              </Text>
-            </Pressable>
-          </View>
+              </AppButton>
+            </View>
+          </Stack>
         )}
-      </View>
+      </Stack>
     </CardShell>
   );
 }

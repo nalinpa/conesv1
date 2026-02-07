@@ -9,6 +9,7 @@ import { CardShell } from "@/components/ui/CardShell";
 import { Screen } from "@/components/screen";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { BadgeTile } from "@/components/badges/BadgeTile";
+import { AppButton } from "@/components/ui/AppButton";
 
 const SECTION_ORDER = ["Core", "Social", "Types", "Regions", "Reviews", "Completionist"];
 
@@ -124,9 +125,13 @@ export default function BadgesScreen() {
               </Text>
             </View>
 
-            <Button size="small" appearance="outline" onPress={goProgressHome}>
-              Back
-            </Button>
+              <AppButton
+                variant="secondary"
+                size="sm"
+                onPress={goProgressHome}
+              >
+                Back
+              </AppButton>
           </View>
 
           <View style={{ marginTop: 14 }}>
