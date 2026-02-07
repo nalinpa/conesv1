@@ -1,10 +1,13 @@
 import React from "react";
-import { View } from "react-native";
-import { Text, Button, Spinner } from "@ui-kitten/components";
 import * as Linking from "expo-linking";
 
 import { CardShell } from "../ui/CardShell";
 import { formatDistanceMeters } from "@/lib/formatters";
+
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 type LocStatus = "unknown" | "granted" | "denied";
 
@@ -19,7 +22,6 @@ function titleCase(s: string): string {
 
 export function MapOverlayCard({
   title,
-  subtitle,
   distanceMeters,
   onOpen,
   locStatus,
@@ -31,7 +33,6 @@ export function MapOverlayCard({
   checkpointRadiusMeters,
 }: {
   title: string;
-  subtitle?: string;
   distanceMeters: number | null;
   onOpen: () => void;
 
@@ -52,50 +53,45 @@ export function MapOverlayCard({
   if (denied) {
     return (
       <CardShell status="danger">
-        <View style={{ gap: 10 }}>
-          <Text category="s1" style={{ fontWeight: "900" }}>
-            Location access denied
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Location access denied</AppText>
 
-          <Text appearance="hint" numberOfLines={3}>
+          <AppText variant="hint" numberOfLines={3}>
             Enable location access in Settings to see your distance and complete cones.
-          </Text>
+          </AppText>
 
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <Button
-              size="small"
-              appearance="outline"
-              status="danger"
+          <Row gap="sm">
+            <AppButton
+              variant="danger"
+              size="sm"
               onPress={() => Linking.openSettings()}
               disabled={refreshingGPS}
-              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+              loading={refreshingGPS}
+              loadingLabel="Opening…"
+              style={{ flex: 1 }}
             >
               Open Settings
-            </Button>
+            </AppButton>
 
             {onRefreshGPS ? (
-              <Button
-                size="small"
-                appearance="ghost"
-                status="basic"
+              <AppButton
+                variant="ghost"
+                size="sm"
                 onPress={onRefreshGPS}
                 disabled={refreshingGPS}
-                accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+                loading={refreshingGPS}
+                loadingLabel="Please wait…"
+                style={{ flex: 1 }}
               >
-                {refreshingGPS ? "Please wait…" : "Try again"}
-              </Button>
+                Try again
+              </AppButton>
             ) : null}
-          </View>
+          </Row>
 
           {refreshingGPS ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Spinner size="tiny" />
-              <Text appearance="hint" category="c1">
-                Re-checking…
-              </Text>
-            </View>
+            <AppText variant="hint">Re-checking…</AppText>
           ) : null}
-        </View>
+        </Stack>
       </CardShell>
     );
   }
@@ -103,36 +99,30 @@ export function MapOverlayCard({
   if (requesting) {
     return (
       <CardShell status="basic">
-        <View style={{ gap: 10 }}>
-          <Text category="s1" style={{ fontWeight: "900" }}>
-            Waiting for GPS
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Waiting for GPS</AppText>
 
-          <Text appearance="hint" numberOfLines={2}>
+          <AppText variant="hint" numberOfLines={2}>
             Getting your current location…
-          </Text>
+          </AppText>
 
           {onRefreshGPS ? (
-            <Button
-              size="small"
-              appearance="outline"
+            <AppButton
+              variant="secondary"
+              size="sm"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
-              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+              loading={refreshingGPS}
+              loadingLabel="Refreshing…"
             >
-              {refreshingGPS ? "Refreshing…" : "Try again"}
-            </Button>
+              Try again
+            </AppButton>
           ) : null}
 
           {refreshingGPS ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Spinner size="tiny" />
-              <Text appearance="hint" category="c1">
-                Getting a better fix…
-              </Text>
-            </View>
+            <AppText variant="hint">Getting a better fix…</AppText>
           ) : null}
-        </View>
+        </Stack>
       </CardShell>
     );
   }
@@ -149,39 +139,29 @@ export function MapOverlayCard({
 
   return (
     <CardShell>
-      <View style={{ gap: 8 }}>
-        <Text category="s1">{title}</Text>
+      <Stack gap="sm">
+        <AppText variant="sectionTitle">{title}</AppText>
 
-        {subtitle ? (
-          <Text appearance="hint" numberOfLines={2}>
-            {subtitle}
-          </Text>
-        ) : null}
-
-        <Text appearance="hint" category="c1" numberOfLines={1}>
+        <AppText variant="hint" numberOfLines={1}>
           {cpRadius != null ? `${cpLabel} • Radius ${cpRadius} m` : cpLabel}
-        </Text>
+        </AppText>
 
-        <Text appearance="hint">{distanceLabel}</Text>
+        <AppText variant="hint">{distanceLabel}</AppText>
 
-        <Button
-          appearance="outline"
+        <AppButton
+          variant="secondary"
           onPress={onOpen}
           disabled={refreshingGPS}
-          accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+          loading={refreshingGPS}
+          loadingLabel="Refreshing GPS…"
         >
           View cone
-        </Button>
+        </AppButton>
 
         {refreshingGPS ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Spinner size="tiny" />
-            <Text appearance="hint" category="c1">
-              Refreshing GPS…
-            </Text>
-          </View>
+          <AppText variant="hint">Refreshing GPS…</AppText>
         ) : null}
-      </View>
+      </Stack>
     </CardShell>
   );
 }

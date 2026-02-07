@@ -1,7 +1,10 @@
-import { View } from "react-native";
-import { Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 export function ReviewsSummaryCard({
   ratingCount,
@@ -12,45 +15,38 @@ export function ReviewsSummaryCard({
   avgRating: number | null;
   onViewAll: () => void;
 }) {
+  const hasReviews = ratingCount > 0;
+
   return (
     <CardShell>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-        }}
-      >
-        <Text category="h6" style={{ fontWeight: "900" }}>
-          Reviews
-        </Text>
+      <Stack gap="md">
+        <Row justify="space-between" align="center">
+          <AppText variant="sectionTitle">Reviews</AppText>
 
-        {ratingCount > 0 ? (
-          <Button size="small" appearance="outline" onPress={onViewAll}>
-            View all
-          </Button>
+          {hasReviews ? (
+            <AppButton variant="secondary" size="sm" onPress={onViewAll}>
+              View all
+            </AppButton>
+          ) : (
+            <></>
+          )}
+        </Row>
+
+        {!hasReviews ? (
+          <AppText variant="hint">No reviews yet — be the first.</AppText>
         ) : (
-          <View />
+          <Row gap="sm" align="center" wrap>
+            <Pill status="info">⭐ {avgRating?.toFixed(1)} / 5</Pill>
+            <AppText variant="hint">
+              ({ratingCount} review{ratingCount === 1 ? "" : "s"})
+            </AppText>
+          </Row>
         )}
-      </View>
 
-      <View style={{ height: 10 }} />
-
-      {ratingCount === 0 ? (
-        <Text appearance="hint">No reviews yet — be the first.</Text>
-      ) : (
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Pill status="info">⭐ {avgRating?.toFixed(1)} / 5</Pill>
-          <Text appearance="hint">
-            ({ratingCount} review{ratingCount === 1 ? "" : "s"})
-          </Text>
-        </View>
-      )}
-
-      <View style={{ height: 10 }} />
-      <Text appearance="hint" style={{ fontSize: 12 }}>
-        Reviews are public. After you’ve visited, you can leave one review for this volcano.
-      </Text>
+        <AppText variant="hint">
+          Reviews are public. After you’ve visited, you can leave one review for this volcano.
+        </AppText>
+      </Stack>
     </CardShell>
   );
 }

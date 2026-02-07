@@ -1,6 +1,8 @@
-import { View } from "react-native";
-import { Text, Button } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 export function ReviewsEmptyStateCard({
   onBack,
@@ -11,24 +13,23 @@ export function ReviewsEmptyStateCard({
 }) {
   return (
     <CardShell>
-      <View style={{ gap: 10 }}>
-        <Text category="s1" style={{ fontWeight: "900" }}>
-          No reviews yet
-        </Text>
+      <Stack gap="md">
+        <AppText variant="sectionTitle">No reviews yet</AppText>
 
-        <Text appearance="hint">
+        <AppText variant="hint">
           Be the first to leave a rating after you’ve visited.
-        </Text>
+        </AppText>
 
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <Button appearance="outline" onPress={onBack} style={{ flex: 1 }}>
+        <Row gap="sm">
+          <AppButton variant="secondary" onPress={onBack} style={{ flex: 1 }}>
             Back
-          </Button>
-          <Button appearance="ghost" onPress={onRetry} style={{ flex: 1 }}>
+          </AppButton>
+
+          <AppButton variant="ghost" onPress={onRetry} style={{ flex: 1 }}>
             Refresh
-          </Button>
-        </View>
-      </View>
+          </AppButton>
+        </Row>
+      </Stack>
     </CardShell>
   );
 }

@@ -1,7 +1,13 @@
 import React, { useMemo } from "react";
 import { View } from "react-native";
-import { Button, Layout, Text } from "@ui-kitten/components";
+
 import { CardShell } from "@/components/ui/CardShell";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
+
+import { space } from "@/lib/ui/tokens";
 import type { LocationStatus } from "@/lib/hooks/useUserLocation";
 
 export function ConesListHeader({
@@ -21,44 +27,34 @@ export function ConesListHeader({
   }, [hasLoc, status]);
 
   return (
-    <Layout>
-      <View style={{ marginBottom: 14 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text category="h4" style={{ fontWeight: "900" }}>
-            Volcanoes
-          </Text>
+    <Stack gap="md">
+      <Row justify="space-between" align="center" style={{ gap: space.md }}>
+        <AppText variant="screenTitle">Volcanoes</AppText>
 
-          <Button size="small" appearance="outline" onPress={onPressGPS}>
-            {gpsButtonLabel}
-          </Button>
-        </View>
+        <AppButton variant="secondary" size="sm" onPress={onPressGPS}>
+          {gpsButtonLabel}
+        </AppButton>
+      </Row>
 
-        <Text appearance="hint" style={{ marginTop: 6 }}>
-          Choose a volcano to explore across the Auckland Volcanic Field.
-        </Text>
+      <AppText variant="hint">
+        Choose a volcano to explore across the Auckland Volcanic Field.
+      </AppText>
 
-        {status === "denied" ? (
-          <View style={{ marginTop: 12 }}>
-            <CardShell status="warning">
-              <Text>Turn on location to see distances.</Text>
-            </CardShell>
-          </View>
-        ) : null}
+      {status === "denied" ? (
+        <CardShell status="warning">
+          <AppText variant="body" style={{ fontWeight: "800" }}>
+            Turn on location to see distances.
+          </AppText>
+        </CardShell>
+      ) : null}
 
-        {locErr ? (
-          <View style={{ marginTop: 12 }}>
-            <CardShell status="danger">
-              <Text>We couldn’t get your location. Try again in a moment.</Text>
-            </CardShell>
-          </View>
-        ) : null}
-      </View>
-    </Layout>
+      {locErr ? (
+        <CardShell status="danger">
+          <AppText variant="body" style={{ fontWeight: "800" }}>
+            We couldn’t get your location. Try again in a moment.
+          </AppText>
+        </CardShell>
+      ) : null}
+    </Stack>
   );
 }

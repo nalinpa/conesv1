@@ -7,8 +7,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  type ViewStyle,
 } from "react-native";
-import { Layout, Text, Button, Spinner } from "@ui-kitten/components";
+import { useTheme } from "@ui-kitten/components";
+
+import { CardShell } from "@/components/ui/CardShell";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
+
+import { space, radius, border as borderTok } from "@/lib/ui/tokens";
 
 export function ReviewModal({
   visible,
@@ -29,19 +38,20 @@ export function ReviewModal({
   onClose: () => void;
   onSave: () => void;
 }) {
+  const theme = useTheme();
   const [touchedSave, setTouchedSave] = useState(false);
 
   const canSave = !saving && draftRating != null;
 
   const ratingLabel = useMemo(() => {
-    if (draftRating == null) return "Select a rating";
+    if (draftRating == null) return "Tap a rating";
     return `${draftRating}/5`;
   }, [draftRating]);
 
   const saveLabel = useMemo(() => {
     if (saving) return "Saving…";
     if (draftRating == null) return "Pick a rating";
-    return "Save review";
+    return "Save";
   }, [saving, draftRating]);
 
   function handleClose() {
@@ -57,8 +67,23 @@ export function ReviewModal({
   }
 
   function setText(t: string) {
-    // keep your maxLength in TextInput; just avoid leading whitespace weirdness
     onChangeText(t.replace(/^\s+/, ""));
+  }
+
+  function ratingPillStyle(selected: boolean): ViewStyle {
+    const selectedBorder = theme["color-primary-600"] ?? "rgba(95,179,162,0.95)";
+    const idleBorder = theme["color-basic-500"] ?? "rgba(100,116,139,0.35)";
+    const selectedBg = theme["color-primary-200"] ?? "rgba(95,179,162,0.22)";
+
+    return {
+      paddingHorizontal: space.md,
+      paddingVertical: space.sm,
+      borderRadius: 999,
+      borderWidth: borderTok.thick,
+      borderColor: selected ? selectedBorder : idleBorder,
+      backgroundColor: selected ? selectedBg : "transparent",
+      opacity: saving ? 0.6 : 1,
+    };
   }
 
   return (
@@ -76,137 +101,126 @@ export function ReviewModal({
           }}
           style={{
             flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
+            backgroundColor: "rgba(0,0,0,0.45)",
             justifyContent: "center",
-            padding: 18,
+            padding: space.lg,
           }}
         >
           {/* Stop propagation so taps inside don't dismiss */}
           <Pressable onPress={() => {}} style={{ width: "100%" }}>
-            <Layout style={{ borderRadius: 18, padding: 16 }}>
-              <Text category="h6" style={{ fontWeight: "900" }}>
-                Leave a review
-              </Text>
+            <CardShell>
+              <Stack gap="lg">
+                <View style={{ gap: space.xs }}>
+                  <AppText variant="sectionTitle">Add a review</AppText>
+                  <AppText variant="hint">
+                    Your review is public. You can leave one review per volcano.
+                  </AppText>
+                </View>
 
-              <View style={{ height: 8 }} />
-              <Text appearance="hint">
-                One-time only. Choose a rating and (optionally) add a short note.
-              </Text>
+                {/* Rating header */}
+                <Row justify="space-between" align="center">
+                  <AppText variant="label">
+                    Your rating{" "}
+                    <AppText variant="hint" style={{ fontWeight: "800" }}>
+                      • {ratingLabel}
+                    </AppText>
+                  </AppText>
 
-              <View style={{ height: 14 }} />
+                  {saving ? <AppText variant="hint">Saving…</AppText> : null}
+                </Row>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 10,
-                }}
-              >
-                <Text style={{ fontWeight: "800" }}>{ratingLabel}</Text>
+                {/* Rating buttons */}
+                <Row wrap gap="sm" style={{ alignItems: "center" }}>
+                  {[1, 2, 3, 4, 5].map((n) => {
+                    const selected = draftRating === n;
+                    return (
+                      <Pressable
+                        key={n}
+                        disabled={saving}
+                        onPress={() => {
+                          onChangeRating(n);
+                          if (touchedSave) setTouchedSave(false);
+                        }}
+                        hitSlop={8}
+                        style={ratingPillStyle(selected)}
+                      >
+                        <AppText style={{ fontWeight: selected ? "900" : "800" }}>
+                          {"⭐".repeat(n)}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+                </Row>
 
-                {saving ? (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Spinner size="tiny" />
-                    <Text appearance="hint" category="c1">
-                      Saving…
-                    </Text>
-                  </View>
+                {touchedSave && draftRating == null ? (
+                  <AppText variant="hint" style={{ fontWeight: "800" }}>
+                    Pick a rating to save your review.
+                  </AppText>
                 ) : null}
-              </View>
 
-              <View style={{ height: 10 }} />
+                {/* Text input */}
+                <View
+                  style={{
+                    borderWidth: borderTok.thick,
+                    borderColor: theme["color-basic-500"] ?? "rgba(100,116,139,0.35)",
+                    borderRadius: radius.md,
+                    paddingHorizontal: space.md,
+                    paddingVertical: space.sm,
+                    opacity: saving ? 0.75 : 1,
+                    backgroundColor: theme["color-basic-100"] ?? "#FFFFFF",
+                  }}
+                >
+                  <TextInput
+                    value={draftText}
+                    onChangeText={setText}
+                    placeholder="Optional note — what was it like? (views, track, vibes)…"
+                    placeholderTextColor={
+                      theme["color-basic-700"] ?? "rgba(100,116,139,0.9)"
+                    }
+                    multiline
+                    editable={!saving}
+                    style={{
+                      minHeight: 96,
+                      color: theme["text-basic-color"] ?? "#0f172a",
+                      fontSize: 16,
+                      fontWeight: "500",
+                    }}
+                    maxLength={280}
+                    textAlignVertical="top"
+                  />
 
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                {[1, 2, 3, 4, 5].map((n) => {
-                  const selected = draftRating === n;
-                  return (
-                    <Pressable
-                      key={n}
+                  <View style={{ marginTop: space.xs }}>
+                    <AppText variant="hint">
+                      {draftText.length} / 280
+                    </AppText>
+                  </View>
+                </View>
+
+                {/* Actions */}
+                <Row gap="sm">
+                  <View style={{ flex: 1 }}>
+                    <AppButton
+                      variant="secondary"
                       disabled={saving}
-                      onPress={() => {
-                        onChangeRating(n);
-                        if (touchedSave) setTouchedSave(false);
-                      }}
-                      style={{
-                        paddingHorizontal: 12,
-                        paddingVertical: 10,
-                        borderRadius: 999,
-                        borderWidth: 1.5,
-                        borderColor: selected
-                          ? "rgba(95,179,162,0.85)"
-                          : "rgba(100,116,139,0.25)",
-                        backgroundColor: selected ? "rgba(95,179,162,0.22)" : "transparent",
-                        opacity: saving ? 0.6 : 1,
-                      }}
+                      onPress={handleClose}
                     >
-                      <Text style={{ fontWeight: selected ? "900" : "800" }}>
-                        {"⭐".repeat(n)}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
+                      Cancel
+                    </AppButton>
+                  </View>
 
-              {touchedSave && draftRating == null ? (
-                <>
-                  <View style={{ height: 10 }} />
-                  <Text status="warning" appearance="hint">
-                    Pick a rating to continue.
-                  </Text>
-                </>
-              ) : null}
-
-              <View style={{ height: 14 }} />
-
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: "rgba(100,116,139,0.25)",
-                  borderRadius: 14,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  opacity: saving ? 0.7 : 1,
-                }}
-              >
-                <TextInput
-                  value={draftText}
-                  onChangeText={setText}
-                  placeholder="Optional note (e.g. great views, muddy track)…"
-                  placeholderTextColor="rgba(100,116,139,0.9)"
-                  multiline
-                  editable={!saving}
-                  style={{ minHeight: 84, color: "#0f172a" }}
-                  maxLength={280}
-                  textAlignVertical="top"
-                />
-                <Text appearance="hint" style={{ fontSize: 12 }}>
-                  {draftText.length} / 280
-                </Text>
-              </View>
-
-              <View style={{ height: 14 }} />
-
-              <View style={{ flexDirection: "row", gap: 10 }}>
-                <Button
-                  appearance="outline"
-                  style={{ flex: 1 }}
-                  disabled={saving}
-                  onPress={handleClose}
-                >
-                  Cancel
-                </Button>
-
-                <Button
-                  style={{ flex: 1 }}
-                  disabled={!canSave}
-                  onPress={handleSave}
-                  accessoryLeft={saving ? () => <Spinner size="tiny" /> : undefined}
-                >
-                  {saveLabel}
-                </Button>
-              </View>
-            </Layout>
+                  <View style={{ flex: 1 }}>
+                    <AppButton
+                      disabled={!canSave}
+                      loading={saving}
+                      loadingLabel="Saving…"
+                      onPress={handleSave}
+                    >
+                      {saveLabel}
+                    </AppButton>
+                  </View>
+                </Row>
+              </Stack>
+            </CardShell>
           </Pressable>
         </Pressable>
       </KeyboardAvoidingView>

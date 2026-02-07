@@ -1,6 +1,7 @@
-import React from "react";
-import { View } from "react-native";
-import { Text, Button } from "@ui-kitten/components";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 export function ReviewsHeader({
   title,
@@ -13,30 +14,23 @@ export function ReviewsHeader({
   count: number;
   onBack: () => void;
 }) {
-  return (
-    <View style={{ marginBottom: 14 }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <View>
-          <Text category="h4" style={{ fontWeight: "900" }}>
-            Reviews
-          </Text>
-          <Text appearance="hint" style={{ marginTop: 4 }}>
-            {count === 0
-              ? "No reviews yet."
-              : `★ ${avg?.toFixed(1)} / 5 (${count} review${count === 1 ? "" : "s"})`}
-          </Text>
-        </View>
+  const subtitle =
+    count === 0
+      ? "No reviews yet."
+      : `★ ${avg?.toFixed(1)} / 5 (${count} review${count === 1 ? "" : "s"})`;
 
-        <Button size="small" appearance="outline" onPress={onBack}>
+  return (
+    <Stack gap="sm">
+      <Row justify="space-between" align="center">
+        <Stack gap="xs">
+          <AppText variant="screenTitle">{title}</AppText>
+          <AppText variant="hint">{subtitle}</AppText>
+        </Stack>
+
+        <AppButton variant="secondary" size="sm" onPress={onBack}>
           Back
-        </Button>
-      </View>
-    </View>
+        </AppButton>
+      </Row>
+    </Stack>
   );
 }

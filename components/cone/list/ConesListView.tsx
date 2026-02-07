@@ -12,17 +12,12 @@ export function ConesListView({
   header,
   onPressCone,
   completedIds,
-
   hideCompleted = false,
 }: {
   rows: ConeRow[];
   header?: React.ReactElement<any> | null;
   onPressCone: (coneId: string) => void;
-
-  // optional: makes it trivial to wire completions + completion filters
   completedIds?: Set<string>;
-
-  // when true + completedIds provided, completed cones are hidden
   hideCompleted?: boolean;
 }) {
   const visibleRows = useMemo(() => {

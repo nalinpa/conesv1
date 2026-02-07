@@ -1,9 +1,21 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { ScrollView, View } from "react-native";
-import { Button, Text } from "@ui-kitten/components";
 
-import { CardShell } from "@/components/ui/CardShell";
 import type { ConeCategory, ConeRegion } from "@/lib/models";
+
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { CardShell } from "@/components/ui/CardShell";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppIconButton } from "@/components/ui/AppIconButton";
+
+import { ChevronDown, ChevronUp } from "lucide-react-native";
+import { space } from "@/lib/ui/tokens";
+
+/* ---------------------------------
+ * Options
+ * --------------------------------- */
 
 const REGIONS: Array<{ label: string; value: ConeRegion | "all" }> = [
   { label: "All", value: "all" },
@@ -36,10 +48,14 @@ const DEFAULT_FILTERS: ConeFiltersValue = {
 
 function labelFor<T extends string>(
   opts: Array<{ label: string; value: T }>,
-  v: T
+  v: T,
 ): string {
   return opts.find((o) => o.value === v)?.label ?? String(v);
 }
+
+/* ---------------------------------
+ * Chip (quiet)
+ * --------------------------------- */
 
 function Chip({
   label,
@@ -51,55 +67,48 @@ function Chip({
   onPress: () => void;
 }) {
   return (
-    <Button
-      size="tiny"
-      appearance={selected ? "filled" : "outline"}
+    <AppButton
+      size="xs"
+      variant={selected ? "secondary" : "ghost"}
       onPress={onPress}
-      style={{ borderRadius: 999, paddingHorizontal: 10 }}
+      style={{
+        borderRadius: 999,
+        minHeight: 32,
+        paddingHorizontal: space.sm,
+      }}
     >
       {label}
-    </Button>
+    </AppButton>
   );
 }
+
+/* ---------------------------------
+ * Component
+ * --------------------------------- */
 
 export function ConeFiltersCard({
   value,
   onChange,
-
   completedCount,
   completionsLoading,
   completionsErr,
-
   shownCount,
-
   defaultExpanded = false,
 }: {
   value: ConeFiltersValue;
   onChange: (next: ConeFiltersValue) => void;
-
   completedCount: number;
   completionsLoading: boolean;
   completionsErr: string;
-
   shownCount: number;
-
   defaultExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
   const patch = useCallback(
     (p: Partial<ConeFiltersValue>) => onChange({ ...value, ...p }),
-    [onChange, value]
+    [onChange, value],
   );
-
-  const hasFilters =
-    value.hideCompleted !== DEFAULT_FILTERS.hideCompleted ||
-    value.region !== DEFAULT_FILTERS.region ||
-    value.category !== DEFAULT_FILTERS.category;
-
-  const onClear = useCallback(() => {
-    onChange(DEFAULT_FILTERS);
-  }, [onChange]);
 
   const summary = useMemo(() => {
     const parts: string[] = [];
@@ -109,130 +118,129 @@ export function ConeFiltersCard({
     if (value.category !== "all")
       parts.push(labelFor(CATEGORIES as any, value.category as any));
     return parts.length ? parts.join(" • ") : "none";
-  }, [value.hideCompleted, value.region, value.category]);
+  }, [value]);
 
+  /* ============================
+   * COLLAPSED BAR
+   * ============================ */
+  if (!expanded) {
+    return (
+      <View
+        style={{
+            marginHorizontal: -space.md,
+            paddingVertical: space.sm,
+            paddingHorizontal: space.md,
+            borderTopWidth: 1,
+            borderBottomWidth: 1,
+            borderColor: "rgba(0,0,0,0.06)",
+            backgroundColor: "rgba(0,0,0,0.02)",
+        }}
+        >
+        <Row justify="space-between" align="center">
+          <AppText variant="hint" numberOfLines={1}>
+            Filters: {summary}
+          </AppText>
+
+          <AppIconButton
+            icon={ChevronDown}
+            size={18}
+            onPress={() => setExpanded(true)}
+            accessibilityLabel="Show filters"
+          />
+        </Row>
+      </View>
+    );
+  }
+
+  /* ============================
+   * EXPANDED PANEL
+   * ============================ */
   return (
     <CardShell>
-      <View style={{ gap: 10 }}>
-        {/* header row */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <View style={{ flex: 1, paddingRight: 12 }}>
-            <Text category="s2">Filters</Text>
-            <Text appearance="hint" category="c1" numberOfLines={1}>
-              {summary}
-            </Text>
-          </View>
+      <Stack gap="sm">
+        <Row justify="space-between" align="center">
+          <AppText variant="label">Filters</AppText>
 
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            {hasFilters ? (
-              <Button
-                size="tiny"
-                appearance="ghost"
-                status="basic"
-                onPress={onClear}
-              >
-                Clear
-              </Button>
-            ) : null}
+          <AppIconButton
+            icon={ChevronUp}
+            size={18}
+            onPress={() => setExpanded(false)}
+            accessibilityLabel="Hide filters"
+          />
+        </Row>
 
-            <Button
-              size="small"
-              appearance="outline"
-              onPress={() => setExpanded((v) => !v)}
-            >
-              {expanded ? "Hide" : "Show"}
-            </Button>
-          </View>
-        </View>
+        {/* Completed */}
+        <Stack gap="xs">
+          <AppText variant="hint">Completed</AppText>
 
-        {expanded ? (
-          <View style={{ gap: 12 }}>
-            {/* completed chips */}
-            <View style={{ gap: 6 }}>
-              <Text appearance="hint" category="c1">
-                Completed
-              </Text>
+          <Row gap="xs" align="center" style={{ flexWrap: "wrap" }}>
+            <Chip
+              label="Hide"
+              selected={value.hideCompleted}
+              onPress={() => patch({ hideCompleted: true })}
+            />
+            <Chip
+              label="Show"
+              selected={!value.hideCompleted}
+              onPress={() => patch({ hideCompleted: false })}
+            />
 
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <View style={{ flex: 1 }} />
+
+            <AppText variant="hint">
+              {completionsLoading
+                ? "Loading…"
+                : `${completedCount} completed`}
+            </AppText>
+          </Row>
+
+          {completionsErr ? (
+            <AppText variant="hint" numberOfLines={2}>
+              {completionsErr}
+            </AppText>
+          ) : null}
+        </Stack>
+
+        {/* Region */}
+        <Stack gap="xs">
+          <AppText variant="hint">Region</AppText>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <Row gap="xs" style={{ paddingVertical: 2 }}>
+              {REGIONS.map((r) => (
                 <Chip
-                  label="Hide"
-                  selected={value.hideCompleted}
-                  onPress={() => patch({ hideCompleted: true })}
+                  key={r.value}
+                  label={r.label}
+                  selected={value.region === r.value}
+                  onPress={() => patch({ region: r.value })}
                 />
+              ))}
+            </Row>
+          </ScrollView>
+        </Stack>
+
+        {/* Category */}
+        <Stack gap="xs">
+          <AppText variant="hint">Type</AppText>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <Row gap="xs" style={{ paddingVertical: 2 }}>
+              {CATEGORIES.map((c) => (
                 <Chip
-                  label="Show"
-                  selected={!value.hideCompleted}
-                  onPress={() => patch({ hideCompleted: false })}
+                  key={c.value}
+                  label={c.label}
+                  selected={value.category === c.value}
+                  onPress={() => patch({ category: c.value })}
                 />
+              ))}
+            </Row>
+          </ScrollView>
+        </Stack>
 
-                <View style={{ flex: 1 }} />
-
-                <Text appearance="hint" category="c1">
-                  {completionsLoading ? "Loading…" : `${completedCount} completed`}
-                </Text>
-              </View>
-
-              {completionsErr ? (
-                <Text appearance="hint" category="c1">
-                  {completionsErr}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* region chips */}
-            <View style={{ gap: 6 }}>
-              <Text appearance="hint" category="c1">
-                Region
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
-                  {REGIONS.map((r) => (
-                    <Chip
-                      key={r.value}
-                      label={r.label}
-                      selected={value.region === r.value}
-                      onPress={() => patch({ region: r.value })}
-                    />
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* type chips */}
-            <View style={{ gap: 6 }}>
-              <Text appearance="hint" category="c1">
-                Type
-              </Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={{ flexDirection: "row", gap: 8, paddingVertical: 2 }}>
-                  {CATEGORIES.map((c) => (
-                    <Chip
-                      key={c.value}
-                      label={c.label}
-                      selected={value.category === c.value}
-                      onPress={() => patch({ category: c.value })}
-                    />
-                  ))}
-                </View>
-              </ScrollView>
-            </View>
-
-            {/* footer */}
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-              <View style={{ flex: 1 }} />
-              <Text appearance="hint" category="c1">
-                Showing {shownCount}
-              </Text>
-            </View>
-          </View>
-        ) : null}
-      </View>
+        <Row justify="flex-end">
+          <AppText variant="hint">Showing {shownCount}</AppText>
+        </Row>
+      </Stack>
     </CardShell>
   );
 }

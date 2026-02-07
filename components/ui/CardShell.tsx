@@ -8,6 +8,9 @@ import {
 } from "react-native";
 import { Layout, useTheme } from "@ui-kitten/components";
 
+import { space, radius, border as borderTok } from "@/lib/ui/tokens";
+import { Stack } from "@/components/ui/Stack";
+
 type CardStatus = "basic" | "success" | "warning" | "danger";
 
 type Props = {
@@ -28,31 +31,29 @@ function getStatusColors(
   theme: Record<string, any>,
   status: CardStatus,
 ): { borderColor: string; backgroundColor: string } {
-  // These theme keys exist in Eva themes; if you use custom tokens, adjust here.
-  // Fallbacks are intentionally conservative.
-  const fallbackBorder = theme["color-basic-400"] ?? "#E5E5E5";
+  const fallbackBorder = theme["color-basic-500"] ?? "#D0D0D0";
   const fallbackBg = theme["color-basic-100"] ?? "#FFFFFF";
 
   switch (status) {
     case "success":
       return {
-        borderColor: theme["color-success-500"] ?? fallbackBorder,
+        borderColor: theme["color-success-600"] ?? fallbackBorder,
         backgroundColor: theme["color-success-100"] ?? fallbackBg,
       };
     case "warning":
       return {
-        borderColor: theme["color-warning-500"] ?? fallbackBorder,
+        borderColor: theme["color-warning-600"] ?? fallbackBorder,
         backgroundColor: theme["color-warning-100"] ?? fallbackBg,
       };
     case "danger":
       return {
-        borderColor: theme["color-danger-500"] ?? fallbackBorder,
+        borderColor: theme["color-danger-600"] ?? fallbackBorder,
         backgroundColor: theme["color-danger-100"] ?? fallbackBg,
       };
     case "basic":
     default:
       return {
-        borderColor: theme["color-basic-400"] ?? fallbackBorder,
+        borderColor: theme["color-basic-500"] ?? fallbackBorder,
         backgroundColor: theme["color-basic-100"] ?? fallbackBg,
       };
   }
@@ -69,21 +70,25 @@ export function CardShell({
 }: Props) {
   const theme = useTheme();
   const { borderColor, backgroundColor } = getStatusColors(theme, status);
-  const baseStyle: ViewStyle = { borderRadius: 18, overflow: "hidden" };
+
+  const baseStyle: ViewStyle = {
+    borderRadius: radius.md,
+    overflow: "hidden",
+  };
 
   const Wrapper: React.ElementType = onPress ? Pressable : View;
 
   const wrapperStyle = ({ pressed }: PressableStateCallbackType) => {
     const base: ViewStyle = {
-      borderRadius: 18,
+      borderRadius: radius.md,
       overflow: "hidden", // ensures press surface matches rounded card
     };
 
-    // Subtle press feedback only when pressable & not disabled
     const pressFx: ViewStyle | undefined =
       onPress && !disabled
         ? {
             opacity: pressed ? 0.92 : 1,
+            transform: pressed ? [{ scale: 0.995 }] : [{ scale: 1 }],
           }
         : undefined;
 
@@ -100,18 +105,18 @@ export function CardShell({
         // Critical: don't let Layout eat touches when wrapped by Pressable
         pointerEvents="box-none"
         style={{
-          borderRadius: 18,
-          padding: 14,
-          borderWidth: 1,
+          borderRadius: radius.md,
+          padding: space.lg,
+          borderWidth: borderTok.thick,
           borderColor,
           backgroundColor,
         }}
       >
-        {header ? <View style={{ marginBottom: 10 }}>{header}</View> : null}
+        {header ? <View style={{ marginBottom: space.sm }}>{header}</View> : null}
 
-        <View style={{ gap: 10 }}>{children}</View>
+        <Stack gap="sm">{children}</Stack>
 
-        {footer ? <View style={{ marginTop: 10 }}>{footer}</View> : null}
+        {footer ? <View style={{ marginTop: space.sm }}>{footer}</View> : null}
       </Layout>
     </Wrapper>
   );

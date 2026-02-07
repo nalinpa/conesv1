@@ -1,10 +1,11 @@
 import React, { useMemo } from "react";
-import { View } from "react-native";
-import { Text, Button, Spinner } from "@ui-kitten/components";
 import * as Linking from "expo-linking";
 
 import { CardShell } from "@/components/ui/CardShell";
-import { formatDistanceMeters, formatMeters } from "@/lib/formatters";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 /**
  * UI-only derived GPS states
@@ -59,12 +60,10 @@ export function StatusCard({
   if (completed) {
     return (
       <CardShell status="success">
-        <View style={{ gap: 10 }}>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            You’ve been here ✅
-          </Text>
-          <Text appearance="hint">This volcano is already marked as visited.</Text>
-        </View>
+        <Stack gap="sm">
+          <AppText variant="sectionTitle">You’ve been here ✓</AppText>
+          <AppText variant="hint">This volcano is already marked as visited.</AppText>
+        </Stack>
       </CardShell>
     );
   }
@@ -81,48 +80,51 @@ export function StatusCard({
   }, [status, loc, accuracyMeters, maxAccuracyMeters, inRange]);
 
   const accuracyLabel = accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`;
-
   const refreshLabel = refreshingGPS ? "Checking…" : "Refresh location";
 
   // --- DENIED ---
   if (gpsState === "denied") {
     return (
       <CardShell status="danger">
-        <View style={{ gap: 10 }}>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            Turn on location
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Turn on location</AppText>
 
-          <Text appearance="hint">
+          <AppText variant="hint">
             We use location to show your distance and let you tap{" "}
-            <Text style={{ fontWeight: "800" }}>I’m here</Text> when you’re nearby.
-          </Text>
+            <AppText variant="hint" style={{ fontWeight: "900" }}>
+              I’m here
+            </AppText>{" "}
+            when you’re nearby.
+          </AppText>
 
-          <View style={{ flexDirection: "row", gap: 10 }}>
-            <Button
-              style={{ flex: 1 }}
-              size="small"
-              status="danger"
+          <Row gap="sm">
+            <AppButton
+              variant="danger"
+              size="sm"
               onPress={() => Linking.openSettings()}
               disabled={refreshingGPS}
-              accessoryLeft={refreshingGPS ? () => <Spinner size="tiny" /> : undefined}
+              loading={refreshingGPS}
+              loadingLabel="Opening…"
+              style={{ flex: 1 }}
             >
               Open Settings
-            </Button>
+            </AppButton>
 
             {onRefreshGPS ? (
-              <Button
-                style={{ flex: 1 }}
-                size="small"
-                appearance="outline"
+              <AppButton
+                variant="secondary"
+                size="sm"
                 onPress={onRefreshGPS}
                 disabled={refreshingGPS}
+                loading={refreshingGPS}
+                loadingLabel="Checking…"
+                style={{ flex: 1 }}
               >
                 Try again
-              </Button>
+              </AppButton>
             ) : null}
-          </View>
-        </View>
+          </Row>
+        </Stack>
       </CardShell>
     );
   }
@@ -131,21 +133,26 @@ export function StatusCard({
   if (gpsState === "unknown_permission") {
     return (
       <CardShell>
-        <View style={{ gap: 10 }}>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            Turn on location
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Turn on location</AppText>
 
-          <Text appearance="hint">
+          <AppText variant="hint">
             Turn on location to see your distance and verify visits.
-          </Text>
+          </AppText>
 
           {onRefreshGPS ? (
-            <Button size="small" appearance="outline" onPress={onRefreshGPS} disabled={refreshingGPS}>
+            <AppButton
+              variant="secondary"
+              size="sm"
+              onPress={onRefreshGPS}
+              disabled={refreshingGPS}
+              loading={refreshingGPS}
+              loadingLabel="Enabling…"
+            >
               Enable location
-            </Button>
+            </AppButton>
           ) : null}
-        </View>
+        </Stack>
       </CardShell>
     );
   }
@@ -154,21 +161,26 @@ export function StatusCard({
   if (gpsState === "requesting") {
     return (
       <CardShell>
-        <View style={{ gap: 10 }}>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            Finding your location…
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Finding your location…</AppText>
 
-          <Text appearance="hint">
+          <AppText variant="hint">
             If it’s taking a while, step outside or tap refresh.
-          </Text>
+          </AppText>
 
           {onRefreshGPS ? (
-            <Button size="small" appearance="outline" onPress={onRefreshGPS} disabled={refreshingGPS}>
+            <AppButton
+              variant="secondary"
+              size="sm"
+              onPress={onRefreshGPS}
+              disabled={refreshingGPS}
+              loading={refreshingGPS}
+              loadingLabel="Checking…"
+            >
               {refreshLabel}
-            </Button>
+            </AppButton>
           ) : null}
-        </View>
+        </Stack>
       </CardShell>
     );
   }
@@ -177,28 +189,30 @@ export function StatusCard({
   if (gpsState === "low_accuracy") {
     return (
       <CardShell status="warning">
-        <View style={{ gap: 10 }}>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            Location isn’t accurate yet
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Location isn’t accurate yet</AppText>
 
-          <Text appearance="hint">
-            Current accuracy: <Text style={{ fontWeight: "800" }}>{accuracyLabel}</Text>.{" "}
-            Try standing still for a moment, then refresh.
-          </Text>
+          <AppText variant="hint">
+            Current accuracy:{" "}
+            <AppText variant="hint" style={{ fontWeight: "900" }}>
+              {accuracyLabel}
+            </AppText>
+            . Try standing still for a moment, then refresh.
+          </AppText>
 
           {onRefreshGPS ? (
-            <Button
-              size="small"
-              appearance="outline"
-              status="warning"
+            <AppButton
+              variant="secondary"
+              size="sm"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
+              loading={refreshingGPS}
+              loadingLabel="Checking…"
             >
               {refreshLabel}
-            </Button>
+            </AppButton>
           ) : null}
-        </View>
+        </Stack>
       </CardShell>
     );
   }
@@ -207,40 +221,48 @@ export function StatusCard({
   if (gpsState === "too_far") {
     return (
       <CardShell status="warning">
-        <View style={{ gap: 10 }}>
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            Not quite there yet
-          </Text>
+        <Stack gap="md">
+          <AppText variant="sectionTitle">Not quite there yet</AppText>
 
-          <Text appearance="hint">Head a little closer and you’ll be able to tap I’m here.</Text>
+          <AppText variant="hint">
+            Head a little closer and you’ll be able to tap{" "}
+            <AppText variant="hint" style={{ fontWeight: "900" }}>
+              I’m here
+            </AppText>
+            .
+          </AppText>
 
           {onRefreshGPS ? (
-            <Button
-              size="small"
-              appearance="outline"
-              status="warning"
+            <AppButton
+              variant="secondary"
+              size="sm"
               onPress={onRefreshGPS}
               disabled={refreshingGPS}
+              loading={refreshingGPS}
+              loadingLabel="Checking…"
             >
               {refreshLabel}
-            </Button>
+            </AppButton>
           ) : null}
-        </View>
+        </Stack>
       </CardShell>
     );
   }
 
+  // --- READY ---
   return (
     <CardShell status="success">
-      <View style={{ gap: 10 }}>
-        <Text category="h6" style={{ fontWeight: "900" }}>
-          You’re close enough ✅
-        </Text>
+      <Stack gap="sm">
+        <AppText variant="sectionTitle">You’re close enough ✓</AppText>
 
-        <Text appearance="hint">
-          When you’re ready, tap <Text style={{ fontWeight: "800" }}>I’m here</Text>.
-        </Text>
-      </View>
+        <AppText variant="hint">
+          When you’re ready, tap{" "}
+          <AppText variant="hint" style={{ fontWeight: "900" }}>
+            I’m here
+          </AppText>
+          .
+        </AppText>
+      </Stack>
     </CardShell>
   );
 }

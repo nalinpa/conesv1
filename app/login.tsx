@@ -4,6 +4,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { auth } from "../lib/firebase";
 import { Layout, Card, Text, Input, Button } from "@ui-kitten/components";
+import { AppButton } from "@/components/ui/AppButton";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -85,14 +86,13 @@ export default function LoginPage() {
               }}
             />
 
-            <Button
+          <AppButton
               onPress={() => void login()}
               disabled={loading || !canSubmit}
-              size="giant"
-              style={{ borderRadius: 14 }}
+              loading={loading}
             >
-              {loading ? "Signing in…" : "Sign in"}
-            </Button>
+              Sign in
+          </AppButton>
 
             <Text appearance="hint" style={{ marginTop: 14 }}>
               Tip: turn on location permissions so we can validate your climbs.

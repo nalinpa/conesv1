@@ -1,7 +1,11 @@
 import { View } from "react-native";
-import { Text, Button } from "@ui-kitten/components";
+
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
 
 export function ActionsCard({
   completed,
@@ -30,80 +34,89 @@ export function ActionsCard({
   shareBonus: boolean;
   onShareBonus: () => void;
 }) {
+  // ---- NOT COMPLETED: primary CTA only ----
   if (!completed) {
     return (
-      <Button
-        size="giant"
+      <AppButton
         onPress={onComplete}
         disabled={saving || !hasLoc}
-        style={{ borderRadius: 14 }}
+        loading={saving}
+        loadingLabel="Marking…"
       >
-        {saving ? "Marking…" : "I’m here"}
-      </Button>
+        I’m here
+      </AppButton>
     );
   }
 
-  const stars = "⭐".repeat(Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))));
+  const stars = "⭐".repeat(
+    Math.max(0, Math.min(5, Math.round(myReviewRating ?? 0))),
+  );
 
   return (
     <CardShell>
-      <View style={{ gap: 14 }}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text category="h6" style={{ fontWeight: "900" }}>
-            You’ve been here
-          </Text>
-          <Pill status="success">✅</Pill>
-        </View>
+      <Stack gap="lg">
+        {/* Header */}
+        <Row justify="space-between" align="center">
+          <AppText variant="sectionTitle">You’ve been here</AppText>
+          <Pill status="success">✓</Pill>
+        </Row>
 
-        {/* Review */}
-        <View style={{ gap: 8 }}>
-          <Text style={{ fontWeight: "800" }}>Your review</Text>
+        {/* Review section */}
+        <Stack gap="md">
+          <AppText variant="label">Your review</AppText>
 
           {!hasReview ? (
-            <View style={{ gap: 10 }}>
-              <Text appearance="hint">Drop a quick rating — you can only leave one.</Text>
-              <Button appearance="outline" onPress={onOpenReview}>
-                Add a review
-              </Button>
-            </View>
-          ) : (
-            <View style={{ gap: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Text style={{ fontWeight: "900" }}>
-                  {stars}{" "}
-                  <Text appearance="hint" style={{ fontWeight: "700" }}>
-                    ({myReviewRating}/5)
-                  </Text>
-                </Text>
-              </View>
+            <Stack gap="sm">
+              <AppText variant="hint">
+                Drop a quick rating — you can only leave one.
+              </AppText>
 
-              <Text appearance="hint">
-                {myReviewText?.trim() ? myReviewText.trim() : "No comment yet."}
-              </Text>
-            </View>
+              <AppButton
+                variant="secondary"
+                onPress={onOpenReview}
+              >
+                Add a review
+              </AppButton>
+            </Stack>
+          ) : (
+            <Stack gap="sm">
+              <Row align="center" gap="sm">
+                <AppText
+                  variant="sectionTitle"
+                  style={{ fontWeight: "900" }}
+                >
+                  {stars}
+                </AppText>
+
+                <AppText variant="hint">
+                  ({myReviewRating}/5)
+                </AppText>
+              </Row>
+
+              <AppText variant="hint">
+                {myReviewText?.trim()
+                  ? myReviewText.trim()
+                  : "No comment yet."}
+              </AppText>
+            </Stack>
           )}
-        </View>
+        </Stack>
 
         {/* Share bonus */}
-        <View style={{ gap: 8 }}>
-          <Text appearance="hint">Optional: share a photo for a little bonus credit.</Text>
+        <Stack gap="sm">
+          <AppText variant="hint">
+            Optional: share a photo for a little bonus credit.
+          </AppText>
 
-          <Button
-            appearance={shareBonus ? "filled" : "outline"}
-            status={shareBonus ? "success" : "basic"}
-            onPress={onShareBonus}
+          <AppButton
+            variant={shareBonus ? "secondary" : "primary"}
             disabled={shareBonus}
+            onPress={onShareBonus}
           >
-            {shareBonus ? "Bonus credit added ✅" : "Share for bonus credit"}
-          </Button>
-        </View>
-      </View>
+            {shareBonus ? "Bonus credit added ✓" : "Share for bonus credit"}
+          </AppButton>
+        </Stack>
+      </Stack>
     </CardShell>
   );
 }

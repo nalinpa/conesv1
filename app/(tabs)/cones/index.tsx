@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { Layout, Text } from "@ui-kitten/components";
-
 import { Screen } from "@/components/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { CardShell } from "@/components/ui/CardShell";
+
+import { Stack } from "@/components/ui/Stack";
+import { AppText } from "@/components/ui/AppText";
 
 import { goCone } from "@/lib/routes";
 
@@ -48,11 +49,7 @@ export default function ConeListPage() {
   const [filters, setFilters] = useState<ConeFiltersValue>(DEFAULT_FILTERS);
 
   // Active cones count (for empty state correctness)
-  const activeCones = useMemo(() => {
-    // If useCones() already returns only active, this still works.
-    return cones.filter((c) => !!c.active);
-  }, [cones]);
-
+  const activeCones = useMemo(() => cones.filter((c) => !!c.active), [cones]);
   const totalActiveCount = activeCones.length;
 
   const filteredCones = useMemo(() => {
@@ -67,9 +64,7 @@ export default function ConeListPage() {
     }
 
     if (filters.category !== "all") {
-      list = list.filter(
-        (c) => c.category === (filters.category as ConeCategory)
-      );
+      list = list.filter((c) => c.category === (filters.category as ConeCategory));
     }
 
     return list;
@@ -84,9 +79,9 @@ export default function ConeListPage() {
   if (loading) {
     return (
       <Screen padded={false}>
-        <Layout style={{ flex: 1 }}>
+        <View style={{ flex: 1 }}>
           <LoadingState label="Loading cones…" />
-        </Layout>
+        </View>
       </Screen>
     );
   }
@@ -94,7 +89,7 @@ export default function ConeListPage() {
   if (err) {
     return (
       <Screen padded={false}>
-        <Layout style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
           <ErrorCard
             title="Couldn’t load cones"
             message={err}
@@ -104,13 +99,13 @@ export default function ConeListPage() {
               appearance: "filled",
             }}
           />
-        </Layout>
+        </View>
       </Screen>
     );
   }
 
   const header = (
-    <View style={{ gap: 12 }}>
+    <Stack gap="md">
       <ConesListHeader
         status={status}
         hasLoc={!!loc}
@@ -126,7 +121,7 @@ export default function ConeListPage() {
         completionsErr={completionsErr}
         shownCount={rows.length}
       />
-    </View>
+    </Stack>
   );
 
   // ----------------------------
@@ -138,36 +133,32 @@ export default function ConeListPage() {
   if (showNoActive || showNoMatch) {
     return (
       <Screen padded={false}>
-        <Layout style={{ flex: 1 }}>
-          <View style={{ paddingHorizontal: 16, paddingTop: 12, gap: 12 }}>
+        <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+          <Stack gap="md">
             {header}
 
             <CardShell>
-              {showNoActive ? (
-                <>
-                  <Text category="s1">No active cones exist</Text>
-                  <Text appearance="hint" style={{ marginTop: 6 }}>
-                    Add cones in the admin app, or activate some cones to show them here.
-                  </Text>
-                </>
-              ) : (
-                <>
-                  <Text category="s1">No cones match your filters</Text>
-                  <Text appearance="hint" style={{ marginTop: 6 }}>
-                    Try clearing filters or adjusting region/category.
-                  </Text>
-                </>
-              )}
+              <Stack gap="sm">
+                <AppText variant="sectionTitle">
+                  {showNoActive ? "No active cones exist" : "No cones match your filters"}
+                </AppText>
+
+                <AppText variant="hint">
+                  {showNoActive
+                    ? "Add cones in the admin app, or activate some cones to show them here."
+                    : "Try clearing filters or adjusting region/category."}
+                </AppText>
+              </Stack>
             </CardShell>
-          </View>
-        </Layout>
+          </Stack>
+        </View>
       </Screen>
     );
   }
 
   return (
     <Screen padded={false}>
-      <Layout style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
         <ConesListView
           rows={rows}
           header={header}
@@ -175,7 +166,7 @@ export default function ConeListPage() {
           completedIds={completedConeIds}
           hideCompleted={false} // already filtered at source
         />
-      </Layout>
+      </View>
     </Screen>
   );
 }

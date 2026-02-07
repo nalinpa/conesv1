@@ -1,9 +1,15 @@
 import React from "react";
-import { View, Pressable } from "react-native";
-import { Text } from "@ui-kitten/components";
+import { View } from "react-native";
+import { Button } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
+
+import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
+import { AppText } from "@/components/ui/AppText";
+import { space } from "@/lib/ui/tokens";
+import { AppButton } from "../ui/AppButton";
 
 type ConeLite = {
   id: string;
@@ -25,64 +31,49 @@ export function ConesToReviewCard({
 
   return (
     <CardShell>
-      <View style={{ gap: 10 }}>
+      <Stack gap="md">
         {/* Header */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text category="h6">Reviews to write</Text>
+        <Row justify="space-between" align="center">
+          <AppText variant="sectionTitle">Reviews to write</AppText>
           <Pill status="info">{cones.length}</Pill>
-        </View>
+        </Row>
 
-        <Text appearance="hint">
+        <AppText variant="hint">
           You’ve been to these volcanoes — add a quick public review.
-        </Text>
+        </AppText>
 
         {/* List */}
-        <View style={{ gap: 12 }}>
+        <Stack gap="lg">
           {visible.map((cone) => (
-            <View key={cone.id} style={{ gap: 6 }}>
-              <Text category="s1" style={{ fontWeight: "800" }}>
-                {cone.name}
-              </Text>
+            <CardShell key={cone.id} status="basic">
+              <Stack gap="sm">
+                <View style={{ gap: space.xs }}>
+                  <AppText variant="sectionTitle" style={{ fontWeight: "800" }}>
+                    {cone.name}
+                  </AppText>
 
-              {cone.description?.trim() ? (
-                <Text appearance="hint" numberOfLines={2}>
-                  {cone.description.trim()}
-                </Text>
-              ) : null}
+                  {cone.description?.trim() ? (
+                    <AppText variant="hint" numberOfLines={2}>
+                      {cone.description.trim()}
+                    </AppText>
+                  ) : null}
+                </View>
 
-              <Pressable
-                onPress={() => onOpenCone(cone.id)}
-                hitSlop={10}
-                style={{
-                  alignSelf: "flex-start",
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  borderRadius: 14,
-                  borderWidth: 1,
-                  borderColor: "rgba(100,116,139,0.25)",
-                }}
-              >
-                <Text status="primary" style={{ fontWeight: "800" }}>
+                <AppButton onPress={() => onOpenCone(cone.id)}>
                   Add a review
-                </Text>
-              </Pressable>
-            </View>
+                </AppButton>
+              </Stack>
+            </CardShell>
           ))}
-        </View>
+        </Stack>
 
         {/* Overflow hint */}
         {remaining > 0 ? (
-          <Text appearance="hint" category="c1">
+          <AppText variant="hint">
             + {remaining} more visited volcano{remaining === 1 ? "" : "es"}
-          </Text>
+          </AppText>
         ) : null}
-      </View>
+      </Stack>
     </CardShell>
   );
 }
