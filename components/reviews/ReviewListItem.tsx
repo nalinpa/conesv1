@@ -1,18 +1,34 @@
 import React from "react";
 import { View } from "react-native";
-import { Text } from "@ui-kitten/components";
 import { CardShell } from "@/components/ui/CardShell";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
+import { Row } from "@/components/ui/Row";
+import { space } from "@/lib/ui/tokens";
 
 function formatDateMaybe(ts: any): string | null {
   try {
     if (!ts) return null;
+
     if (typeof ts?.toDate === "function") {
       const d: Date = ts.toDate();
       return d.toLocaleDateString();
     }
-    if (typeof ts === "number") {
-      return new Date(ts).toLocaleDateString();
+
+    if (ts instanceof Date) {
+      return ts.toLocaleDateString();
     }
+
+    if (typeof ts === "number") {
+      const d = new Date(ts);
+      return Number.isFinite(d.getTime()) ? d.toLocaleDateString() : null;
+    }
+
+    if (typeof ts === "string") {
+      const d = new Date(ts);
+      return Number.isFinite(d.getTime()) ? d.toLocaleDateString() : null;
+    }
+
     return null;
   } catch {
     return null;
@@ -21,31 +37,37 @@ function formatDateMaybe(ts: any): string | null {
 
 function clampRating(n: any): number {
   const v = Number(n);
-  if (!Number.isFinite(v)) return 0;
-  return Math.max(0, Math.min(5, v));
+  if (!Number.isFinite(v)) return 1;
+  const r = Math.round(v);
+  if (r < 1) return 1;
+  if (r > 5) return 5;
+  return r;
 }
 
-function starsForRating(rating: number): string {
-  if (!rating) return "—";
-  const whole = Math.max(1, Math.min(5, Math.round(rating)));
-  return "★".repeat(whole);
+function starsLine(rating: number): string {
+  const r = clampRating(rating);
+  const filled = "★".repeat(r);
+  const empty = "☆".repeat(5 - r);
+  return filled + empty;
 }
 
 export function ReviewListItem({
   rating,
   text,
   createdAt,
+  onReport,
 }: {
-  rating: number; // 1..5 (or 0)
+  rating: number; // 1..5
   text?: string | null;
   createdAt?: any;
+  onReport?: () => void; // optional placeholder
 }) {
   const r = clampRating(rating);
   const when = formatDateMaybe(createdAt);
-  const stars = starsForRating(r);
+  const cleaned = typeof text === "string" ? text.trim() : "";
 
   return (
-    <CardShell style={{ marginBottom: 12 }}>
+    <CardShell style={{ marginBottom: space.md }}>
       <View
         style={{
           flexDirection: "row",
@@ -53,23 +75,32 @@ export function ReviewListItem({
           justifyContent: "space-between",
         }}
       >
-        <Text category="s1" style={{ fontWeight: "800" }}>
-          {stars}
-        </Text>
-        <Text appearance="hint" category="c1">
-          {r ? `${r}/5` : ""}
-        </Text>
+        <AppText variant="sectionTitle" style={{ fontWeight: "800" }}>
+          {starsLine(r)}
+        </AppText>
+
+        <AppText variant="hint" style={{ fontWeight: "800" }}>
+          {`${r}/5`}
+        </AppText>
       </View>
 
       {when ? (
-        <Text appearance="hint" category="c1" style={{ marginTop: 6 }}>
+        <AppText variant="hint" style={{ marginTop: space.sm }}>
           {when}
-        </Text>
+        </AppText>
       ) : null}
 
-      <Text appearance="hint" style={{ marginTop: 10 }}>
-        {text?.trim() ? text.trim() : "No comment."}
-      </Text>
+      <AppText variant="hint" style={{ marginTop: space.md }}>
+        {cleaned ? cleaned : "No comment."}
+      </AppText>
+
+      {onReport ? (
+        <Row style={{ marginTop: space.md, justifyContent: "flex-end" }}>
+          <AppButton variant="ghost" onPress={onReport}>
+            Report
+          </AppButton>
+        </Row>
+      ) : null}
     </CardShell>
   );
 }

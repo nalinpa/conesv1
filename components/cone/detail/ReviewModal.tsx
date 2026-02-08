@@ -19,6 +19,10 @@ import { AppButton } from "@/components/ui/AppButton";
 
 import { space, radius, border as borderTok } from "@/lib/ui/tokens";
 
+function isValidRating(n: number | null): n is number {
+  return n != null && Number.isFinite(n) && n >= 1 && n <= 5;
+}
+
 export function ReviewModal({
   visible,
   saving,
@@ -33,7 +37,7 @@ export function ReviewModal({
   saving: boolean;
   draftRating: number | null;
   draftText: string;
-  onChangeRating: (n: number) => void;
+  onChangeRating: (n: number | null) => void; // ✅ allow null
   onChangeText: (t: string) => void;
   onClose: () => void;
   onSave: () => void;
@@ -41,16 +45,16 @@ export function ReviewModal({
   const theme = useTheme();
   const [touchedSave, setTouchedSave] = useState(false);
 
-  const canSave = !saving && draftRating != null;
+  const canSave = !saving && isValidRating(draftRating);
 
   const ratingLabel = useMemo(() => {
-    if (draftRating == null) return "Tap a rating";
+    if (!isValidRating(draftRating)) return "Tap a rating";
     return `${draftRating}/5`;
   }, [draftRating]);
 
   const saveLabel = useMemo(() => {
     if (saving) return "Saving…";
-    if (draftRating == null) return "Pick a rating";
+    if (!isValidRating(draftRating)) return "Pick a rating";
     return "Save";
   }, [saving, draftRating]);
 
@@ -87,7 +91,12 @@ export function ReviewModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={handleClose}
+    >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
@@ -106,8 +115,15 @@ export function ReviewModal({
             padding: space.lg,
           }}
         >
-          {/* Stop propagation so taps inside don't dismiss */}
-          <Pressable onPress={() => {}} style={{ width: "100%" }}>
+          {/* Content wrapper: prevent backdrop dismiss */}
+          <Pressable
+            onPress={(e) => {
+              // RN Pressable doesn't expose stopPropagation consistently across platforms,
+              // but nesting this Pressable prevents the parent onPress from firing.
+              e?.preventDefault?.();
+            }}
+            style={{ width: "100%" }}
+          >
             <CardShell>
               <Stack gap="lg">
                 <View style={{ gap: space.xs }}>
@@ -152,7 +168,7 @@ export function ReviewModal({
                   })}
                 </Row>
 
-                {touchedSave && draftRating == null ? (
+                {touchedSave && !isValidRating(draftRating) ? (
                   <AppText variant="hint" style={{ fontWeight: "800" }}>
                     Pick a rating to save your review.
                   </AppText>
@@ -190,20 +206,14 @@ export function ReviewModal({
                   />
 
                   <View style={{ marginTop: space.xs }}>
-                    <AppText variant="hint">
-                      {draftText.length} / 280
-                    </AppText>
+                    <AppText variant="hint">{draftText.length} / 280</AppText>
                   </View>
                 </View>
 
                 {/* Actions */}
                 <Row gap="sm">
                   <View style={{ flex: 1 }}>
-                    <AppButton
-                      variant="secondary"
-                      disabled={saving}
-                      onPress={handleClose}
-                    >
+                    <AppButton variant="secondary" disabled={saving} onPress={handleClose}>
                       Cancel
                     </AppButton>
                   </View>

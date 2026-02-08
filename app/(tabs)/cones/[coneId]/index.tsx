@@ -27,15 +27,6 @@ import { StatusCard } from "@/components/cone/detail/StatusCard";
 import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
 
-type PublicReviewDoc = {
-  coneId: string;
-  coneName: string;
-  userId: string;
-  reviewRating: number; // 1..5
-  reviewText: string | null;
-  reviewCreatedAt: any;
-};
-
 const MAX_ACCURACY_METERS = 50;
 
 export default function ConeDetailRoute() {
@@ -64,13 +55,15 @@ export default function ConeDetailRoute() {
   // GPS gate
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
 
-  // Reviews summary
+  // Reviews summary (+ write)
   const {
     avgRating,
     ratingCount,
     myRating: myReviewRating,
     myText: myReviewText,
     err: reviewsErr,
+    saving: reviewsSaving,
+    saveReview: saveReviewToDb,
   } = useConeReviewsSummary(coneId);
 
   // UI state
@@ -81,7 +74,6 @@ export default function ConeDetailRoute() {
   const [reviewOpen, setReviewOpen] = useState(false);
   const [draftRating, setDraftRating] = useState<number | null>(null);
   const [draftText, setDraftText] = useState("");
-  const [reviewSaving, setReviewSaving] = useState(false);
   const [optimisticReviewRating, setOptimisticReviewRating] = useState<number | null>(
     null,
   );
@@ -282,7 +274,8 @@ export default function ConeDetailRoute() {
 
   function openReview() {
     if (!completedId) return;
-    if (myReviewRating != null) return;
+    if (optimisticReviewRating != null || myReviewRating != null) return;
+
     setDraftRating(null);
     setDraftText("");
     setReviewOpen(true);
@@ -313,34 +306,27 @@ export default function ConeDetailRoute() {
       return;
     }
 
-    const cleanedText = draftText.trim() ? draftText.trim().slice(0, 280) : null;
-
     setErr("");
-    setReviewSaving(true);
 
-    try {
-      const reviewId = `${uid}_${cone.id}`;
+    const res = await saveReviewToDb({
+      coneId: cone.id,
+      coneSlug: cone.slug,
+      coneName: cone.name,
+      reviewRating: draftRating,
+      reviewText: draftText,
+    });
 
-      const publicPayload: PublicReviewDoc = {
-        coneId: cone.id,
-        coneName: cone.name,
-        userId: uid,
-        reviewRating: draftRating,
-        reviewText: cleanedText,
-        reviewCreatedAt: serverTimestamp(),
-      };
-
-      await setDoc(doc(db, COL.coneReviews, reviewId), publicPayload);
-
-      setOptimisticReviewRating(draftRating);
-      setOptimisticReviewText(cleanedText);
-      setReviewOpen(false);
-    } catch (e: any) {
-      console.error(e);
-      setErr(e?.message ?? "We couldn’t save your review. Try again.");
-    } finally {
-      setReviewSaving(false);
+    if (!res.ok) {
+      setErr(res.err);
+      return;
     }
+
+    // Keep optimistic UI (snappy)
+    const cleanedText = draftText.trim() ? draftText.trim().slice(0, 280) : null;
+    setOptimisticReviewRating(draftRating);
+    setOptimisticReviewText(cleanedText);
+
+    setReviewOpen(false);
   }
 
   // ---------------------------------
@@ -456,7 +442,7 @@ export default function ConeDetailRoute() {
 
       <ReviewModal
         visible={reviewOpen}
-        saving={reviewSaving}
+        saving={reviewsSaving}
         draftRating={draftRating}
         draftText={draftText}
         onChangeRating={setDraftRating}

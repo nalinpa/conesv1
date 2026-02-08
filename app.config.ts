@@ -1,11 +1,14 @@
-// app.config.ts
 import "dotenv/config";
 import type { ExpoConfig } from "expo/config";
 
 const config: ExpoConfig = {
   name: "Cones",
   slug: "cones",
+  scheme: "cones",
   version: "1.0.0",
+  android: {
+    package: "com.anonymous.cones",
+  },
 
   extra: {
     firebase: {

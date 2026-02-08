@@ -15,22 +15,8 @@ import { ReviewsHeader } from "@/components/reviews/ReviewsHeader";
 import { ReviewsEmptyStateCard } from "@/components/reviews/ReviewsEmptyState";
 
 import { usePublicConeReviews } from "@/lib/hooks/usePublicConeReviews";
-
-type PublicReview = {
-  id: string;
-  userId: string;
-  coneId: string;
-  coneName?: string;
-  reviewRating: number; // 1..5
-  reviewText?: string | null;
-  reviewCreatedAt?: any;
-};
-
-function clampRating(n: any): number {
-  const v = Number(n);
-  if (!Number.isFinite(v)) return 0;
-  return Math.max(0, Math.min(5, v));
-}
+import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
+import type { PublicReview } from "@/lib/services/reviewService";
 
 export default function ConeReviewsPage() {
   const { coneId, coneName } = useLocalSearchParams<{
@@ -38,32 +24,28 @@ export default function ConeReviewsPage() {
     coneName?: string;
   }>();
 
+  const id = String(coneId);
+
   const title =
     typeof coneName === "string" && coneName.trim() ? coneName.trim() : "Volcano";
 
   const goBack = useCallback(() => {
     if (router.canGoBack()) router.back();
-    else goCone(String(coneId));
-  }, [coneId]);
+    else goCone(id);
+  }, [id]);
 
-  const { loading, err, reviews, retry } = usePublicConeReviews(String(coneId));
+  // List (newest-first handled inside the hook)
+  const { loading, err, reviews, refresh } = usePublicConeReviews(id);
+  const retry = refresh; // keep existing prop name usage
+
+  // Summary (keep consistent with cone detail)
+  const { avgRating, ratingCount } = useConeReviewsSummary(id);
 
   const summary = useMemo(() => {
-    if (reviews.length === 0) return { avg: null as number | null, count: 0 };
-
-    let sum = 0;
-    let count = 0;
-
-    for (const r of reviews) {
-      const v = clampRating(r.reviewRating);
-      if (v >= 1 && v <= 5) {
-        sum += v;
-        count += 1;
-      }
-    }
-
-    return { avg: count > 0 ? sum / count : null, count };
-  }, [reviews]);
+    const avg =
+      avgRating == null ? null : Math.round(Number(avgRating) * 10) / 10;
+    return { avg, count: ratingCount };
+  }, [avgRating, ratingCount]);
 
   const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {
     return (
@@ -71,12 +53,18 @@ export default function ConeReviewsPage() {
         rating={item.reviewRating}
         text={item.reviewText}
         createdAt={item.reviewCreatedAt}
+        // future: onReport={() => ...}
       />
     );
   };
 
   const header = (
-    <ReviewsHeader title={title} avg={summary.avg} count={summary.count} onBack={goBack} />
+    <ReviewsHeader
+      title={title}
+      avg={summary.avg}
+      count={summary.count}
+      onBack={goBack}
+    />
   );
 
   if (loading) {
@@ -95,10 +83,12 @@ export default function ConeReviewsPage() {
       <Screen padded={false}>
         <Stack.Screen options={{ title: `Reviews` }} />
         <Layout style={{ flex: 1 }}>
-          <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
+          <View
+            style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}
+          >
             <ErrorCard
               title="Couldn’t load reviews"
-              message={err}
+              message={err || "Check your connection and try again."}
               action={{ label: "Back", onPress: goBack }}
               secondaryAction={{ label: "Retry", onPress: retry }}
             />
@@ -119,14 +109,23 @@ export default function ConeReviewsPage() {
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingHorizontal: 16,
             paddingTop: 16,
             paddingBottom: 24,
           }}
-          ListHeaderComponent={header}
+          // Keep header aligned with list padding by giving the header its own padding.
+          // (Prevents double padding if header already has inner padding styles.)
+          ListHeaderComponent={<View style={{ paddingHorizontal: 16 }}>{header}</View>}
           ListEmptyComponent={
-            <ReviewsEmptyStateCard onBack={goBack} onRetry={retry} />
+            <View style={{ paddingHorizontal: 16 }}>
+              <ReviewsEmptyStateCard onBack={goBack} onRetry={retry} />
+            </View>
           }
+          // Items should have horizontal padding too
+          renderItem={({ item }: ListRenderItemInfo<PublicReview>) => (
+            <View style={{ paddingHorizontal: 16 }}>
+              {renderItem({ item } as any)}
+            </View>
+          )}
         />
       </Layout>
     </Screen>
