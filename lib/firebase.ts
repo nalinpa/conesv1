@@ -1,15 +1,15 @@
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { initializeAuth, getReactNativePersistence } from "firebase/auth";
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
 import { getFirestore } from "firebase/firestore";
 import Constants from "expo-constants";
 
 const firebaseConfig = Constants.expoConfig?.extra?.firebase;
 
-if (!firebaseConfig) {
-  throw new Error("Missing Firebase config");
-}
+const app = getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
 
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+});
 
-export const auth = getAuth(app);
 export const db = getFirestore(app);

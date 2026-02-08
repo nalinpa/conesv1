@@ -1,8 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-
-import { db } from "@/lib/firebase";
-import { COL } from "@/lib/constants/firestore";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { reviewService } from "@/lib/services/reviewService";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 
 type ReviewsSummaryState = {
@@ -13,22 +10,17 @@ type ReviewsSummaryState = {
   myText: string | null;
 
   loading: boolean;
-  err: string;
+  err: string | null;
+
+  saving: boolean;
+  saveReview: (args: {
+    coneId: string;
+    coneSlug: string;
+    coneName: string;
+    reviewRating: number | null | undefined;
+    reviewText: string | null | undefined;
+  }) => Promise<{ ok: true } | { ok: false; err: string }>;
 };
-
-function clampRating(n: any): number | null {
-  const v = Number(n);
-  if (!Number.isFinite(v)) return null;
-  if (v < 1 || v > 5) return null;
-  return v;
-}
-
-function cleanText(t: any, maxLen = 280): string | null {
-  if (typeof t !== "string") return null;
-  const s = t.trim();
-  if (!s) return null;
-  return s.length > maxLen ? s.slice(0, maxLen) : s;
-}
 
 export function useConeReviewsSummary(
   coneId: string | null | undefined,
@@ -42,97 +34,82 @@ export function useConeReviewsSummary(
   const [myText, setMyText] = useState<string | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
-    // While auth hydrates, keep loading (prevents flicker / "missing my review")
+    // While auth hydrates, keep loading (prevents flicker / “missing my review”)
     if (authLoading) {
       setLoading(true);
-      setErr("");
-      return () => {
-        mounted = false;
-      };
+      setErr(null);
+      return;
     }
 
     if (!coneId) {
-      // Treat missing coneId as a “hard” error to match other hooks
       setAvgRating(null);
       setRatingCount(0);
       setMyRating(null);
       setMyText(null);
       setLoading(false);
       setErr("Missing coneId.");
-      return () => {
-        mounted = false;
-      };
+      return;
     }
 
     setLoading(true);
-    setErr("");
+    setErr(null);
 
-    const myId = uid ? `${uid}_${String(coneId)}` : null;
-
-    const reviewsQ = query(
-      collection(db, COL.coneReviews),
-      where("coneId", "==", String(coneId)),
-    );
-
-    const unsub = onSnapshot(
-      reviewsQ,
-      (snap) => {
-        if (!mounted) return;
-
-        let sum = 0;
-        let count = 0;
-
-        let mineRating: number | null = null;
-        let mineText: string | null = null;
-
-        for (const d of snap.docs) {
-          const data = d.data() as any;
-
-          const r = clampRating(data?.reviewRating);
-          if (r != null) {
-            sum += r;
-            count += 1;
-          }
-
-          // One review per user per cone is enforced by docId convention
-          if (myId && d.id === myId) {
-            mineRating = clampRating(data?.reviewRating);
-            mineText = cleanText(data?.reviewText, 280);
-          }
-        }
-
-        setRatingCount(count);
-        setAvgRating(count > 0 ? sum / count : null);
-
-        setMyRating(mineRating);
-        setMyText(mineText);
-
+    const unsub = reviewService.listenConeReviewsSummary(
+      String(coneId),
+      uid,
+      (v) => {
+        setAvgRating(v.avgRating);
+        setRatingCount(v.ratingCount);
+        setMyRating(v.myRating);
+        setMyText(v.myText);
         setLoading(false);
       },
-      (e) => {
-        console.error(e);
-        if (!mounted) return;
-
+      (e: any) => {
         setAvgRating(null);
         setRatingCount(0);
         setMyRating(null);
         setMyText(null);
-
-        setErr((e as any)?.message ?? "Failed to load reviews.");
+        setErr(e?.message ?? "Failed to load reviews.");
         setLoading(false);
       },
     );
 
-    return () => {
-      mounted = false;
-      unsub();
-    };
+    return () => unsub();
   }, [authLoading, coneId, uid]);
+
+  const saveReview = useCallback(
+    async (args: {
+      coneId: string;
+      coneSlug: string;
+      coneName: string;
+      reviewRating: number | null | undefined;
+      reviewText: string | null | undefined;
+    }) => {
+      if (authLoading) return { ok: false as const, err: "Auth not ready" };
+      if (!uid) return { ok: false as const, err: "You must be logged in" };
+      if (!args.coneId) return { ok: false as const, err: "Missing coneId" };
+
+      setSaving(true);
+      try {
+        return await reviewService.saveReview({
+          uid,
+          coneId: String(args.coneId),
+          coneSlug: String(args.coneSlug ?? ""),
+          coneName: String(args.coneName ?? ""),
+          reviewRating: args.reviewRating,
+          reviewText: args.reviewText,
+        });
+      } finally {
+        setSaving(false);
+      }
+    },
+    [authLoading, uid],
+  );
 
   return useMemo(
     () => ({
@@ -142,7 +119,9 @@ export function useConeReviewsSummary(
       myText,
       loading,
       err,
+      saving,
+      saveReview,
     }),
-    [avgRating, ratingCount, myRating, myText, loading, err],
+    [avgRating, ratingCount, myRating, myText, loading, err, saving, saveReview],
   );
 }
