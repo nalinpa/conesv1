@@ -1,6 +1,5 @@
 import { useEffect } from "react";
-import { router } from "expo-router";
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { goLogin, goProgressHome } from "@/lib/routes";

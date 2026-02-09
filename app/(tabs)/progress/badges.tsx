@@ -6,7 +6,7 @@ import { goProgressHome, goBadges } from "@/lib/routes";
 
 import { LoadingState } from "@/components/ui/LoadingState";
 import { CardShell } from "@/components/ui/CardShell";
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { BadgeTile } from "@/components/badges/BadgeTile";
 import { AppButton } from "@/components/ui/AppButton";

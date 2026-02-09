@@ -8,7 +8,7 @@ import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useMyReviews } from "@/lib/hooks/useMyReviews";
 
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/badges/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";

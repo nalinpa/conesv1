@@ -6,8 +6,20 @@ const config: ExpoConfig = {
   slug: "cones",
   scheme: "cones",
   version: "1.0.0",
+
   android: {
     package: "com.anonymous.cones",
+    config: {
+      googleMaps: {
+        apiKey: process.env.GMAPS_API_KEY,
+      },
+    },
+  },
+
+  ios: {
+    config: {
+      googleMapsApiKey: process.env.GMAPS_API_KEY,
+    },
   },
 
   extra: {

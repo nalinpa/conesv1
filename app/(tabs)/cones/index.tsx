@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { CardShell } from "@/components/ui/CardShell";

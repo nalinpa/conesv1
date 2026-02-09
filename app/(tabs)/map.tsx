@@ -4,7 +4,7 @@ import { View } from "react-native";
 import { goCone } from "@/lib/routes";
 import { completionService } from "@/lib/services/completionService";
 
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import { CardShell } from "@/components/ui/CardShell";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
