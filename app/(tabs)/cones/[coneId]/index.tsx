@@ -7,7 +7,7 @@ import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import type { ConeCompletionWrite } from "@/lib/models";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 
@@ -26,12 +26,14 @@ import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard"
 import { StatusCard } from "@/components/cone/detail/StatusCard";
 import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
+import { shareService } from "@/lib/services/share/shareService";
 
 const MAX_ACCURACY_METERS = 50;
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
-
+  const [shareHint, setShareHint] = useState<string | null>(null);
+ 
   // Auth (avoid auth.currentUser races)
   const { loading: authLoading, uid } = useAuthUser();
 
@@ -244,33 +246,21 @@ export default function ConeDetailRoute() {
     }
   }
 
-  async function doShareBonus() {
+  function doShareBonus() {
     if (!cone) return;
-    if (!completedId) return;
-    if (shareBonus) return;
 
-    if (authLoading) return;
-    if (!uid) return;
-
-    try {
-      const text = `I just visited ${cone.name} 🌋 #AucklandCones`;
-      await Share.share({ message: text });
-
-      const completionId = `${uid}_${cone.id}`;
-
-      await updateDoc(doc(db, COL.coneCompletions, completionId), {
-        shareBonus: true,
-        shareConfirmed: true,
-        sharedAt: serverTimestamp(),
-        sharedPlatform: "unknown",
-      });
-
-      // UI snappiness; snapshot will confirm
-      setShareBonusLocal(true);
-    } catch {
-      // cancel is normal
-    }
+    router.push({
+      pathname: "/share-frame",
+      params: {
+        coneId: cone.id,
+        coneName: cone.name,
+        region: cone.region ?? "",
+        visitedLabel: "Visited",
+        completedAtMs: String(Date.now()),
+      },
+    });
   }
+
 
   function openReview() {
     if (!completedId) return;

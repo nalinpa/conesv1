@@ -4,7 +4,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 
 import { goCone } from "@/lib/routes";
 
-import { Screen } from "@/components/screen";
+import { Screen } from "@/components/ui/screen";
 import { Layout, List } from "@ui-kitten/components";
 
 import { LoadingState } from "@/components/ui/LoadingState";

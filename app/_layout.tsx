@@ -1,3 +1,4 @@
+import "@/lib/polyfills/buffer";
 import React, { useEffect } from "react";
 import { Stack, useSegments } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -31,9 +32,14 @@ function AuthGate() {
   useEffect(() => {
     if (loading) return;
 
-    const top = segments[0]; // e.g. "login", "(tabs)"
+    const top = segments[0]; // e.g. "login", "(tabs)", "share-frame"
     const inAuthRoute = top === "login";
     const inTabsRoute = top === "(tabs)";
+
+    // ✅ allow these routes while logged in, even though they aren't "(tabs)"
+    const allowedAuthedRoutes = new Set(["share-frame"]);
+    const inAllowedAuthedRoute = allowedAuthedRoutes.has(top);
+
     const loggedIn = !!user;
 
     // Logged out -> must be at /login
@@ -42,8 +48,8 @@ function AuthGate() {
       return;
     }
 
-    // Logged in -> must be inside tabs (default to progress)
-    if (loggedIn && !inTabsRoute) {
+    // Logged in -> must be inside tabs OR allowed routes (like share-frame)
+    if (loggedIn && !inTabsRoute && !inAllowedAuthedRoute) {
       goProgressHome();
       return;
     }
@@ -53,5 +59,9 @@ function AuthGate() {
     return <LoadingState label="Signing you in…" />;
   }
 
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="share-frame" options={{ presentation: "modal", headerShown: true, title: "Share" }} />
+    </Stack>
+  );
 }

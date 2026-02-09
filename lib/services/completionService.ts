@@ -1,5 +1,5 @@
-import { collection, onSnapshot, query, where } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where, doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { db, auth } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { completionFromDoc } from "@/lib/mappers/completionFromDoc";
 
@@ -65,5 +65,19 @@ export const completionService = {
         if (onError) onError(e);
       },
     );
+  },
+
+  /**
+   * Grant (or revoke) a share bonus for a completed cone.
+   * Uses merge write for safety.
+   */
+  async setShareBonus(uid: string, coneId: string, value: boolean) {
+    const completionId = `${uid}_${coneId}`;
+    await updateDoc(doc(db, COL.coneCompletions, completionId), {
+      shareBonus: value,
+      shareConfirmed: value,
+      sharedAt: value ? serverTimestamp() : null,
+      sharedPlatform: value ? "share-frame" : null,
+    });
   },
 };
