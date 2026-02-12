@@ -49,3 +49,7 @@ export function goMapHome() {
 export function goLogin() {
   router.replace("/login");
 }
+
+export function goAccountHome() {
+  router.push("/(tabs)/account");
+}
