@@ -9,9 +9,9 @@ import { ApplicationProvider, IconRegistry } from "@ui-kitten/components";
 import { EvaIconsPack } from "@ui-kitten/eva-icons";
 import { surfGreenTheme } from "@/lib/kitten-theme";
 
-import { goLogin, goProgressHome } from "@/lib/routes";
+import { goLogin, goMapHome, goProgressHome } from "@/lib/routes";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 
 export default function RootLayout() {
   return (
@@ -19,6 +19,28 @@ export default function RootLayout() {
       <IconRegistry icons={EvaIconsPack} />
       <ApplicationProvider {...eva} theme={{ ...eva.light, ...surfGreenTheme }}>
         <AuthGate />
+
+        <Stack screenOptions={{ headerShown: false }}>
+          {/* This is the default entry route */}
+          <Stack.Screen name="index" />
+
+          {/* Auth */}
+          <Stack.Screen name="login" />
+
+          {/* Main app */}
+          <Stack.Screen name="(tabs)" />
+
+          {/* Modals */}
+          <Stack.Screen
+            name="share-frame"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Share",
+            }}
+          />
+        </Stack>
+
         <PortalHost />
       </ApplicationProvider>
     </SafeAreaProvider>
@@ -27,41 +49,64 @@ export default function RootLayout() {
 
 function AuthGate() {
   const segments = useSegments();
-  const { user, loading } = useAuthUser();
+  const { user, loading: authLoading } = useAuthUser();
+  const guest = useGuestMode();
+
+  const loading = authLoading || guest.loading;
 
   useEffect(() => {
     if (loading) return;
 
-    const top = segments[0]; // e.g. "login", "(tabs)", "share-frame"
-    const inAuthRoute = top === "login";
-    const inTabsRoute = top === "(tabs)";
-
-    // ✅ allow these routes while logged in, even though they aren't "(tabs)"
-    const allowedAuthedRoutes = new Set(["share-frame"]);
-    const inAllowedAuthedRoute = allowedAuthedRoutes.has(top);
-
+    const top = segments[0]; // "login", "(tabs)", "share-frame", etc.
     const loggedIn = !!user;
+    const guestEnabled = guest.enabled;
 
-    // Logged out -> must be at /login
-    if (!loggedIn && !inAuthRoute) {
-      goLogin();
+    const inLogin = top === "login";
+    const inTabs = top === "(tabs)";
+    const inShare = top === "share-frame";
+
+    // If logged in, guest mode should not be enabled.
+    // (Don’t await; just fire and forget.)
+    if (loggedIn && guestEnabled) {
+      void guest.disable();
+    }
+
+    // Logged IN: keep them out of /login, send to progress if they land elsewhere.
+    if (loggedIn) {
+      if (inLogin) {
+        goProgressHome();
+        return;
+      }
+      // Allow tabs + share-frame; otherwise push to progress home.
+      if (!inTabs && !inShare) {
+        goProgressHome();
+        return;
+      }
       return;
     }
 
-    // Logged in -> must be inside tabs OR allowed routes (like share-frame)
-    if (loggedIn && !inTabsRoute && !inAllowedAuthedRoute) {
-      goProgressHome();
+    // Logged OUT:
+    // If guest enabled -> allow tabs; otherwise force login.
+    if (!guestEnabled) {
+      if (!inLogin) {
+        goLogin();
+        return;
+      }
       return;
     }
-  }, [loading, user, segments]);
 
-  if (loading) {
-    return <LoadingState label="Signing you in…" />;
-  }
+    // Guest enabled (logged out):
+    // - allow tabs
+    // - if they are on login, move them to map
+    if (inLogin) {
+      goMapHome();
+      return;
+    }
+    if (!inTabs) {
+      goMapHome();
+      return;
+    }
+  }, [loading, user, guest.enabled, segments, guest]);
 
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="share-frame" options={{ presentation: "modal", headerShown: true, title: "Share" }} />
-    </Stack>
-  );
+  return null;
 }

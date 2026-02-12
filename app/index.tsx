@@ -1,27 +1,17 @@
-import { useEffect } from "react";
-import { Screen } from "@/components/ui/screen";
-import { LoadingState } from "@/components/ui/LoadingState";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { goLogin, goProgressHome } from "@/lib/routes";
+import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { router } from "expo-router";
 
 export default function Index() {
-  const { uid, loading } = useAuthUser();
-
   useEffect(() => {
-    if (loading) return;
-
-    if (uid) {
-      // signed in → go to the app
-      goProgressHome();
-    } else {
-      // signed out → go to login
-      goLogin();
-    }
-  }, [uid, loading]);
+    // Let AuthGate decide where to send them,
+    // but ensure we start inside routing tree.
+    router.replace("/login");
+  }, []);
 
   return (
-    <Screen>
-      <LoadingState fullScreen={false} label="Starting…" />
-    </Screen>
+    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+      <ActivityIndicator />
+    </View>
   );
 }

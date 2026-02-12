@@ -1,11 +1,10 @@
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View } from "react-native";
 
 import { Screen } from "@/components/ui/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { CardShell } from "@/components/ui/CardShell";
-
 import { Stack } from "@/components/ui/Stack";
 import { AppText } from "@/components/ui/AppText";
 
@@ -15,15 +14,14 @@ import { useCones } from "@/lib/hooks/useCones";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 
 import type { ConeCategory, ConeRegion } from "@/lib/models";
 
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
-import {
-  ConeFiltersCard,
-  type ConeFiltersValue,
-} from "@/components/cone/list/ConeFiltersCard";
+import { ConeFiltersCard, type ConeFiltersValue } from "@/components/cone/list/ConeFiltersCard";
 
 const DEFAULT_FILTERS: ConeFiltersValue = {
   hideCompleted: true,
@@ -32,23 +30,120 @@ const DEFAULT_FILTERS: ConeFiltersValue = {
 };
 
 export default function ConeListPage() {
-  // Data
+  const { user, loading: authLoading } = useAuthUser();
+  const guest = useGuestMode();
+  const loading = authLoading || guest.loading;
+
+  const isGuest = !user && guest.enabled;
+
+  if (loading) {
+    return (
+      <Screen padded={false}>
+        <View style={{ flex: 1 }}>
+          <LoadingState label="Loading…" />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (isGuest) return <ConeListGuest />;
+  return <ConeListAuthed />;
+}
+
+function ConeListGuest() {
   const { cones, loading, err, reload } = useCones();
 
-  // Location
-  const { loc, status, err: locErr, request, refresh: refreshGPS } =
-    useUserLocation();
+  const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
 
-  // Completions (live)
-  const {
-    completedConeIds,
-    loading: completionsLoading,
-    err: completionsErr,
-  } = useMyCompletions();
+  const activeCones = useMemo(() => cones.filter((c) => !!c.active), [cones]);
+
+  const rows = useSortedConeRows(activeCones, loc);
+
+  if (loading) {
+    return (
+      <Screen padded={false}>
+        <View style={{ flex: 1 }}>
+          <LoadingState label="Loading cones…" />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (err) {
+    return (
+      <Screen padded={false}>
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
+          <ErrorCard
+            title="Couldn’t load cones"
+            message={err}
+            action={{ label: "Retry", onPress: () => void reload(), appearance: "filled" }}
+          />
+        </View>
+      </Screen>
+    );
+  }
+
+  const header = (
+    <Stack gap="md">
+      <ConesListHeader
+        status={status}
+        hasLoc={!!loc}
+        locErr={locErr}
+        onPressGPS={() => void (loc ? refreshGPS() : request())}
+      />
+
+      {/* Guests: hide filters entirely */}
+      <CardShell>
+        <Stack gap="xs">
+          <AppText variant="sectionTitle">Browse</AppText>
+          <AppText variant="hint">Sign in to filter by completion and track progress.</AppText>
+        </Stack>
+      </CardShell>
+    </Stack>
+  );
+
+  if (rows.length === 0) {
+    return (
+      <Screen padded={false}>
+        <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+          <Stack gap="md">
+            {header}
+            <CardShell>
+              <Stack gap="sm">
+                <AppText variant="sectionTitle">No active cones exist</AppText>
+                <AppText variant="hint">Activate cones in the admin app to show them here.</AppText>
+              </Stack>
+            </CardShell>
+          </Stack>
+        </View>
+      </Screen>
+    );
+  }
+
+  return (
+    <Screen padded={false}>
+      <View style={{ flex: 1 }}>
+        <ConesListView
+          rows={rows}
+          header={header}
+          onPressCone={(coneId: string) => goCone(coneId)}
+          completedIds={new Set()} // guests have no completions
+          hideCompleted={false}
+        />
+      </View>
+    </Screen>
+  );
+}
+
+function ConeListAuthed() {
+  const { cones, loading, err, reload } = useCones();
+
+  const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
+
+  const { completedConeIds, loading: completionsLoading, err: completionsErr } = useMyCompletions();
 
   const [filters, setFilters] = useState<ConeFiltersValue>(DEFAULT_FILTERS);
 
-  // Active cones count (for empty state correctness)
   const activeCones = useMemo(() => cones.filter((c) => !!c.active), [cones]);
   const totalActiveCount = activeCones.length;
 
@@ -70,12 +165,8 @@ export default function ConeListPage() {
     return list;
   }, [activeCones, filters, completedConeIds]);
 
-  // Sorted rows (distance-aware when loc exists)
   const rows = useSortedConeRows(filteredCones, loc);
 
-  // ----------------------------
-  // Loading / error states
-  // ----------------------------
   if (loading) {
     return (
       <Screen padded={false}>
@@ -93,11 +184,7 @@ export default function ConeListPage() {
           <ErrorCard
             title="Couldn’t load cones"
             message={err}
-            action={{
-              label: "Retry",
-              onPress: () => void reload(),
-              appearance: "filled",
-            }}
+            action={{ label: "Retry", onPress: () => void reload(), appearance: "filled" }}
           />
         </View>
       </Screen>
@@ -124,9 +211,6 @@ export default function ConeListPage() {
     </Stack>
   );
 
-  // ----------------------------
-  // Empty states (correct + distinct)
-  // ----------------------------
   const showNoActive = totalActiveCount === 0;
   const showNoMatch = !showNoActive && rows.length === 0;
 
@@ -136,7 +220,6 @@ export default function ConeListPage() {
         <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
           <Stack gap="md">
             {header}
-
             <CardShell>
               <Stack gap="sm">
                 <AppText variant="sectionTitle">
@@ -164,7 +247,7 @@ export default function ConeListPage() {
           header={header}
           onPressCone={(coneId: string) => goCone(coneId)}
           completedIds={completedConeIds}
-          hideCompleted={false} // already filtered at source
+          hideCompleted={false}
         />
       </View>
     </Screen>

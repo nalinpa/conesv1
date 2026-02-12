@@ -1,5 +1,18 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import { View, ScrollView } from "react-native";
+
+import { Screen } from "@/components/ui/screen";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { ErrorCard } from "@/components/ui/ErrorCard";
+
+import { Stack } from "@/components/ui/Stack";
+import { Section } from "@/components/ui/Section";
+import { AppText } from "@/components/ui/AppText";
+import { CardShell } from "@/components/ui/CardShell";
+import { AppButton } from "@/components/ui/AppButton";
+
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useGuestMode } from "@/lib/hooks/useGuestMode";
 
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
@@ -8,23 +21,76 @@ import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useMyReviews } from "@/lib/hooks/useMyReviews";
 
-import { Screen } from "@/components/ui/screen";
 import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/badges/BadgesSummaryCard";
 import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard";
 import { ProgressHeaderCard } from "@/components/progress/ProgressHeader";
 
-import { LoadingState } from "@/components/ui/LoadingState";
-import { ErrorCard } from "@/components/ui/ErrorCard";
-
-import { goBadges, goCone, goConesHome, goProgressHome } from "@/lib/routes";
-
+import { goBadges, goCone, goConesHome, goLogin, goProgressHome } from "@/lib/routes";
 import { space } from "@/lib/ui/tokens";
-import { Stack } from "@/components/ui/Stack";
-import { Section } from "@/components/ui/Section";
-import { AppText } from "@/components/ui/AppText";
 
 export default function ProgressScreen() {
+  const { user, loading: authLoading } = useAuthUser();
+  const guest = useGuestMode();
+
+  const loading = authLoading || guest.loading;
+  const isGuest = !user && guest.enabled;
+
+  if (loading) {
+    return (
+      <Screen padded={false}>
+        <View style={{ flex: 1 }}>
+          <LoadingState label="Loading…" />
+        </View>
+      </Screen>
+    );
+  }
+
+  if (isGuest) return <GuestProgress />;
+  return <AuthedProgress />;
+}
+
+function GuestProgress() {
+  return (
+    <Screen padded={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: space.md,
+          paddingTop: space.md,
+          paddingBottom: space.xl,
+        }}
+      >
+        <Stack gap="lg">
+          <Section>
+            <CardShell>
+              <Stack gap="sm">
+                <AppText variant="screenTitle">Progress</AppText>
+
+                <AppText variant="body">
+                  You can browse cones and read reviews without signing in. Sign in to track completions
+                  and earn badges.
+                </AppText>
+
+                <Stack gap="sm" style={{ marginTop: 6 }}>
+                  <AppButton variant="primary" onPress={goLogin}>
+                    Sign in
+                  </AppButton>
+
+                  <AppButton variant="secondary" onPress={goConesHome}>
+                    Browse cones
+                  </AppButton>
+                </Stack>
+              </Stack>
+            </CardShell>
+          </Section>
+        </Stack>
+      </ScrollView>
+    </Screen>
+  );
+}
+
+function AuthedProgress() {
   const { cones, loading: conesLoading, err: conesErr } = useCones();
   const { loc, err: locErr } = useUserLocation();
 
@@ -38,10 +104,7 @@ export default function ProgressScreen() {
 
   const totals = useMemo(() => {
     const total = cones.length;
-    const completed = cones.reduce(
-      (acc, c) => acc + (completedIds.has(c.id) ? 1 : 0),
-      0,
-    );
+    const completed = cones.reduce((acc, c) => acc + (completedIds.has(c.id) ? 1 : 0), 0);
     const percent = total === 0 ? 0 : completed / total;
     return { total, completed, percent };
   }, [cones, completedIds]);
@@ -76,13 +139,7 @@ export default function ProgressScreen() {
   if (fatalErr) {
     return (
       <Screen padded={false}>
-        <View
-          style={{
-            flex: 1,
-            justifyContent: "center",
-            paddingHorizontal: space.md,
-          }}
-        >
+        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: space.md }}>
           <ErrorCard
             title="Progress"
             message={fatalErr}
