@@ -11,8 +11,7 @@ import { AppText } from "@/components/ui/AppText";
 import { CardShell } from "@/components/ui/CardShell";
 import { AppButton } from "@/components/ui/AppButton";
 
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { useGuestMode } from "@/lib/hooks/useGuestMode";
+import { useSession } from "@/lib/providers/SessionProvider";
 
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
@@ -30,13 +29,9 @@ import { goBadges, goCone, goConesHome, goLogin, goProgressHome } from "@/lib/ro
 import { space } from "@/lib/ui/tokens";
 
 export default function ProgressScreen() {
-  const { user, loading: authLoading } = useAuthUser();
-  const guest = useGuestMode();
+  const { session } = useSession();
 
-  const loading = authLoading || guest.loading;
-  const isGuest = !user && guest.enabled;
-
-  if (loading) {
+  if (session.status === "loading") {
     return (
       <Screen padded={false}>
         <View style={{ flex: 1 }}>
@@ -46,7 +41,9 @@ export default function ProgressScreen() {
     );
   }
 
-  if (isGuest) return <GuestProgress />;
+  // Guests + logged-out both get the “marketing” screen
+  if (session.status !== "authed") return <GuestProgress />;
+
   return <AuthedProgress />;
 }
 
@@ -68,8 +65,8 @@ function GuestProgress() {
                 <AppText variant="screenTitle">Progress</AppText>
 
                 <AppText variant="body">
-                  You can browse cones and read reviews without signing in. Sign in to track completions
-                  and earn badges.
+                  You can browse cones and read reviews without signing in. Sign in to track
+                  completions and earn badges.
                 </AppText>
 
                 <Stack gap="sm" style={{ marginTop: 6 }}>

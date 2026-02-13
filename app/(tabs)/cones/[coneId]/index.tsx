@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AppState, View, ScrollView, Share } from "react-native";
+import { AppState, View, ScrollView } from "react-native";
 import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
-import { doc, serverTimestamp, setDoc, updateDoc } from "firebase/firestore";
+import { doc, serverTimestamp, setDoc } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -14,7 +14,7 @@ import { goConesHome, goConeReviews } from "@/lib/routes";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
@@ -26,16 +26,16 @@ import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard"
 import { StatusCard } from "@/components/cone/detail/StatusCard";
 import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
-import { shareService } from "@/lib/services/share/shareService";
 
 const MAX_ACCURACY_METERS = 50;
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
-  const [shareHint, setShareHint] = useState<string | null>(null);
- 
-  // Auth (avoid auth.currentUser races)
-  const { loading: authLoading, uid } = useAuthUser();
+
+  // Session
+  const { session } = useSession();
+  const sessionLoading = session.status === "loading";
+  const uid = session.status === "authed" ? session.uid : null;
 
   // Cone
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
@@ -104,10 +104,6 @@ export default function ConeDetailRoute() {
     const sub = AppState.addEventListener("change", (state) => {
       if (state !== "active") return;
 
-      // Only re-check when we might benefit:
-      // - permission unknown (first run / just returned from Settings)
-      // - no location yet (need a fix)
-      // - accuracy currently too low
       const accuracyOk =
         gate.accuracyMeters == null || gate.accuracyMeters <= MAX_ACCURACY_METERS;
 
@@ -130,9 +126,6 @@ export default function ConeDetailRoute() {
 
   // ---------------------------------
   // Auto-refresh GPS on focus (skip if completed; avoid loops)
-  // Only refresh when we actually "need help":
-  //  - no loc yet, or
-  //  - accuracy is too low
   // ---------------------------------
   useFocusEffect(
     useCallback(() => {
@@ -160,10 +153,11 @@ export default function ConeDetailRoute() {
 
     setErr("");
 
-    if (authLoading) {
-      setErr("Signing you in…");
+    if (sessionLoading) {
+      setErr("Loading your session…");
       return;
     }
+
     if (!uid) {
       setErr("Please sign in to save your visits.");
       return;
@@ -261,7 +255,6 @@ export default function ConeDetailRoute() {
     });
   }
 
-
   function openReview() {
     if (!completedId) return;
     if (optimisticReviewRating != null || myReviewRating != null) return;
@@ -275,10 +268,11 @@ export default function ConeDetailRoute() {
   async function saveReview() {
     if (!cone) return;
 
-    if (authLoading) {
-      setErr("Signing you in…");
+    if (sessionLoading) {
+      setErr("Loading your session…");
       return;
     }
+
     if (!uid) {
       setErr("Please sign in to leave a review.");
       return;
@@ -324,11 +318,11 @@ export default function ConeDetailRoute() {
   // ---------------------------------
   const headerTitle = cone?.name ?? "Volcano";
 
-  if (authLoading) {
+  if (sessionLoading) {
     return (
       <Screen>
         <Stack.Screen options={{ title: "Loading…" }} />
-        <LoadingState fullScreen={false} label="Signing you in…" />
+        <LoadingState fullScreen={false} label="Loading your session…" />
       </Screen>
     );
   }
@@ -364,9 +358,8 @@ export default function ConeDetailRoute() {
 
   const hasReview = displayReviewRating != null;
 
-  // One “top” error string for UI (if you want to show it in a banner later)
   const topErr = err || completionErr || locErr || reviewsErr || "";
-  void topErr; // keeps TS happy if unused
+  void topErr;
 
   return (
     <Screen padded={false}>
@@ -380,7 +373,6 @@ export default function ConeDetailRoute() {
         }}
         showsVerticalScrollIndicator={false}
       >
-        {/* HERO */}
         <ConeHero cone={cone} completed={completed} />
 
         <View style={{ height: 14 }} />
@@ -392,7 +384,6 @@ export default function ConeDetailRoute() {
           </>
         ) : null}
 
-        {/* REVIEWS SUMMARY */}
         <ReviewsSummaryCard
           ratingCount={ratingCount}
           avgRating={avgRating}
@@ -401,7 +392,6 @@ export default function ConeDetailRoute() {
 
         <View style={{ height: 14 }} />
 
-        {/* STATUS */}
         <StatusCard
           completed={completed}
           loc={loc}
@@ -415,7 +405,6 @@ export default function ConeDetailRoute() {
 
         <View style={{ height: 14 }} />
 
-        {/* ACTIONS */}
         <ActionsCard
           completed={completed}
           saving={saving}

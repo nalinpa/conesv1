@@ -14,8 +14,8 @@ import { useCones } from "@/lib/hooks/useCones";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { useGuestMode } from "@/lib/hooks/useGuestMode";
+
+import { useSession } from "@/lib/providers/SessionProvider";
 
 import type { ConeCategory, ConeRegion } from "@/lib/models";
 
@@ -30,13 +30,9 @@ const DEFAULT_FILTERS: ConeFiltersValue = {
 };
 
 export default function ConeListPage() {
-  const { user, loading: authLoading } = useAuthUser();
-  const guest = useGuestMode();
-  const loading = authLoading || guest.loading;
+  const { session } = useSession();
 
-  const isGuest = !user && guest.enabled;
-
-  if (loading) {
+  if (session.status === "loading") {
     return (
       <Screen padded={false}>
         <View style={{ flex: 1 }}>
@@ -46,7 +42,7 @@ export default function ConeListPage() {
     );
   }
 
-  if (isGuest) return <ConeListGuest />;
+  if (session.status === "guest") return <ConeListGuest />;
   return <ConeListAuthed />;
 }
 

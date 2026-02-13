@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { reviewService } from "@/lib/services/reviewService";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 
 type ReviewsSummaryState = {
   avgRating: number | null;
@@ -25,7 +25,7 @@ type ReviewsSummaryState = {
 export function useConeReviewsSummary(
   coneId: string | null | undefined,
 ): ReviewsSummaryState {
-  const { uid, loading: authLoading } = useAuthUser();
+  const { session } = useSession();
 
   const [avgRating, setAvgRating] = useState<number | null>(null);
   const [ratingCount, setRatingCount] = useState(0);
@@ -39,8 +39,8 @@ export function useConeReviewsSummary(
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    // While auth hydrates, keep loading (prevents flicker / “missing my review”)
-    if (authLoading) {
+    // While session hydrates, keep loading (prevents flicker / “missing my review”)
+    if (session.status === "loading") {
       setLoading(true);
       setErr(null);
       return;
@@ -59,9 +59,12 @@ export function useConeReviewsSummary(
     setLoading(true);
     setErr(null);
 
+    // Public summary is allowed for everyone; only "my review" is gated by authed uid.
+    const uidOrNull = session.status === "authed" ? session.uid : null;
+
     const unsub = reviewService.listenConeReviewsSummary(
       String(coneId),
-      uid,
+      uidOrNull,
       (v) => {
         setAvgRating(v.avgRating);
         setRatingCount(v.ratingCount);
@@ -80,7 +83,11 @@ export function useConeReviewsSummary(
     );
 
     return () => unsub();
-  }, [authLoading, coneId, uid]);
+  }, [
+    session.status,
+    coneId,
+    session.status === "authed" ? session.uid : null,
+  ]);
 
   const saveReview = useCallback(
     async (args: {
@@ -90,9 +97,15 @@ export function useConeReviewsSummary(
       reviewRating: number | null | undefined;
       reviewText: string | null | undefined;
     }) => {
-      if (authLoading) return { ok: false as const, err: "Auth not ready" };
-      if (!uid) return { ok: false as const, err: "You must be logged in" };
+      if (session.status === "loading")
+        return { ok: false as const, err: "Session not ready" };
+
+      if (session.status !== "authed")
+        return { ok: false as const, err: "You must be logged in" };
+
       if (!args.coneId) return { ok: false as const, err: "Missing coneId" };
+
+      const uid = session.uid;
 
       setSaving(true);
       try {
@@ -108,7 +121,7 @@ export function useConeReviewsSummary(
         setSaving(false);
       }
     },
-    [authLoading, uid],
+    [session.status, session.status === "authed" ? session.uid : null],
   );
 
   return useMemo(

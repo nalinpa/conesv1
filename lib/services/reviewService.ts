@@ -104,6 +104,7 @@ export const reviewService = {
     const reviewsQ = query(
       collection(db, COL.coneReviews),
       where("coneId", "==", String(coneId)),
+      orderBy("reviewCreatedAt", "desc"),
     );
 
     const unsub = onSnapshot(

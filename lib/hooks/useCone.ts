@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Cone } from "@/lib/models";
 import { coneService } from "@/lib/services/coneService";
 
@@ -7,15 +7,32 @@ export function useCone(coneId: string | null | undefined) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
+  const lastConeIdRef = useRef<string | null>(null);
+
   const load = useCallback(
     async (force = false) => {
-      setLoading(true);
       setErr("");
-      setCone(null);
+
+      const id = coneId ? String(coneId) : null;
+      if (!id) {
+        setCone(null);
+        setLoading(false);
+        setErr("Missing coneId.");
+        return;
+      }
+
+      // Only hard-reset when coneId actually changes
+      if (lastConeIdRef.current !== id) {
+        lastConeIdRef.current = id;
+        setCone(null);
+        setLoading(true);
+      } else {
+        // keep showing existing cone; just show spinner if you want
+        setLoading(true);
+      }
 
       try {
-        if (!coneId) throw new Error("Missing coneId.");
-        const c = await coneService.getCone(String(coneId), { force });
+        const c = await coneService.getCone(id, { force });
         setCone(c);
       } catch (e: any) {
         setErr(e?.message ?? "Failed to load cone.");

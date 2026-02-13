@@ -3,7 +3,7 @@ import { collection, onSnapshot, query, where } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 
 function toMs(v: any): number {
   if (!v) return 0;
@@ -14,6 +14,8 @@ function toMs(v: any): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+const EMPTY_IDS = new Set<string>();
+
 export function useMyReviews(): {
   loading: boolean;
   err: string;
@@ -22,26 +24,31 @@ export function useMyReviews(): {
   reviewCount: number;
   reviewedAtByConeId: Record<string, number>;
 } {
-  const { user, uid, loading: authLoading } = useAuthUser();
+  const { session } = useSession();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const [reviewedConeIds, setReviewedConeIds] = useState<Set<string>>(new Set());
+  const [reviewedConeIds, setReviewedConeIds] =
+    useState<Set<string>>(EMPTY_IDS);
   const [reviewCount, setReviewCount] = useState(0);
-  const [reviewedAtByConeId, setReviewedAtByConeId] = useState<Record<string, number>>({});
+  const [reviewedAtByConeId, setReviewedAtByConeId] = useState<
+    Record<string, number>
+  >({});
 
   useEffect(() => {
     let unsub: (() => void) | null = null;
 
-    if (authLoading) {
+    // 1) Loading session: do nothing, stay loading
+    if (session.status === "loading") {
       setLoading(true);
       setErr("");
       return;
     }
 
-    if (!user || !uid) {
-      setReviewedConeIds(new Set());
+    // 2) Guest/loggedOut: empty sets, no work
+    if (session.status !== "authed") {
+      setReviewedConeIds(EMPTY_IDS);
       setReviewCount(0);
       setReviewedAtByConeId({});
       setErr("");
@@ -49,10 +56,16 @@ export function useMyReviews(): {
       return;
     }
 
+    // 3) Authed: subscribe
+    const uid = session.uid;
+
     setLoading(true);
     setErr("");
 
-    const qy = query(collection(db, COL.coneReviews), where("userId", "==", uid));
+    const qy = query(
+      collection(db, COL.coneReviews),
+      where("userId", "==", uid),
+    );
 
     unsub = onSnapshot(
       qy,
@@ -67,6 +80,7 @@ export function useMyReviews(): {
 
           ids.add(coneId);
 
+          // keep earliest timestamp we saw for this cone
           const t = toMs(data?.reviewCreatedAt);
           if (t > 0) {
             const prev = atByCone[coneId] ?? 0;
@@ -77,13 +91,12 @@ export function useMyReviews(): {
         setReviewedConeIds(ids);
         setReviewCount(ids.size);
         setReviewedAtByConeId(atByCone);
-
         setLoading(false);
       },
       (e) => {
         console.error(e);
         setErr((e as any)?.message ?? "Failed to load reviews");
-        setReviewedConeIds(new Set());
+        setReviewedConeIds(EMPTY_IDS);
         setReviewCount(0);
         setReviewedAtByConeId({});
         setLoading(false);
@@ -93,7 +106,7 @@ export function useMyReviews(): {
     return () => {
       if (unsub) unsub();
     };
-  }, [authLoading, user, uid]);
+  }, [session.status, session.status === "authed" ? session.uid : null]);
 
   return { loading, err, reviewedConeIds, reviewCount, reviewedAtByConeId };
 }

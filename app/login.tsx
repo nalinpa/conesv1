@@ -1,16 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { KeyboardAvoidingView, Platform } from "react-native";
-import { Stack } from "expo-router";
+import { Stack, router } from "expo-router";
 
 import { Screen } from "@/components/ui/screen";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { useAuthForm } from "@/lib/hooks/useAuthForm";
-import { useGuestMode } from "@/lib/hooks/useGuestMode";
-import { goMapHome } from "@/lib/routes";
+import { useSession } from "@/lib/providers/SessionProvider";
 
 export default function LoginScreen() {
   const f = useAuthForm("login");
-  const guest = useGuestMode();
+  const { session, enableGuest } = useSession();
+
+  // If session changes while we're on login, leave immediately.
+  useEffect(() => {
+    if (session.status === "guest") router.replace("/(tabs)/map");
+    if (session.status === "authed") router.replace("/(tabs)/progress");
+  }, [session.status]);
+
+  const busy = f.busy || session.status === "loading";
 
   return (
     <>
@@ -28,7 +35,7 @@ export default function LoginScreen() {
             email={f.email}
             password={f.password}
             confirm={f.confirm}
-            busy={f.busy || guest.loading}
+            busy={busy}
             err={f.err}
             notice={f.notice}
             canSubmit={f.canSubmit}
@@ -38,8 +45,9 @@ export default function LoginScreen() {
             onChangeConfirm={f.setConfirm}
             onSubmit={() => void f.submit()}
             onGuest={async () => {
-              await guest.enable();
-              goMapHome();
+              if (session.status !== "loggedOut") return;
+              await enableGuest();
+              router.replace("/(tabs)/map");
             }}
           />
         </KeyboardAvoidingView>
