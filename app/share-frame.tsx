@@ -19,7 +19,7 @@ import { AppButton } from "@/components/ui/AppButton";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { LoadingState } from "@/components/ui/LoadingState";
 
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 import type { ShareConePayload } from "@/lib/services/share/types";
 import { shareService } from "@/lib/services/share/shareService";
 import { completionService } from "@/lib/services/completionService";
@@ -51,7 +51,11 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /* ───────────────── component ───────────────── */
 
 export default function ShareFrameRoute() {
-  const { uid, loading: authLoading } = useAuthUser();
+  const { session } = useSession();
+
+  const authLoading = session.status === "loading";
+  const uid = session.status === "authed" ? session.uid : null;
+  const canClaimBonus = session.status === "authed";
 
   const params = useLocalSearchParams<{
     coneId?: string;
@@ -197,10 +201,6 @@ export default function ShareFrameRoute() {
 
   async function doShare() {
     if (!payload || authLoading) return;
-    if (!uid) {
-      setErr("Please sign in to claim the share bonus.");
-      return;
-    }
 
     setSharing(true);
     setErr(null);
@@ -218,7 +218,13 @@ export default function ShareFrameRoute() {
         return;
       }
 
-      await completionService.setShareBonus(uid, payload.coneId, true);
+      // ✅ Only signed-in users get share bonuses.
+      if (canClaimBonus && uid) {
+        await completionService.setShareBonus(uid, payload.coneId, true);
+      } else {
+        setHint("Shared! Sign in to earn share bonuses.");
+      }
+
       router.back();
     } finally {
       setSharing(false);

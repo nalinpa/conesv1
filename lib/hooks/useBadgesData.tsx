@@ -5,7 +5,7 @@ import { BADGES, getBadgeState } from "@/lib/badges";
 
 import type { Cone } from "@/lib/models";
 import { coneService } from "@/lib/services/coneService";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useMyReviews } from "@/lib/hooks/useMyReviews";
 
@@ -46,11 +46,10 @@ type BadgesData = {
 };
 
 export function useBadgesData(): BadgesData {
-  const { user, loading: authLoading } = useAuthUser();
+  const { session } = useSession();
 
   const [conesLoading, setConesLoading] = useState(true);
   const [err, setErr] = useState("");
-
   const [cones, setCones] = useState<Cone[]>([]);
 
   const my = useMyCompletions();
@@ -68,17 +67,11 @@ export function useBadgesData(): BadgesData {
   useEffect(() => {
     let mounted = true;
 
-    if (authLoading) {
+    // Optional: if you want to avoid *any* work until session hydration finishes,
+    // keep this. If you prefer cones to load immediately (even while session loads),
+    // remove this block.
+    if (session.status === "loading") {
       setConesLoading(true);
-      setErr("");
-      return () => {
-        mounted = false;
-      };
-    }
-
-    if (!user) {
-      setCones([]);
-      setConesLoading(false);
       setErr("");
       return () => {
         mounted = false;
@@ -104,7 +97,7 @@ export function useBadgesData(): BadgesData {
     return () => {
       mounted = false;
     };
-  }, [authLoading, user]);
+  }, [session.status]);
 
   const mergedErr = useMemo(() => {
     return err || my.err || reviews.err;

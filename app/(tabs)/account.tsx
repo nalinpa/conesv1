@@ -1,5 +1,6 @@
 import React from "react";
 import { View } from "react-native";
+import { router } from "expo-router";
 
 import { Screen } from "@/components/ui/screen";
 import { CardShell } from "@/components/ui/CardShell";
@@ -7,17 +8,13 @@ import { Stack } from "@/components/ui/Stack";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { useGuestMode } from "@/lib/hooks/useGuestMode";
-import { goLogin } from "@/lib/routes";
-
+import { useSession } from "@/lib/providers/SessionProvider";
 import { auth } from "@/lib/firebase";
 
 export default function AccountScreen() {
-  const { user, loading } = useAuthUser();
-  const guest = useGuestMode();
+  const { session, disableGuest } = useSession();
 
-  if (loading || guest.loading) {
+  if (session.status === "loading") {
     return (
       <Screen padded>
         <View style={{ flex: 1 }}>
@@ -27,8 +24,8 @@ export default function AccountScreen() {
     );
   }
 
-  const loggedIn = !!user;
-  const isGuest = !loggedIn && guest.enabled;
+  const isAuthed = session.status === "authed";
+  const isGuest = session.status === "guest";
 
   return (
     <Screen padded>
@@ -37,20 +34,17 @@ export default function AccountScreen() {
           <Stack gap="sm">
             <AppText variant="screenTitle">Account</AppText>
 
-            {loggedIn ? (
+            {isAuthed ? (
               <>
-                <AppText variant="hint">Signed in as</AppText>
-                <AppText variant="body" style={{ fontWeight: "800" }}>
-                  {user?.email ?? "—"}
-                </AppText>
+                <AppText variant="hint">Signed in</AppText>
 
                 <AppButton
                   variant="secondary"
                   onPress={async () => {
-                    // Clean guest flag just in case
-                    if (guest.enabled) await guest.disable();
+                    // guest should already be off when authed, but safe anyway
+                    await disableGuest();
                     await auth.signOut();
-                    goLogin();
+                    router.replace("/login");
                   }}
                 >
                   Log out
@@ -65,8 +59,8 @@ export default function AccountScreen() {
                 <AppButton
                   variant="primary"
                   onPress={async () => {
-                    await guest.disable();
-                    goLogin();
+                    await disableGuest();
+                    router.replace("/login");
                   }}
                 >
                   Sign in / Create account
@@ -75,7 +69,7 @@ export default function AccountScreen() {
             ) : (
               <>
                 <AppText variant="body">You’re not signed in.</AppText>
-                <AppButton variant="primary" onPress={goLogin}>
+                <AppButton variant="primary" onPress={() => router.replace("/login")}>
                   Sign in
                 </AppButton>
               </>

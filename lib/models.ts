@@ -69,5 +69,5 @@ export type CompletionMeta = {
   id: string;
   coneId: string;
   shareBonus: boolean;
-  completedAtMs: number; // epoch ms
+  completedAtMs: number | null;
 };

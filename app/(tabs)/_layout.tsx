@@ -5,8 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { goProgressHome, goConesHome, goMapHome, goAccountHome } from "@/lib/routes";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { useGuestMode } from "@/lib/hooks/useGuestMode";
+import { useSession } from "@/lib/providers/SessionProvider";
 
 function Ionicon({
   name,
@@ -41,21 +40,27 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
 
-  const { user } = useAuthUser();
-  const guest = useGuestMode();
-  const isGuest = !user && guest.enabled;
+  const { session } = useSession();
+  const sessionLoading = session.status === "loading";
+  const isGuest = session.status === "guest";
 
   const visibleTabs = useMemo(() => {
-    // Hide Progress for guests (keep Account visible — it can show “Sign in”)
+    // Guests can't use Progress, but Account remains (it can show “Sign in”)
     return isGuest ? ALL_TABS.filter((t) => t.key !== "progress") : ALL_TABS;
   }, [isGuest]);
 
-  // Map current navigator index -> visible index
-  const activeRouteName: TabKey = state.routes[state.index]?.name;
-  const visibleActiveIndex = Math.max(
-    0,
-    visibleTabs.findIndex((t) => t.key === activeRouteName),
-  );
+  const activeRouteName = (state.routes[state.index]?.name ?? "cones") as TabKey;
+
+  // If active route is hidden (guest deep-linked into "progress"), just highlight Map.
+  // (AuthGate should be the one that actually redirects.)
+  const visibleActiveIndex = useMemo(() => {
+    const idx = visibleTabs.findIndex((t) => t.key === activeRouteName);
+    if (idx >= 0) return idx;
+
+    const fallbackKey: TabKey = isGuest ? "map" : "progress";
+    const fallbackIdx = visibleTabs.findIndex((t) => t.key === fallbackKey);
+    return Math.max(0, fallbackIdx);
+  }, [visibleTabs, activeRouteName, isGuest]);
 
   const bg = theme["background-basic-color-1"] ?? "#FFFFFF";
   const border = theme["border-basic-color-3"] ?? "rgba(0,0,0,0.12)";
@@ -68,6 +73,7 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
       borderRadius: 18,
       marginHorizontal: 6,
       backgroundColor: isActive ? activeBg : "transparent",
+      opacity: sessionLoading ? 0.7 : 1,
     }) as const;
 
   const titleStyle = (isActive: boolean) => ({
@@ -77,10 +83,11 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
   });
 
   const onSelectVisible = (visibleIndex: number) => {
+    if (sessionLoading) return; // prevent taps while session hydrates
+
     const tab = visibleTabs[visibleIndex];
     if (!tab) return;
 
-    // Find the actual state index for that route
     const targetIndex = state.routes.findIndex((r: any) => r.name === tab.key);
     const targetRoute = state.routes[targetIndex];
     if (!targetRoute) return;
@@ -135,10 +142,18 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
 }
 
 export default function TabsLayout() {
+  const { session } = useSession();
+  const isGuest = session.status === "guest";
+
   return (
     <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <KittenTabBar {...props} />}>
       <Tabs.Screen name="cones" options={{ href: "/(tabs)/cones" }} />
-      <Tabs.Screen name="progress" options={{ href: "/(tabs)/progress" }} />
+      <Tabs.Screen
+        name="progress"
+        options={{
+          href: isGuest ? null : "/(tabs)/progress",
+        }}
+      />
       <Tabs.Screen name="map" options={{ href: "/(tabs)/map" }} />
       <Tabs.Screen name="account" options={{ href: "/(tabs)/account" }} />
     </Tabs>

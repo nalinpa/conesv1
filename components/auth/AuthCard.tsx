@@ -10,8 +10,6 @@ import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 import { Pill } from "@/components/ui/Pill";
 import { space } from "@/lib/ui/tokens";
-import { goMapHome } from "@/lib/routes";
-import { setGuestMode } from "@/lib/guestMode";
 
 export function AuthCard({
   mode,
@@ -189,11 +187,8 @@ export function AuthCard({
               <AppButton
                 variant="ghost"
                 size="sm"
-                disabled={busy}
-                onPress={async () => {
-                  await setGuestMode(true);
-                  onGuest?.();
-                }}
+                disabled={busy || !onGuest}
+                onPress={() => void onGuest?.()}
               >
                 Continue as guest
               </AppButton>

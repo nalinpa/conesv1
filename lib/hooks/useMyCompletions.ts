@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 import {
   completionService,
   type WatchMyCompletionsResult,
@@ -25,7 +25,7 @@ export function useMyCompletions(): {
 
   completions: WatchMyCompletionsResult["completions"];
 } {
-  const { user, loading: authLoading, uid } = useAuthUser();
+  const { session } = useSession();
 
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -35,17 +35,23 @@ export function useMyCompletions(): {
   useEffect(() => {
     let unsub: (() => void) | null = null;
 
-    if (authLoading) {
+    // 1) Loading session: do nothing, stay loading
+    if (session.status === "loading") {
       setLoading(true);
+      setErr("");
       return;
     }
 
-    if (!user || !uid) {
+    // 2) Guest/loggedOut: return empty sets, no work
+    if (session.status !== "authed") {
       setState(EMPTY);
-      setErr("");
       setLoading(false);
+      setErr("");
       return;
     }
+
+    // 3) Authed: subscribe
+    const uid = session.uid;
 
     setLoading(true);
     setErr("");
@@ -65,7 +71,7 @@ export function useMyCompletions(): {
     return () => {
       if (unsub) unsub();
     };
-  }, [authLoading, user, uid]);
+  }, [session.status, session.status === "authed" ? session.uid : null]);
 
   return {
     loading,

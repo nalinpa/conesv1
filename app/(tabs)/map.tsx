@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 
 import { goCone } from "@/lib/routes";
@@ -14,18 +14,17 @@ import { Text } from "@ui-kitten/components";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
+
+import { useSession } from "@/lib/providers/SessionProvider";
 
 import { ConesMapView } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 
-function titleCase(s: string): string {
-  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
-}
-
 export default function MapScreen() {
-  const { loading: authLoading, uid } = useAuthUser();
+  const { session } = useSession();
+  const sessionLoading = session.status === "loading";
+  const uid = session.status === "authed" ? session.uid : null;
 
   const { cones, loading, err } = useCones();
 
@@ -41,14 +40,14 @@ export default function MapScreen() {
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
 
-  // Live completions listener (auth-safe)
+  // Live completions listener (session-safe)
   useEffect(() => {
     let unsub: (() => void) | null = null;
 
-    // while auth hydrates, do nothing (avoid racing currentUser)
-    if (authLoading) return;
+    // While session hydrates, do nothing (avoids racing auth state)
+    if (sessionLoading) return;
 
-    // logged out -> clear state
+    // Not authed (guest) -> clear completions
     if (!uid) {
       setCompletedIds(new Set());
       return;
@@ -63,7 +62,7 @@ export default function MapScreen() {
     return () => {
       if (unsub) unsub();
     };
-  }, [authLoading, uid]);
+  }, [sessionLoading, uid]);
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
@@ -72,7 +71,6 @@ export default function MapScreen() {
     if (selectedConeId) return; // user already selected something
     const nearestId = nearestUnclimbed?.cone?.id ?? null;
     if (!nearestId) return;
-
     setSelectedConeId(nearestId);
   }, [nearestUnclimbed?.cone?.id, selectedConeId]);
 
@@ -107,12 +105,10 @@ export default function MapScreen() {
     await refreshLocation();
   }, [locStatus, requestLocation, refreshLocation]);
 
-  // Optional: if you want Map to be “quiet” during auth hydration
-  // (AuthGate should handle routing anyway)
-  if (authLoading) {
+  if (sessionLoading) {
     return (
       <Screen>
-        <LoadingState label="Signing you in…" />
+        <LoadingState label="Loading…" />
       </Screen>
     );
   }
@@ -135,8 +131,6 @@ export default function MapScreen() {
 
   const activeCone = selectedCone ?? nearestUnclimbed?.cone ?? null;
 
-  // If nothing selected, we can still show nearest-unclimbed overlay (your existing behavior)
-  // Once user selects a cone, selection takes precedence.
   const overlayTitle = activeCone?.name ?? "";
 
   // distance: use gate distance for selected; otherwise nearest-unclimbed distance
@@ -168,7 +162,7 @@ export default function MapScreen() {
               locStatus={locStatus}
               hasLoc={!!loc}
               onRefreshGPS={() => void refreshGPS()}
-              refreshingGPS={isRefreshing} 
+              refreshingGPS={isRefreshing}
               checkpointLabel={overlayCheckpointLabel}
               checkpointRadiusMeters={overlayCheckpointRadius}
             />

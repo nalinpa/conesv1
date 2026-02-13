@@ -3,7 +3,7 @@ import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
-import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useSession } from "@/lib/providers/SessionProvider";
 
 export function useConeCompletion(coneId: string | null | undefined): {
   completedId: string | null;
@@ -15,7 +15,7 @@ export function useConeCompletion(coneId: string | null | undefined): {
   refresh: () => Promise<void>;
   setShareBonusLocal: (next: boolean) => void;
 } {
-  const { user, loading: authLoading, uid } = useAuthUser();
+  const { session } = useSession();
 
   const [completedId, setCompletedId] = useState<string | null>(null);
   const [shareBonus, setShareBonus] = useState(false);
@@ -31,17 +31,19 @@ export function useConeCompletion(coneId: string | null | undefined): {
   const refresh = useCallback(async () => {
     setErr("");
 
-    // Auth not ready yet → don't flip to "not completed" prematurely
-    if (authLoading) return;
+    // Session not ready yet → don't flip to "not completed" prematurely
+    if (session.status === "loading") return;
 
-    // Not logged in or no cone → clear state
-    if (!uid || !coneId) {
+    // Guest/loggedOut or no cone → clear state
+    if (session.status !== "authed" || !coneId) {
       reset();
       return;
     }
 
+    const uid = session.uid;
+
     try {
-      const completionId = `${user?.uid}_${String(coneId)}`;
+      const completionId = `${uid}_${String(coneId)}`;
       const snap = await getDoc(doc(db, COL.coneCompletions, completionId));
 
       if (snap.exists()) {
@@ -54,22 +56,24 @@ export function useConeCompletion(coneId: string | null | undefined): {
     } catch (e: any) {
       setErr(e?.message ?? "Failed to refresh completion.");
     }
-  }, [authLoading, uid, coneId, reset]);
+  }, [session.status, session.status === "authed" ? session.uid : null, coneId, reset]);
 
   // Live watch (preferred)
   useEffect(() => {
     let mounted = true;
+    let unsub: (() => void) | null = null;
 
-    // While auth is loading, keep the hook loading
-    if (authLoading) {
+    // While session is loading, keep the hook loading and do nothing
+    if (session.status === "loading") {
       setLoading(true);
+      setErr("");
       return () => {
         mounted = false;
       };
     }
 
-    // No uid or coneId → nothing to watch
-    if (!uid || !coneId) {
+    // Guest/loggedOut or no coneId → nothing to watch
+    if (session.status !== "authed" || !coneId) {
       reset();
       setLoading(false);
       setErr("");
@@ -78,13 +82,15 @@ export function useConeCompletion(coneId: string | null | undefined): {
       };
     }
 
+    const uid = session.uid;
+
     setLoading(true);
     setErr("");
 
     const completionId = `${uid}_${String(coneId)}`;
     const ref = doc(db, COL.coneCompletions, completionId);
 
-    const unsub = onSnapshot(
+    unsub = onSnapshot(
       ref,
       (snap) => {
         if (!mounted) return;
@@ -108,9 +114,9 @@ export function useConeCompletion(coneId: string | null | undefined): {
 
     return () => {
       mounted = false;
-      unsub();
+      if (unsub) unsub();
     };
-  }, [authLoading, uid, coneId, reset]);
+  }, [session.status, session.status === "authed" ? session.uid : null, coneId, reset]);
 
   return {
     completedId,
