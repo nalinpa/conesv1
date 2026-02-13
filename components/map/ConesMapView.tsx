@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { VolcanoMarker } from "@/components/map/VolcanoMarker";
 
@@ -10,7 +10,7 @@ type ConeMapPoint = {
   radiusMeters?: number;
 };
 
-function initialRegionFrom(
+export function initialRegionFrom(
   userLat: number | null,
   userLng: number | null,
   cones: ConeMapPoint[],
@@ -43,27 +43,19 @@ function initialRegionFrom(
   };
 }
 
-export function ConesMapView({
+export const ConesMapView = React.memo(function ConesMapView({
   cones,
   completedIds,
-  userLat,
-  userLng,
+  initialRegion,
   selectedConeId,
   onPressCone,
 }: {
   cones: ConeMapPoint[];
   completedIds: Set<string>;
-  userLat: number | null;
-  userLng: number | null;
+  initialRegion: Region;
   selectedConeId: string | null;
   onPressCone: (coneId: string) => void;
 }) {
-  const initialRegion = useMemo(
-    () => initialRegionFrom(userLat, userLng, cones),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
   /**
    * ✅ Android custom marker reliability:
    * Keep tracksViewChanges enabled for a longer "warmup" window,
@@ -151,4 +143,4 @@ export function ConesMapView({
       })}
     </MapView>
   );
-}
+});

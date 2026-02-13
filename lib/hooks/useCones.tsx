@@ -1,31 +1,26 @@
-import { useCallback, useEffect, useState } from "react";
+import { useMemo } from "react";
+import { collection, query, where, orderBy } from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
+import { useFirestoreQuery } from "@/lib/hooks/useFirestoreQuery";
 import type { Cone } from "@/lib/models";
-import { coneService } from "@/lib/services/coneService";
 
 export function useCones() {
-  const [cones, setCones] = useState<Cone[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-
-  const load = useCallback(async (force = false) => {
-    setLoading(true);
-    setErr("");
-
-    try {
-      const list = await coneService.listActiveCones({ force });
-      setCones(list);
-    } catch (e: any) {
-      setErr(e?.message ?? "Failed to load cones");
-    } finally {
-      setLoading(false);
-    }
+  const q = useMemo(() => {
+    return query(
+      collection(db, COL.cones),
+      where("active", "==", true),
+      orderBy("name", "asc"),
+    );
   }, []);
 
-  useEffect(() => {
-    void load(false);
-  }, [load]);
+  const { data, loading, error } = useFirestoreQuery(q);
 
-  const reload = useCallback(() => load(true), [load]);
+  const cones = useMemo(() => {
+    if (!data) return [];
+    return data.docs.map((d) => ({ id: d.id, ...d.data() }) as Cone);
+  }, [data]);
 
-  return { cones, loading, err, reload };
+  return { cones, loading, err: error?.message ?? "" };
 }

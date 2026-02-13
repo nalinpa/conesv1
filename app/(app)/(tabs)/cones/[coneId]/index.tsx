@@ -2,13 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppState, View, ScrollView } from "react-native";
 import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
-import { doc, serverTimestamp, setDoc } from "firebase/firestore";
-
-import { db } from "@/lib/firebase";
-import { COL } from "@/lib/constants/firestore";
-
 import { Screen } from "@/components/ui/screen";
-import type { ConeCompletionWrite } from "@/lib/models";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -26,6 +20,7 @@ import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard"
 import { StatusCard } from "@/components/cone/detail/StatusCard";
 import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
+import { completionService } from "@/lib/services/completionService";
 
 const MAX_ACCURACY_METERS = 50;
 
@@ -51,7 +46,7 @@ export default function ConeDetailRoute() {
   } = useUserLocation();
 
   // Completion
-  const { completedId, shareBonus, err: completionErr, setShareBonusLocal } =
+  const { completedId, shareBonus, err: completionErr } =
     useConeCompletion(coneId);
 
   // GPS gate
@@ -202,36 +197,14 @@ export default function ConeDetailRoute() {
 
     setSaving(true);
     try {
-      const completionId = `${uid}_${cone.id}`;
+      await completionService.completeCone({
+        uid,
+        cone,
+        loc,
+        gate,
+      });
 
-      const payload: ConeCompletionWrite = {
-        coneId: cone.id,
-        coneSlug: cone.slug,
-        coneName: cone.name,
-        userId: uid,
-        completedAt: serverTimestamp(),
-
-        deviceLat: loc.coords.latitude,
-        deviceLng: loc.coords.longitude,
-        accuracyMeters: loc.coords.accuracy ?? null,
-
-        distanceMeters: gate.distanceMeters ?? 0,
-
-        checkpointId: gate.checkpointId ?? null,
-        checkpointLabel: gate.checkpointLabel ?? null,
-        checkpointLat: gate.checkpointLat ?? null,
-        checkpointLng: gate.checkpointLng ?? null,
-        checkpointRadiusMeters: gate.checkpointRadius ?? null,
-        checkpointDistanceMeters: gate.distanceMeters ?? null,
-
-        shareBonus: false,
-        shareConfirmed: false,
-        sharedAt: null,
-        sharedPlatform: null,
-      };
-
-      await setDoc(doc(db, COL.coneCompletions, completionId), payload);
-      // live snapshot will update completedId + shareBonus
+      // live snapshot (useConeCompletion) will update completedId + shareBonus
     } catch (e: any) {
       console.error(e);
       setErr(e?.message ?? "We couldn’t mark this visit. Try again.");

@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View } from "react-native";
 
 import { goCone } from "@/lib/routes";
-import { completionService } from "@/lib/services/completionService";
 
 import { Screen } from "@/components/ui/screen";
 import { CardShell } from "@/components/ui/CardShell";
@@ -15,16 +14,16 @@ import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
+import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 
 import { useSession } from "@/lib/providers/SessionProvider";
 
-import { ConesMapView } from "@/components/map/ConesMapView";
+import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 
 export default function MapScreen() {
   const { session } = useSession();
   const sessionLoading = session.status === "loading";
-  const uid = session.status === "authed" ? session.uid : null;
 
   const { cones, loading, err } = useCones();
 
@@ -37,32 +36,8 @@ export default function MapScreen() {
     isRefreshing, // ✅ disable buttons / show spinner
   } = useUserLocation();
 
-  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const { completedConeIds: completedIds } = useMyCompletions();
   const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
-
-  // Live completions listener (session-safe)
-  useEffect(() => {
-    let unsub: (() => void) | null = null;
-
-    // While session hydrates, do nothing (avoids racing auth state)
-    if (sessionLoading) return;
-
-    // Not authed (guest) -> clear completions
-    if (!uid) {
-      setCompletedIds(new Set());
-      return;
-    }
-
-    unsub = completionService.watchMyCompletions(
-      uid,
-      ({ completedConeIds }) => setCompletedIds(completedConeIds),
-      (e) => console.error(e),
-    );
-
-    return () => {
-      if (unsub) unsub();
-    };
-  }, [sessionLoading, uid]);
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
@@ -91,6 +66,14 @@ export default function MapScreen() {
     if (!selectedConeId) return null;
     return cones.find((c) => c.id === selectedConeId) ?? null;
   }, [cones, selectedConeId]);
+
+  // Calculate initial region ONCE when loading finishes.
+  // We ignore subsequent location updates for the viewport (user can pan manually).
+  const initialRegion = useMemo(() => {
+    if (loading) return null;
+    return initialRegionFrom(userLat, userLng, mapCones);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   const gate = useGPSGate(selectedCone, loc);
 
@@ -147,8 +130,7 @@ export default function MapScreen() {
         <ConesMapView
           cones={mapCones}
           completedIds={completedIds}
-          userLat={userLat}
-          userLng={userLng}
+          initialRegion={initialRegion!}
           selectedConeId={selectedConeId}
           onPressCone={(coneId) => setSelectedConeId(coneId)}
         />

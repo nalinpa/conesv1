@@ -2,13 +2,11 @@ import {
   collection,
   doc,
   getDocs,
-  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
-  setDoc,
-  where,
-  type Unsubscribe,
+  runTransaction,
+  where
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
@@ -22,13 +20,6 @@ export type PublicReview = {
   reviewRating: number; // 1..5
   reviewText?: string | null;
   reviewCreatedAt?: any;
-};
-
-export type ReviewsSummary = {
-  avgRating: number | null;
-  ratingCount: number;
-  myRating: number | null;
-  myText: string | null;
 };
 
 function clampRating(n: any): number | null {
@@ -87,66 +78,6 @@ export const reviewService = {
     return snap.docs.map((d) => mapPublicReview(d.id, d.data()));
   },
 
-  // ✅ Realtime summary (small + cheap) — but *service-owned*, not in screens
-  listenConeReviewsSummary(
-    coneId: string,
-    uid: string | null | undefined,
-    onData: (v: ReviewsSummary) => void,
-    onError?: (err: unknown) => void,
-  ): Unsubscribe {
-    if (!coneId) {
-      onData({ avgRating: null, ratingCount: 0, myRating: null, myText: null });
-      return () => {};
-    }
-
-    const myId = uid ? `${uid}_${String(coneId)}` : null;
-
-    const reviewsQ = query(
-      collection(db, COL.coneReviews),
-      where("coneId", "==", String(coneId)),
-      orderBy("reviewCreatedAt", "desc"),
-    );
-
-    const unsub = onSnapshot(
-      reviewsQ,
-      (snap) => {
-        let sum = 0;
-        let count = 0;
-
-        let mineRating: number | null = null;
-        let mineText: string | null = null;
-
-        for (const d of snap.docs) {
-          const data = d.data() as any;
-
-          const r = clampRating(data?.reviewRating);
-          if (r != null) {
-            sum += r;
-            count += 1;
-          }
-
-          if (myId && d.id === myId) {
-            mineRating = r;
-            mineText = cleanText(data?.reviewText, 280);
-          }
-        }
-
-        onData({
-          ratingCount: count,
-          avgRating: count > 0 ? round1dp(sum / count) : null,
-          myRating: mineRating,
-          myText: mineText,
-        });
-      },
-      (e) => {
-        console.warn("[reviews] listenConeReviewsSummary failed", { coneId, e });
-        onError?.(e);
-      },
-    );
-
-    return unsub;
-  },
-
   // ✅ Write (one per user per cone enforced by doc id)
   async saveReview(args: {
     uid: string;
@@ -166,22 +97,66 @@ export const reviewService = {
 
     if (rating == null) return { ok: false, err: "Pick a rating (1–5)." };
 
-    try {
-      const id = `${uid}_${String(coneId)}`;
+    const reviewId = `${uid}_${String(coneId)}`;
+    const reviewRef = doc(db, COL.coneReviews, reviewId);
+    const coneRef = doc(db, COL.cones, String(coneId));
 
-      await setDoc(
-        doc(db, COL.coneReviews, id),
-        {
-          coneId: String(coneId),
-          coneSlug: String(args.coneSlug ?? ""),
-          coneName: String(args.coneName ?? ""),
-          userId: uid,
-          reviewRating: rating,
-          reviewText: text ?? null,
-          reviewCreatedAt: serverTimestamp(),
-        },
-        { merge: true },
-      );
+    try {
+      await runTransaction(db, async (tx) => {
+        // 1. Read Cone (for aggregates)
+        const coneSnap = await tx.get(coneRef);
+        if (!coneSnap.exists()) throw new Error("Cone not found");
+
+        // 2. Read Review (to check for update vs create)
+        const reviewSnap = await tx.get(reviewRef);
+        const existing = reviewSnap.exists() ? reviewSnap.data() : null;
+
+        // 3. Calculate Aggregates
+        const coneData = coneSnap.data();
+        let count = (coneData.ratingCount || 0) as number;
+        let sum = (coneData.ratingSum || 0) as number;
+        const currentAvg = (coneData.avgRating || 0) as number;
+
+        // Backfill sum if missing (legacy data support)
+        if (!sum && count > 0 && currentAvg > 0) {
+          sum = Math.round(currentAvg * count);
+        }
+
+        const oldRating = existing?.reviewRating ? Number(existing.reviewRating) : null;
+        const isUpdate = oldRating != null && Number.isFinite(oldRating);
+
+        if (isUpdate) {
+          sum = sum - (oldRating as number) + rating;
+        } else {
+          sum += rating;
+          count += 1;
+        }
+
+        const newAvg = count > 0 ? round1dp(sum / count) : 0;
+
+        // 4. Write Review
+        tx.set(
+          reviewRef,
+          {
+            coneId: String(coneId),
+            coneSlug: String(args.coneSlug ?? ""),
+            coneName: String(args.coneName ?? ""),
+            userId: uid,
+            reviewRating: rating,
+            reviewText: text ?? null,
+            reviewCreatedAt: existing?.reviewCreatedAt ?? serverTimestamp(),
+            reviewUpdatedAt: serverTimestamp(),
+          },
+          { merge: true },
+        );
+
+        // 5. Update Cone
+        tx.update(coneRef, {
+          ratingCount: count,
+          ratingSum: sum,
+          avgRating: newAvg,
+        });
+      });
 
       return { ok: true };
     } catch (e: any) {

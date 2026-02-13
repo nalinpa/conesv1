@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useMemo } from "react";
+import { useSyncExternalStore } from "react";
 
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
 import {
   ensureGuestModeHydrated,
-  getGuestModeSnapshot,
   subscribeGuestMode,
+  getGuestModeSnapshot,
   setGuestMode,
   clearGuestMode,
 } from "@/lib/guestMode";
@@ -26,32 +27,18 @@ const Ctx = createContext<SessionCtx | null>(null);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { user, uid, loading: authLoading } = useAuthUser();
 
-  const [guestEnabled, setGuestEnabled] = useState(false);
-  const [guestLoading, setGuestLoading] = useState(true);
-
-  // ✅ Single subscription to guest-mode store (NO useSyncExternalStore object snapshot loop)
   useEffect(() => {
-    let mounted = true;
-
-    const sync = () => {
-      const snap = getGuestModeSnapshot();
-      if (!mounted) return;
-      setGuestEnabled(snap.enabled);
-      setGuestLoading(snap.loading);
-    };
-
-    // start listening immediately
-    const unsub = subscribeGuestMode(sync);
-
-    // hydrate once, then sync again when hydration finishes
-    sync();
-    void ensureGuestModeHydrated().then(sync);
-
-    return () => {
-      mounted = false;
-      unsub();
-    };
+    void ensureGuestModeHydrated();
   }, []);
+
+  const guestBits = useSyncExternalStore(
+    subscribeGuestMode,
+    getGuestModeSnapshot,
+    getGuestModeSnapshot,
+  );
+
+  const guestEnabled = (guestBits & 1) === 1;
+  const guestLoading = (guestBits & 2) === 2;
 
   const loading = authLoading || guestLoading;
 

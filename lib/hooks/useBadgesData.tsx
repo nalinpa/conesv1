@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import type { ConeMeta, BadgeProgress } from "@/lib/badges";
 import { BADGES, getBadgeState } from "@/lib/badges";
 
 import type { Cone } from "@/lib/models";
-import { coneService } from "@/lib/services/coneService";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useMyReviews } from "@/lib/hooks/useMyReviews";
+import { useCones } from "@/lib/hooks/useCones";
 
 export type BadgeTileItem = {
   id: string;
@@ -48,9 +48,7 @@ type BadgesData = {
 export function useBadgesData(): BadgesData {
   const { session } = useSession();
 
-  const [conesLoading, setConesLoading] = useState(true);
-  const [err, setErr] = useState("");
-  const [cones, setCones] = useState<Cone[]>([]);
+  const { cones, loading: conesLoading, err: conesErr } = useCones();
 
   const my = useMyCompletions();
   const reviews = useMyReviews();
@@ -64,44 +62,9 @@ export function useBadgesData(): BadgesData {
   const reviewCount = reviews.reviewCount;
   const reviewedAtByConeId = reviews.reviewedAtByConeId;
 
-  useEffect(() => {
-    let mounted = true;
-
-    // Optional: if you want to avoid *any* work until session hydration finishes,
-    // keep this. If you prefer cones to load immediately (even while session loads),
-    // remove this block.
-    if (session.status === "loading") {
-      setConesLoading(true);
-      setErr("");
-      return () => {
-        mounted = false;
-      };
-    }
-
-    (async () => {
-      setConesLoading(true);
-      setErr("");
-      try {
-        const list = await coneService.listActiveCones();
-        if (!mounted) return;
-        setCones(list);
-      } catch (e: any) {
-        if (!mounted) return;
-        setErr(e?.message ?? "Failed to load cones");
-      } finally {
-        if (!mounted) return;
-        setConesLoading(false);
-      }
-    })();
-
-    return () => {
-      mounted = false;
-    };
-  }, [session.status]);
-
   const mergedErr = useMemo(() => {
-    return err || my.err || reviews.err;
-  }, [err, my.err, reviews.err]);
+    return conesErr || my.err || reviews.err;
+  }, [conesErr, my.err, reviews.err]);
 
   const loading = conesLoading || my.loading || reviews.loading;
 
