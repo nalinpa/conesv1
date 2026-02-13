@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { doc } from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 import { reviewService } from "@/lib/services/reviewService";
 import { useSession } from "@/lib/providers/SessionProvider";
+import { useFirestoreDoc } from "@/lib/hooks/useFirestoreDoc";
 
 type ReviewsSummaryState = {
   avgRating: number | null;
@@ -27,67 +32,32 @@ export function useConeReviewsSummary(
 ): ReviewsSummaryState {
   const { session } = useSession();
 
-  const [avgRating, setAvgRating] = useState<number | null>(null);
-  const [ratingCount, setRatingCount] = useState(0);
-
-  const [myRating, setMyRating] = useState<number | null>(null);
-  const [myText, setMyText] = useState<string | null>(null);
-
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    // While session hydrates, keep loading (prevents flicker / “missing my review”)
-    if (session.status === "loading") {
-      setLoading(true);
-      setErr(null);
-      return;
-    }
+  // 1. Cone Doc (for avgRating, ratingCount)
+  const coneRef = useMemo(() => {
+    if (!coneId) return null;
+    return doc(db, COL.cones, coneId);
+  }, [coneId]);
 
-    if (!coneId) {
-      setAvgRating(null);
-      setRatingCount(0);
-      setMyRating(null);
-      setMyText(null);
-      setLoading(false);
-      setErr("Missing coneId.");
-      return;
-    }
+  const { data: coneData, loading: coneLoading, error: coneError } = useFirestoreDoc(coneRef);
 
-    setLoading(true);
-    setErr(null);
+  // 2. My Review Doc (assuming deterministic ID: uid_coneId)
+  const reviewRef = useMemo(() => {
+    if (session.status !== "authed" || !coneId) return null;
+    const reviewId = `${session.uid}_${coneId}`;
+    return doc(db, COL.coneReviews, reviewId);
+  }, [session.status, session.status === "authed" ? session.uid : null, coneId]);
 
-    // Public summary is allowed for everyone; only "my review" is gated by authed uid.
-    const uidOrNull = session.status === "authed" ? session.uid : null;
+  const { data: reviewData, loading: reviewLoading, error: reviewError } = useFirestoreDoc(reviewRef);
 
-    const unsub = reviewService.listenConeReviewsSummary(
-      String(coneId),
-      uidOrNull,
-      (v) => {
-        setAvgRating(v.avgRating);
-        setRatingCount(v.ratingCount);
-        setMyRating(v.myRating);
-        setMyText(v.myText);
-        setLoading(false);
-      },
-      (e: any) => {
-        setAvgRating(null);
-        setRatingCount(0);
-        setMyRating(null);
-        setMyText(null);
-        setErr(e?.message ?? "Failed to load reviews.");
-        setLoading(false);
-      },
-    );
+  const avgRating = coneData?.avgRating ?? null;
+  const ratingCount = coneData?.ratingCount ?? 0;
+  const myRating = reviewData?.rating ?? reviewData?.reviewRating ?? null;
+  const myText = reviewData?.text ?? reviewData?.reviewText ?? null;
 
-    return () => unsub();
-  }, [
-    session.status,
-    coneId,
-    session.status === "authed" ? session.uid : null,
-  ]);
+  const loading = session.status === "loading" || coneLoading || reviewLoading;
+  const err = coneError?.message ?? reviewError?.message ?? null;
 
   const saveReview = useCallback(
     async (args: {

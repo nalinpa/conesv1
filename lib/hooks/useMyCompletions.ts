@@ -1,18 +1,19 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import { collection, query, where } from "firebase/firestore";
 
+import { db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
 import { useSession } from "@/lib/providers/SessionProvider";
-import {
-  completionService,
-  type WatchMyCompletionsResult,
-} from "@/lib/services/completionService";
+import { useFirestoreQuery } from "@/lib/hooks/useFirestoreQuery";
+import type { WatchMyCompletionsResult } from "@/lib/services/completionService";
 
-const EMPTY: WatchMyCompletionsResult = {
-  completedConeIds: new Set<string>(),
-  shareBonusCount: 0,
-  completedAtByConeId: {},
-  completions: [],
-  sharedConeIds: new Set<string>(),
-};
+function toMs(v: any): number {
+  if (!v) return 0;
+  if (typeof v?.toMillis === "function") return v.toMillis();
+  if (typeof v === "number") return v;
+  if (v instanceof Date) return v.getTime();
+  return 0;
+}
 
 export function useMyCompletions(): {
   loading: boolean;
@@ -27,55 +28,55 @@ export function useMyCompletions(): {
 } {
   const { session } = useSession();
 
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
-
-  const [state, setState] = useState<WatchMyCompletionsResult>(EMPTY);
-
-  useEffect(() => {
-    let unsub: (() => void) | null = null;
-
-    // 1) Loading session: do nothing, stay loading
-    if (session.status === "loading") {
-      setLoading(true);
-      setErr("");
-      return;
-    }
-
-    // 2) Guest/loggedOut: return empty sets, no work
-    if (session.status !== "authed") {
-      setState(EMPTY);
-      setLoading(false);
-      setErr("");
-      return;
-    }
-
-    // 3) Authed: subscribe
-    const uid = session.uid;
-
-    setLoading(true);
-    setErr("");
-
-    unsub = completionService.watchMyCompletions(
-      uid,
-      (next) => {
-        setState(next);
-        setLoading(false);
-      },
-      (e) => {
-        setErr((e as any)?.message ?? "Failed to load completions");
-        setLoading(false);
-      },
+  const qy = useMemo(() => {
+    if (session.status !== "authed") return null;
+    return query(
+      collection(db, COL.coneCompletions),
+      where("userId", "==", session.uid)
     );
-
-    return () => {
-      if (unsub) unsub();
-    };
   }, [session.status, session.status === "authed" ? session.uid : null]);
 
+  const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
+
+  const state = useMemo<WatchMyCompletionsResult>(() => {
+    if (!data) {
+      return {
+        completedConeIds: new Set(),
+        shareBonusCount: 0,
+        completedAtByConeId: {},
+        completions: [],
+        sharedConeIds: new Set(),
+      };
+    }
+
+    const completedConeIds = new Set<string>();
+    const sharedConeIds = new Set<string>();
+    const completedAtByConeId: Record<string, number> = {};
+    const completions: any[] = [];
+
+    data.docs.forEach((doc) => {
+      const d = doc.data();
+      const coneId = d.coneId;
+      if (!coneId) return;
+
+      completedConeIds.add(coneId);
+      completedAtByConeId[coneId] = toMs(d.completedAt);
+      if (d.shareBonus) sharedConeIds.add(coneId);
+      completions.push({ id: doc.id, ...d });
+    });
+
+    return {
+      completedConeIds,
+      shareBonusCount: sharedConeIds.size,
+      completedAtByConeId,
+      sharedConeIds,
+      completions,
+    };
+  }, [data]);
+
   return {
-    loading,
-    err,
+    loading: session.status === "loading" || queryLoading,
+    err: error?.message ?? "",
     completedConeIds: state.completedConeIds,
     shareBonusCount: state.shareBonusCount,
     completedAtByConeId: state.completedAtByConeId,

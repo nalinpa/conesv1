@@ -1,53 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useMemo } from "react";
+import { doc } from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
+import { COL } from "@/lib/constants/firestore";
+import { useFirestoreDoc } from "@/lib/hooks/useFirestoreDoc";
 import type { Cone } from "@/lib/models";
-import { coneService } from "@/lib/services/coneService";
 
 export function useCone(coneId: string | null | undefined) {
-  const [cone, setCone] = useState<Cone | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState("");
+  const ref = useMemo(() => {
+    if (!coneId) return null;
+    return doc(db, COL.cones, coneId);
+  }, [coneId]);
 
-  const lastConeIdRef = useRef<string | null>(null);
+  const { data, loading, error } = useFirestoreDoc(ref);
 
-  const load = useCallback(
-    async (force = false) => {
-      setErr("");
+  const cone = useMemo(() => {
+    if (!data || !ref) return null;
+    return { id: ref.id, ...data } as Cone;
+  }, [data, ref]);
 
-      const id = coneId ? String(coneId) : null;
-      if (!id) {
-        setCone(null);
-        setLoading(false);
-        setErr("Missing coneId.");
-        return;
-      }
-
-      // Only hard-reset when coneId actually changes
-      if (lastConeIdRef.current !== id) {
-        lastConeIdRef.current = id;
-        setCone(null);
-        setLoading(true);
-      } else {
-        // keep showing existing cone; just show spinner if you want
-        setLoading(true);
-      }
-
-      try {
-        const c = await coneService.getCone(id, { force });
-        setCone(c);
-      } catch (e: any) {
-        setErr(e?.message ?? "Failed to load cone.");
-      } finally {
-        setLoading(false);
-      }
-    },
-    [coneId],
-  );
-
-  useEffect(() => {
-    void load(false);
-  }, [load]);
-
-  const reload = useCallback(() => load(true), [load]);
-
-  return { cone, loading, err, reload };
+  return {
+    cone,
+    loading,
+    err: error?.message ?? "",
+  };
 }
