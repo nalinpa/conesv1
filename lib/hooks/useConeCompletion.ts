@@ -9,12 +9,14 @@ import { useFirestoreDoc } from "@/lib/hooks/useFirestoreDoc";
 export function useConeCompletion(coneId?: string | null) {
   const { session } = useSession();
 
+  const uid = session.status === "authed" ? session.uid : null;
+
   // Only provide a doc ref if we have a user and coneId
   const ref = useMemo(() => {
-    if (session.status !== "authed" || !coneId) return null;
-    const completionId = `${session.uid}_${coneId}`;
+    if (!uid || !coneId) return null;
+    const completionId = `${uid}_${coneId}`;
     return doc(db, COL.coneCompletions, completionId);
-  }, [session.status, session.status === "authed" ? session.uid : null, coneId]);
+  }, [uid, coneId]);
 
   const { data, loading, error } = useFirestoreDoc(ref);
 

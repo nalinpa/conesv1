@@ -1,5 +1,5 @@
-import { View } from "react-native";
-import { Button } from "@ui-kitten/components";
+import React from "react";
+import { View, StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { PieChart } from "@/components/progress/PieChart";
@@ -47,20 +47,16 @@ export function ProgressHeaderCard({
   return (
     <Stack gap="md">
       {/* Header */}
-      <Row justify="space-between" align="flex-start" style={{ gap: space.md }}>
-        <View style={{ flex: 1 }}>
+      <Row justify="space-between" align="flex-start" style={styles.headerRow}>
+        <View style={styles.flex1}>
           <AppText variant="sectionTitle">Your journey</AppText>
-          <AppText variant="hint" style={{ marginTop: space.xs }}>
+          <AppText variant="hint" style={styles.headerHint}>
             {completedCount} of {totalCount} volcanoes visited
           </AppText>
         </View>
 
-       <AppButton
-            variant="secondary"
-            size="sm"
-            onPress={onOpenBadges}
-            >
-            Badges
+        <AppButton variant="secondary" size="sm" onPress={onOpenBadges}>
+          Badges
         </AppButton>
       </Row>
 
@@ -70,17 +66,16 @@ export function ProgressHeaderCard({
             <AppText variant="sectionTitle">No visits yet</AppText>
 
             <AppText variant="body">
-              Pick a volcano, then tap <AppText variant="body" style={{ fontWeight: "800" }}>
+              Pick a volcano, then tap{" "}
+              <AppText variant="body" style={styles.boldText}>
                 I’m here
               </AppText>{" "}
               when you’re nearby.
             </AppText>
 
             {onBrowseVolcanoes ? (
-              <View style={{ marginTop: space.xs }}>
-               <AppButton onPress={onBrowseVolcanoes}>
-                    Browse volcanoes
-                </AppButton>
+              <View style={styles.browseButtonWrapper}>
+                <AppButton onPress={onBrowseVolcanoes}>Browse volcanoes</AppButton>
               </View>
             ) : null}
           </Stack>
@@ -91,7 +86,7 @@ export function ProgressHeaderCard({
             <Row align="center" gap="lg">
               <PieChart percent={percentValue} />
 
-              <View style={{ flex: 1 }}>
+              <View style={styles.flex1}>
                 <Stack gap="sm">
                   <StatRow label="Visited" value={`${completedCount}`} />
                   <StatRow label="Still to explore" value={`${remaining}`} />
@@ -102,7 +97,7 @@ export function ProgressHeaderCard({
 
             {allDone ? (
               <CardShell status="success">
-                <AppText variant="body" style={{ fontWeight: "800" }}>
+                <AppText variant="body" style={styles.boldText}>
                   You’ve visited every volcano in the Auckland Volcanic Field ✅
                 </AppText>
               </CardShell>
@@ -113,3 +108,21 @@ export function ProgressHeaderCard({
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRow: {
+    gap: space.md,
+  },
+  flex1: {
+    flex: 1,
+  },
+  headerHint: {
+    marginTop: space.xs,
+  },
+  boldText: {
+    fontWeight: "800",
+  },
+  browseButtonWrapper: {
+    marginTop: space.xs,
+  },
+});

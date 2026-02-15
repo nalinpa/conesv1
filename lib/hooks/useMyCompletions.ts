@@ -28,13 +28,12 @@ export function useMyCompletions(): {
 } {
   const { session } = useSession();
 
+  const uid = session.status === "authed" ? session.uid : null;
+
   const qy = useMemo(() => {
-    if (session.status !== "authed") return null;
-    return query(
-      collection(db, COL.coneCompletions),
-      where("userId", "==", session.uid)
-    );
-  }, [session.status, session.status === "authed" ? session.uid : null]);
+    if (!uid) return null;
+    return query(collection(db, COL.coneCompletions), where("userId", "==", uid));
+  }, [uid]);
 
   const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
 

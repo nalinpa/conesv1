@@ -44,7 +44,8 @@ export function ReviewsSummaryCard({
         )}
 
         <AppText variant="hint">
-          Reviews are public. After you’ve visited, you can leave one review for this volcano.
+          Reviews are public. After you’ve visited, you can leave one review for this
+          volcano.
         </AppText>
       </Stack>
     </CardShell>

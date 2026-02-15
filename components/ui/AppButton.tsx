@@ -25,15 +25,10 @@ export function AppButton({
   children,
   ...rest
 }: Props) {
-  const appearance: ButtonProps["appearance"] =
-    variant === "ghost" ? "ghost" : "filled";
+  const appearance: ButtonProps["appearance"] = variant === "ghost" ? "ghost" : "filled";
 
   const status: ButtonProps["status"] =
-    variant === "danger"
-      ? "danger"
-      : variant === "secondary"
-        ? "basic"
-        : "primary";
+    variant === "danger" ? "danger" : variant === "secondary" ? "basic" : "primary";
 
   const minHeight = size === "sm" ? tap.min : tap.primary;
 

@@ -4,7 +4,7 @@ import { useCachedQuery } from "@/lib/hooks/useCachedQuery";
 export function usePublicConeReviews(coneId: string) {
   const { data, loading, error, refresh } = useCachedQuery(
     ["public-reviews", coneId],
-    () => reviewService.getPublicConeReviews(coneId)
+    () => reviewService.getPublicConeReviews(coneId),
   );
   return {
     reviews: data ?? [],

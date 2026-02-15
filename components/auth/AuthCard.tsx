@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Input, Text, useTheme } from "@ui-kitten/components";
 
 import type { AuthMode } from "@/lib/hooks/useAuthForm";
@@ -39,41 +39,38 @@ export function AuthCard({
   err: string | null;
   notice: string | null;
   canSubmit: boolean;
-  onChangeMode: (m: AuthMode) => void;
-  onChangeEmail: (v: string) => void;
-  onChangePassword: (v: string) => void;
-  onChangeConfirm: (v: string) => void;
+  onChangeMode: (mode: AuthMode) => void;
+  onChangeEmail: (value: string) => void;
+  onChangePassword: (value: string) => void;
+  onChangeConfirm: (value: string) => void;
   onGuest?: () => void | Promise<void>;
   onSubmit: () => void;
 }) {
   const theme = useTheme();
 
   return (
-    <View style={{ flex: 1, justifyContent: "flex-start" }}>
+    <View style={styles.container}>
       {/* Brand header */}
-      <View style={{ gap: 14, marginBottom: 18 }}>
-        <View style={{ alignItems: "center", gap: 10 }}>
+      <View style={styles.brandHeader}>
+        <View style={styles.logoContainer}>
           <View
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 16,
-              alignItems: "center",
-              justifyContent: "center",
-              backgroundColor: theme["color-primary-100"],
-              borderWidth: 1,
-              borderColor: theme["border-basic-color-3"],
-            }}
+            style={[
+              styles.logoBox,
+              {
+                backgroundColor: theme["color-primary-100"],
+                borderColor: theme["border-basic-color-3"],
+              },
+            ]}
           >
-            <Text style={{ fontSize: 26 }}>🌋</Text>
+            <Text style={styles.logoEmoji}>🌋</Text>
           </View>
 
-          <View style={{ alignItems: "center", gap: 6 }}>
-            <AppText variant="screenTitle" style={{ fontWeight: "900" }}>
+          <View style={styles.titleContainer}>
+            <AppText variant="screenTitle" style={styles.titleText}>
               Cones
             </AppText>
 
-            <AppText variant="hint" appearance="hint" style={{ textAlign: "center" }}>
+            <AppText variant="hint" appearance="hint" style={styles.subtitleText}>
               Explore Auckland’s volcanic field.
             </AppText>
           </View>
@@ -83,12 +80,12 @@ export function AuthCard({
       <CardShell>
         <Stack gap="md">
           {/* Mode switch */}
-          <Row gap="sm" justify="space-between" style={{ width: "100%" }}>
+          <Row gap="sm" justify="space-between" style={styles.buttonRow}>
             <AppButton
               variant={mode === "login" ? "primary" : "secondary"}
               size="sm"
               disabled={busy}
-              style={{ flex: 1 }}
+              style={styles.flex1}
               onPress={() => onChangeMode("login")}
             >
               Sign in
@@ -98,15 +95,15 @@ export function AuthCard({
               variant={mode === "signup" ? "primary" : "secondary"}
               size="sm"
               disabled={busy}
-              style={{ flex: 1 }}
+              style={styles.flex1}
               onPress={() => onChangeMode("signup")}
             >
               Sign up
             </AppButton>
           </Row>
 
-          <View style={{ gap: 6 }}>
-            <AppText variant="sectionTitle" style={{ fontWeight: "900" }}>
+          <View style={styles.formHeader}>
+            <AppText variant="sectionTitle" style={styles.titleText}>
               {title}
             </AppText>
             <AppText variant="hint" appearance="hint">
@@ -126,7 +123,7 @@ export function AuthCard({
             </Pill>
           ) : null}
 
-          <View style={{ gap: 12 }}>
+          <View style={styles.inputsContainer}>
             <Input
               label="Email"
               placeholder="you@example.com"
@@ -169,8 +166,8 @@ export function AuthCard({
               mode === "signup"
                 ? "Creating…"
                 : mode === "reset"
-                ? "Sending…"
-                : "Signing in…"
+                  ? "Sending…"
+                  : "Signing in…"
             }
             disabled={!canSubmit || busy}
             onPress={onSubmit}
@@ -178,8 +175,8 @@ export function AuthCard({
             {mode === "signup"
               ? "Create account"
               : mode === "reset"
-              ? "Send reset link"
-              : "Sign in"}
+                ? "Send reset link"
+                : "Sign in"}
           </AppButton>
 
           {mode === "login" ? (
@@ -204,9 +201,9 @@ export function AuthCard({
             </>
           ) : null}
 
-          <View style={{ height: space.xs }} />
+          <View style={styles.spacerSmall} />
 
-          <AppText variant="hint" appearance="hint" style={{ textAlign: "center" }}>
+          <AppText variant="hint" appearance="hint" style={styles.footerText}>
             No account needed to explore. Sign in to track completions and leave reviews.
           </AppText>
         </Stack>
@@ -214,3 +211,57 @@ export function AuthCard({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "flex-start",
+  },
+  brandHeader: {
+    gap: 14,
+    marginBottom: 18,
+  },
+  logoContainer: {
+    alignItems: "center",
+    gap: 10,
+  },
+  logoBox: {
+    width: 56,
+    height: 56,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+  },
+  logoEmoji: {
+    fontSize: 26,
+  },
+  titleContainer: {
+    alignItems: "center",
+    gap: 6,
+  },
+  titleText: {
+    fontWeight: "900",
+  },
+  subtitleText: {
+    textAlign: "center",
+  },
+  buttonRow: {
+    width: "100%",
+  },
+  flex1: {
+    flex: 1,
+  },
+  formHeader: {
+    gap: 6,
+  },
+  inputsContainer: {
+    gap: 12,
+  },
+  spacerSmall: {
+    height: space.xs,
+  },
+  footerText: {
+    textAlign: "center",
+  },
+});

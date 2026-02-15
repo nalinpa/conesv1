@@ -11,15 +11,19 @@ function buildTextShare(payload: ShareConePayload): { message: string; title?: s
   const visited = (payload.visitedLabel || "Visited").trim();
   return {
     title: "Cones",
-    message: [`${visited}: ${payload.coneName}`, `Region: ${region}`, "", "Shared from Cones"].join(
-      "\n",
-    ),
+    message: [
+      `${visited}: ${payload.coneName}`,
+      `Region: ${region}`,
+      "",
+      "Shared from Cones",
+    ].join("\n"),
   };
 }
 
 function getSupportedAbis(): string[] {
   const pc = (NativeModules as any)?.PlatformConstants;
-  const abis: unknown = pc?.supportedAbis ?? pc?.supported32BitAbis ?? pc?.supported64BitAbis;
+  const abis: unknown =
+    pc?.supportedAbis ?? pc?.supported32BitAbis ?? pc?.supported64BitAbis;
   return Array.isArray(abis) ? abis.map(String) : [];
 }
 
@@ -72,6 +76,7 @@ async function shareTextAsync(payload: ShareConePayload): Promise<boolean> {
 
 async function safeUnlink(uri: string) {
   try {
+    // @ts-ignore
     if (FileSystem.cacheDirectory && uri.startsWith(FileSystem.cacheDirectory)) {
       await FileSystem.deleteAsync(uri, { idempotent: true });
     }
@@ -85,7 +90,7 @@ export const shareService = {
    * Share a pre-rendered image file (e.g. captured via react-native-view-shot).
    * This avoids any offscreen Skia rendering inside the service.
    */
-  async shareImageUriAsync(fileUri: string, _payload?: ShareConePayload): Promise<ShareResult> {
+  async shareImageUriAsync(fileUri: string): Promise<ShareResult> {
     const ok = await shareImageAsync(fileUri);
     void safeUnlink(fileUri);
 

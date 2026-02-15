@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
+import { StyleSheet } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { VolcanoMarker } from "@/components/map/VolcanoMarker";
 
@@ -65,7 +66,7 @@ export const ConesMapView = React.memo(function ConesMapView({
 
   useEffect(() => {
     // Give Android enough time to snapshot marker children into bitmaps.
-    const t = setTimeout(() => setWarmupTracking(false), 1500);
+    const t = setTimeout(() => setWarmupTracking(false), 1000);
     return () => clearTimeout(t);
   }, []);
 
@@ -75,33 +76,32 @@ export const ConesMapView = React.memo(function ConesMapView({
   // ✅ ids that should be allowed to update for a brief window (old+new selection)
   const [thawIds, setThawIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    const prev = prevSelectedRef.current;
-    const next = selectedConeId;
+  // ✅ Detect selection change synchronously during render to avoid 1-frame lag
+  const prevSelected = prevSelectedRef.current;
+  const isSelectionChange = prevSelected !== selectedConeId;
 
-    if (prev === next) return;
+  useEffect(() => {
+    if (!isSelectionChange) return;
 
     const ids = new Set<string>();
-    if (prev) ids.add(prev);
-    if (next) ids.add(next);
+    if (prevSelected) ids.add(prevSelected);
+    if (selectedConeId) ids.add(selectedConeId);
 
     setThawIds(ids);
-    prevSelectedRef.current = next;
+    prevSelectedRef.current = selectedConeId;
 
-    const t = setTimeout(() => setThawIds(new Set()), 280);
+    const t = setTimeout(() => setThawIds(new Set()), 150);
     return () => clearTimeout(t);
-  }, [selectedConeId]);
+  }, [selectedConeId, isSelectionChange, prevSelected]);
 
-  // ✅ also thaw everything once right after mount so markers definitely appear
+  // ✅ Thaw all markers whenever data changes (cones list or completion status)
   useEffect(() => {
     if (!cones.length) return;
     const all = new Set(cones.map((c) => c.id));
     setThawIds(all);
-    const t = setTimeout(() => setThawIds(new Set()), 500);
+    const t = setTimeout(() => setThawIds(new Set()), 1000);
     return () => clearTimeout(t);
-    // only want this once when cones first arrive
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cones.length]);
+  }, [cones, completedIds]);
 
   const handlePress = useCallback(
     (id: string) => {
@@ -113,7 +113,7 @@ export const ConesMapView = React.memo(function ConesMapView({
   return (
     <MapView
       provider={PROVIDER_GOOGLE}
-      style={{ flex: 1 }}
+      style={styles.flex1}
       initialRegion={initialRegion}
       showsUserLocation
       showsMyLocationButton={false}
@@ -126,7 +126,12 @@ export const ConesMapView = React.memo(function ConesMapView({
         // ✅ tracking policy:
         // - during warmup: true for all markers
         // - after warmup: only thawed ids update (selection + one-time initial thaw)
-        const tracksViewChanges = warmupTracking || thawIds.has(c.id);
+        // - selected: always track current selection (prevents lag on select)
+        // - isSelectionChange + prevSelected: track the one being unselected (prevents lag on unselect)
+        const tracksViewChanges =
+          warmupTracking ||
+          thawIds.has(c.id) ||
+          (isSelectionChange && (c.id === prevSelected || c.id === selectedConeId));
 
         return (
           <Marker
@@ -143,4 +148,8 @@ export const ConesMapView = React.memo(function ConesMapView({
       })}
     </MapView>
   );
+});
+
+const styles = StyleSheet.create({
+  flex1: { flex: 1 },
 });

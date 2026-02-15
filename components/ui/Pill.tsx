@@ -1,5 +1,5 @@
 import React from "react";
-import { View, ViewProps } from "react-native";
+import { View, ViewProps, StyleSheet } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 import type { LucideIcon } from "lucide-react-native";
 
@@ -49,22 +49,11 @@ export function Pill({
   return (
     <View
       style={[
+        styles.container,
         {
-          flexDirection: "row",
-          alignItems: "center",
-          gap: 6,
-
-          paddingHorizontal: space.sm,
-          paddingVertical: space.xs,
-          minHeight: 32,
-
-          borderRadius: 999,
-          borderWidth: borderTok.thick,
           borderColor: colors.border,
           backgroundColor: colors.bg,
-
           opacity: muted ? 0.7 : 1,
-          alignSelf: "flex-start",
         },
         style,
       ]}
@@ -72,15 +61,26 @@ export function Pill({
     >
       {Icon ? <Icon size={14} color={colors.text} /> : null}
 
-      <AppText
-        variant="label"
-        style={{
-          fontWeight: "900",
-          color: colors.text,
-        }}
-      >
+      <AppText variant="label" style={[styles.text, { color: colors.text }]}>
         {children}
       </AppText>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
+    minHeight: 32,
+    borderRadius: 999,
+    borderWidth: borderTok.thick,
+    alignSelf: "flex-start",
+  },
+  text: {
+    fontWeight: "900",
+  },
+});

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View } from "react-native";
+import { StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
@@ -28,7 +28,7 @@ export function ConesListHeader({
 
   return (
     <Stack gap="md">
-      <Row justify="space-between" align="center" style={{ gap: space.md }}>
+      <Row justify="space-between" align="center" style={styles.headerRow}>
         <AppText variant="screenTitle">Volcanoes</AppText>
 
         <AppButton variant="secondary" size="sm" onPress={onPressGPS}>
@@ -42,7 +42,7 @@ export function ConesListHeader({
 
       {status === "denied" ? (
         <CardShell status="warning">
-          <AppText variant="body" style={{ fontWeight: "800" }}>
+          <AppText variant="body" style={styles.boldText}>
             Turn on location to see distances.
           </AppText>
         </CardShell>
@@ -50,7 +50,7 @@ export function ConesListHeader({
 
       {locErr ? (
         <CardShell status="danger">
-          <AppText variant="body" style={{ fontWeight: "800" }}>
+          <AppText variant="body" style={styles.boldText}>
             We couldn’t get your location. Try again in a moment.
           </AppText>
         </CardShell>
@@ -58,3 +58,12 @@ export function ConesListHeader({
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRow: {
+    gap: space.md,
+  },
+  boldText: {
+    fontWeight: "800",
+  },
+});

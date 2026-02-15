@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { CardShell } from "@/components/ui/CardShell";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
@@ -67,35 +67,29 @@ export function ReviewListItem({
   const cleaned = typeof text === "string" ? text.trim() : "";
 
   return (
-    <CardShell style={{ marginBottom: space.md }}>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-        }}
-      >
-        <AppText variant="sectionTitle" style={{ fontWeight: "800" }}>
+    <CardShell style={styles.card}>
+      <View style={styles.header}>
+        <AppText variant="sectionTitle" style={styles.bold}>
           {starsLine(r)}
         </AppText>
 
-        <AppText variant="hint" style={{ fontWeight: "800" }}>
+        <AppText variant="hint" style={styles.bold}>
           {`${r}/5`}
         </AppText>
       </View>
 
       {when ? (
-        <AppText variant="hint" style={{ marginTop: space.sm }}>
+        <AppText variant="hint" style={styles.date}>
           {when}
         </AppText>
       ) : null}
 
-      <AppText variant="hint" style={{ marginTop: space.md }}>
+      <AppText variant="hint" style={styles.comment}>
         {cleaned ? cleaned : "No comment."}
       </AppText>
 
       {onReport ? (
-        <Row style={{ marginTop: space.md, justifyContent: "flex-end" }}>
+        <Row style={styles.reportRow}>
           <AppButton variant="ghost" onPress={onReport}>
             Report
           </AppButton>
@@ -104,3 +98,27 @@ export function ReviewListItem({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  card: {
+    marginBottom: space.md,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+  },
+  bold: {
+    fontWeight: "800",
+  },
+  date: {
+    marginTop: space.sm,
+  },
+  comment: {
+    marginTop: space.md,
+  },
+  reportRow: {
+    marginTop: space.md,
+    justifyContent: "flex-end",
+  },
+});

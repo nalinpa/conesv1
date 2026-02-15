@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 import { Screen } from "@/components/ui/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -21,7 +21,10 @@ import type { ConeCategory, ConeRegion } from "@/lib/models";
 
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
-import { ConeFiltersCard, type ConeFiltersValue } from "@/components/cone/list/ConeFiltersCard";
+import {
+  ConeFiltersCard,
+  type ConeFiltersValue,
+} from "@/components/cone/list/ConeFiltersCard";
 
 const DEFAULT_FILTERS: ConeFiltersValue = {
   hideCompleted: true,
@@ -35,7 +38,7 @@ export default function ConeListPage() {
   if (session.status === "loading") {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex1}>
           <LoadingState label="Loading…" />
         </View>
       </Screen>
@@ -47,7 +50,7 @@ export default function ConeListPage() {
 }
 
 function ConeListGuest() {
-  const { cones, loading, err, reload } = useCones();
+  const { cones, loading, err } = useCones();
 
   const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
 
@@ -58,7 +61,7 @@ function ConeListGuest() {
   if (loading) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex1}>
           <LoadingState label="Loading cones…" />
         </View>
       </Screen>
@@ -68,12 +71,8 @@ function ConeListGuest() {
   if (err) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
-          <ErrorCard
-            title="Couldn’t load cones"
-            message={err}
-            action={{ label: "Retry", onPress: () => void reload(), appearance: "filled" }}
-          />
+        <View style={styles.centerContainer}>
+          <ErrorCard title="Couldn’t load cones" message={err} />
         </View>
       </Screen>
     );
@@ -92,7 +91,9 @@ function ConeListGuest() {
       <CardShell>
         <Stack gap="xs">
           <AppText variant="sectionTitle">Browse</AppText>
-          <AppText variant="hint">Sign in to filter by completion and track progress.</AppText>
+          <AppText variant="hint">
+            Sign in to filter by completion and track progress.
+          </AppText>
         </Stack>
       </CardShell>
     </Stack>
@@ -101,13 +102,15 @@ function ConeListGuest() {
   if (rows.length === 0) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+        <View style={styles.listContainer}>
           <Stack gap="md">
             {header}
             <CardShell>
               <Stack gap="sm">
                 <AppText variant="sectionTitle">No active cones exist</AppText>
-                <AppText variant="hint">Activate cones in the admin app to show them here.</AppText>
+                <AppText variant="hint">
+                  Activate cones in the admin app to show them here.
+                </AppText>
               </Stack>
             </CardShell>
           </Stack>
@@ -118,7 +121,7 @@ function ConeListGuest() {
 
   return (
     <Screen padded={false}>
-      <View style={{ flex: 1 }}>
+      <View style={styles.flex1}>
         <ConesListView
           rows={rows}
           header={header}
@@ -132,11 +135,15 @@ function ConeListGuest() {
 }
 
 function ConeListAuthed() {
-  const { cones, loading, err, reload } = useCones();
+  const { cones, loading, err } = useCones();
 
   const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
 
-  const { completedConeIds, loading: completionsLoading, err: completionsErr } = useMyCompletions();
+  const {
+    completedConeIds,
+    loading: completionsLoading,
+    err: completionsErr,
+  } = useMyCompletions();
 
   const [filters, setFilters] = useState<ConeFiltersValue>(DEFAULT_FILTERS);
 
@@ -166,7 +173,7 @@ function ConeListAuthed() {
   if (loading) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex1}>
           <LoadingState label="Loading cones…" />
         </View>
       </Screen>
@@ -176,12 +183,8 @@ function ConeListAuthed() {
   if (err) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
-          <ErrorCard
-            title="Couldn’t load cones"
-            message={err}
-            action={{ label: "Retry", onPress: () => void reload(), appearance: "filled" }}
-          />
+        <View style={styles.centerContainer}>
+          <ErrorCard title="Couldn’t load cones" message={err} />
         </View>
       </Screen>
     );
@@ -213,7 +216,7 @@ function ConeListAuthed() {
   if (showNoActive || showNoMatch) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1, paddingHorizontal: 16, paddingTop: 12 }}>
+        <View style={styles.listContainer}>
           <Stack gap="md">
             {header}
             <CardShell>
@@ -237,7 +240,7 @@ function ConeListAuthed() {
 
   return (
     <Screen padded={false}>
-      <View style={{ flex: 1 }}>
+      <View style={styles.flex1}>
         <ConesListView
           rows={rows}
           header={header}
@@ -249,3 +252,19 @@ function ConeListAuthed() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+});

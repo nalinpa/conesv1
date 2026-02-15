@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -16,7 +16,7 @@ type ConeListItemProps = {
   completed?: boolean;
   distanceMeters?: number | null;
 
-  onPress: (coneId: string) => void;
+  onPress: (id: string) => void;
 };
 
 export function ConeListItem({
@@ -32,36 +32,30 @@ export function ConeListItem({
 
   return (
     <CardShell onPress={() => onPress(id)}>
-      <View style={{ gap: 10 }}>
+      <View style={styles.container}>
         {/* Top row: title + distance */}
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 10,
-          }}
-        >
-          <View style={{ flex: 1, gap: 6 }}>
+        <View style={styles.topRow}>
+          <View style={styles.textContainer}>
             <Text
               category="s1"
               numberOfLines={1}
-              style={{
-                fontWeight: "900",
-                opacity: completed ? 0.72 : 1,
-              }}
+              style={[styles.title, completed && styles.titleCompleted]}
             >
               {name}
             </Text>
 
             {description?.trim() ? (
-              <Text appearance="hint" numberOfLines={2} style={{ opacity: completed ? 0.75 : 1 }}>
+              <Text
+                appearance="hint"
+                numberOfLines={2}
+                style={completed && styles.descCompleted}
+              >
                 {description.trim()}
               </Text>
             ) : null}
           </View>
 
-          <View style={{ alignItems: "flex-end", gap: 8 }}>
+          <View style={styles.rightContainer}>
             {/* Distance in top-right */}
             <Pill status={hasDistance ? "info" : "basic"}>{distanceLabel}</Pill>
 
@@ -71,17 +65,12 @@ export function ConeListItem({
         </View>
 
         {/* Bottom CTA row */}
-        <View style={{ marginTop: 2 }}>
+        <View style={styles.bottomRow}>
           <AppButton
             variant={completed ? "secondary" : "primary"}
             size="md"
             onPress={() => onPress(id)}
-            style={{
-              width: "100%",
-              minHeight: 44,
-              borderRadius: 14,
-              paddingHorizontal: space.lg,
-            }}
+            style={styles.button}
           >
             View details
           </AppButton>
@@ -90,3 +79,25 @@ export function ConeListItem({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { gap: 10 },
+  topRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  textContainer: { flex: 1, gap: 6 },
+  title: { fontWeight: "900" },
+  titleCompleted: { opacity: 0.72 },
+  descCompleted: { opacity: 0.75 },
+  rightContainer: { alignItems: "flex-end", gap: 8 },
+  bottomRow: { marginTop: 2 },
+  button: {
+    width: "100%",
+    minHeight: 44,
+    borderRadius: 14,
+    paddingHorizontal: space.lg,
+  },
+});

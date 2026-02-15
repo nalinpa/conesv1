@@ -11,7 +11,9 @@ import { SURF_GREEN, formatRegionLabel, formatVisitedLabel } from "./shareTheme"
  *
  * IMPORTANT: Capability gating (32-bit Android, etc.) should happen in shareService.
  */
-export async function renderShareCardPngAsync(payload: ShareConePayload): Promise<string | null> {
+export async function renderShareCardPngAsync(
+  payload: ShareConePayload,
+): Promise<string | null> {
   try {
     const SkiaMod = await import("@shopify/react-native-skia");
     const { Skia } = SkiaMod;
@@ -62,10 +64,7 @@ export async function renderShareCardPngAsync(payload: ShareConePayload): Promis
       p.setStyle(SkiaMod.PaintStyle.Stroke);
       p.setStrokeWidth(18);
       p.setColor(Skia.Color(SURF_GREEN["primary-800"]));
-      canvas.drawRRect(
-        Skia.RRectXY(Skia.XYWHRect(42, 42, W - 84, H - 84), 44, 44),
-        p,
-      );
+      canvas.drawRRect(Skia.RRectXY(Skia.XYWHRect(42, 42, W - 84, H - 84), 44, 44), p);
     }
 
     // Inner card
@@ -78,7 +77,10 @@ export async function renderShareCardPngAsync(payload: ShareConePayload): Promis
       const bg = Skia.Paint();
       bg.setAntiAlias(true);
       bg.setColor(Skia.Color("#FFFFFF"));
-      canvas.drawRRect(Skia.RRectXY(Skia.XYWHRect(cardX, cardY, cardW, cardH), 50, 50), bg);
+      canvas.drawRRect(
+        Skia.RRectXY(Skia.XYWHRect(cardX, cardY, cardW, cardH), 50, 50),
+        bg,
+      );
 
       const stroke = Skia.Paint();
       stroke.setAntiAlias(true);
@@ -131,9 +133,18 @@ export async function renderShareCardPngAsync(payload: ShareConePayload): Promis
       const p = Skia.Paint();
       p.setAntiAlias(true);
       p.setColor(Skia.Color(SURF_GREEN["primary-700"]));
-      canvas.drawRRect(Skia.RRectXY(Skia.XYWHRect(pillX, pillY, pillW, pillH), 999, 999), p);
+      canvas.drawRRect(
+        Skia.RRectXY(Skia.XYWHRect(pillX, pillY, pillW, pillH), 999, 999),
+        p,
+      );
 
-      canvas.drawText(label, pillX + pillPadX, pillY + pillPadY + m.height, fontSmall, textWhite);
+      canvas.drawText(
+        label,
+        pillX + pillPadX,
+        pillY + pillPadY + m.height,
+        fontSmall,
+        textWhite,
+      );
     }
 
     // Cone name (2 lines max)
@@ -223,7 +234,8 @@ async function loadBundledTypefaceAsync(Skia: any): Promise<any | null> {
 
     const data = Skia.Data.fromBytes(bytes);
 
-    if (Skia?.Typeface?.MakeFreeTypeFaceFromData) return Skia.Typeface.MakeFreeTypeFaceFromData(data);
+    if (Skia?.Typeface?.MakeFreeTypeFaceFromData)
+      return Skia.Typeface.MakeFreeTypeFaceFromData(data);
     if (Skia?.Typeface?.MakeFromData) return Skia.Typeface.MakeFromData(data);
 
     return null;
@@ -233,7 +245,12 @@ async function loadBundledTypefaceAsync(Skia: any): Promise<any | null> {
   }
 }
 
-function wrapTwoLines(text: string, font: any, paint: any, maxWidth: number): [string, string?] {
+function wrapTwoLines(
+  text: string,
+  font: any,
+  paint: any,
+  maxWidth: number,
+): [string, string?] {
   const words = text.split(/\s+/).filter(Boolean);
   if (words.length <= 1) return [text];
 

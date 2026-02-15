@@ -42,35 +42,32 @@ export function useUserLocation({ autoRequest = true }: { autoRequest?: boolean 
   const lastRunAtRef = useRef<number>(0);
   const MIN_INTERVAL_MS = 1200; // tweak to taste
 
-  const runGuarded = useCallback(
-    async (fn: () => Promise<{ ok: boolean }>) => {
-      const now = Date.now();
+  const runGuarded = useCallback(async (fn: () => Promise<{ ok: boolean }>) => {
+    const now = Date.now();
 
-      // If a refresh is already running, return the same promise (single-flight)
-      if (inFlightRef.current) return inFlightRef.current;
+    // If a refresh is already running, return the same promise (single-flight)
+    if (inFlightRef.current) return inFlightRef.current;
 
-      // Throttle: prevent rapid repeated refresh triggers (tap spam / focus+active)
-      if (now - lastRunAtRef.current < MIN_INTERVAL_MS) {
-        return { ok: false as const }; // skipped
+    // Throttle: prevent rapid repeated refresh triggers (tap spam / focus+active)
+    if (now - lastRunAtRef.current < MIN_INTERVAL_MS) {
+      return { ok: false as const }; // skipped
+    }
+
+    if (aliveRef.current) setIsRefreshing(true);
+
+    const p = (async () => {
+      try {
+        return await fn();
+      } finally {
+        lastRunAtRef.current = Date.now();
+        inFlightRef.current = null;
+        if (aliveRef.current) setIsRefreshing(false);
       }
+    })();
 
-      if (aliveRef.current) setIsRefreshing(true);
-
-      const p = (async () => {
-        try {
-          return await fn();
-        } finally {
-          lastRunAtRef.current = Date.now();
-          inFlightRef.current = null;
-          if (aliveRef.current) setIsRefreshing(false);
-        }
-      })();
-
-      inFlightRef.current = p;
-      return p;
-    },
-    [],
-  );
+    inFlightRef.current = p;
+    return p;
+  }, []);
 
   /**
    * Ask permission + do a "good enough" location fetch.

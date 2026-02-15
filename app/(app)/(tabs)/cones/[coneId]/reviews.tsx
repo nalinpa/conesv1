@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
-import { View, ListRenderItemInfo } from "react-native";
+import { View, ListRenderItemInfo, StyleSheet } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
-
-import { goCone } from "@/lib/routes";
-
-import { Screen } from "@/components/ui/screen";
 import { Layout, List } from "@ui-kitten/components";
 
+import { goCone } from "@/lib/routes";
+import { Screen } from "@/components/ui/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 
@@ -42,21 +40,22 @@ export default function ConeReviewsPage() {
   const { avgRating, ratingCount } = useConeReviewsSummary(id);
 
   const summary = useMemo(() => {
-    const avg =
-      avgRating == null ? null : Math.round(Number(avgRating) * 10) / 10;
+    const avg = avgRating == null ? null : Math.round(Number(avgRating) * 10) / 10;
     return { avg, count: ratingCount };
   }, [avgRating, ratingCount]);
 
-  const renderItem = ({ item }: ListRenderItemInfo<PublicReview>) => {
+  const renderItem = useCallback(({ item }: ListRenderItemInfo<PublicReview>) => {
     return (
-      <ReviewListItem
-        rating={item.reviewRating}
-        text={item.reviewText}
-        createdAt={item.reviewCreatedAt}
-        // future: onReport={() => ...}
-      />
+      <View style={styles.itemWrapper}>
+        <ReviewListItem
+          rating={item.reviewRating}
+          text={item.reviewText}
+          createdAt={item.reviewCreatedAt}
+          // future: onReport={() => ...}
+        />
+      </View>
     );
-  };
+  }, []);
 
   const header = (
     <ReviewsHeader
@@ -71,7 +70,7 @@ export default function ConeReviewsPage() {
     return (
       <Screen padded={false}>
         <Stack.Screen options={{ title: `Reviews` }} />
-        <Layout style={{ flex: 1 }}>
+        <Layout style={styles.container}>
           <LoadingState label="Loading reviews…" />
         </Layout>
       </Screen>
@@ -82,10 +81,8 @@ export default function ConeReviewsPage() {
     return (
       <Screen padded={false}>
         <Stack.Screen options={{ title: `Reviews` }} />
-        <Layout style={{ flex: 1 }}>
-          <View
-            style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}
-          >
+        <Layout style={styles.container}>
+          <View style={styles.errorContainer}>
             <ErrorCard
               title="Couldn’t load reviews"
               message={err || "Check your connection and try again."}
@@ -102,32 +99,40 @@ export default function ConeReviewsPage() {
     <Screen padded={false}>
       <Stack.Screen options={{ title: `Reviews` }} />
 
-      <Layout style={{ flex: 1 }}>
+      <Layout style={styles.container}>
         <List
           data={reviews}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingTop: 16,
-            paddingBottom: 24,
-          }}
+          contentContainerStyle={styles.listContent}
           // Keep header aligned with list padding by giving the header its own padding.
-          // (Prevents double padding if header already has inner padding styles.)
-          ListHeaderComponent={<View style={{ paddingHorizontal: 16 }}>{header}</View>}
+          ListHeaderComponent={<View style={styles.itemWrapper}>{header}</View>}
           ListEmptyComponent={
-            <View style={{ paddingHorizontal: 16 }}>
+            <View style={styles.itemWrapper}>
               <ReviewsEmptyStateCard onBack={goBack} onRetry={retry} />
             </View>
           }
-          // Items should have horizontal padding too
-          renderItem={({ item }: ListRenderItemInfo<PublicReview>) => (
-            <View style={{ paddingHorizontal: 16 }}>
-              {renderItem({ item } as any)}
-            </View>
-          )}
         />
       </Layout>
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  listContent: {
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  itemWrapper: {
+    paddingHorizontal: 16,
+  },
+});

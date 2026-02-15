@@ -7,7 +7,7 @@ type Options = {
 
 export function useFirestoreDoc<T>(
   ref: DocumentReference<T> | null | undefined,
-  opts?: Options
+  opts?: Options,
 ) {
   const enabled = opts?.enabled ?? true;
 
@@ -33,7 +33,7 @@ export function useFirestoreDoc<T>(
       (err) => {
         setError(err);
         setLoading(false);
-      }
+      },
     );
 
     return () => unsub();

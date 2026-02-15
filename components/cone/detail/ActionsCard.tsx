@@ -1,4 +1,5 @@
-import { View } from "react-native";
+import React from "react";
+import { StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -69,7 +70,9 @@ export function ActionsCard({
 
           {!hasReview ? (
             <Stack gap="sm">
-              <AppText variant="hint">Drop a quick rating — you can only leave one.</AppText>
+              <AppText variant="hint">
+                Drop a quick rating — you can only leave one.
+              </AppText>
 
               <AppButton variant="secondary" onPress={onOpenReview}>
                 Add a review
@@ -78,7 +81,7 @@ export function ActionsCard({
           ) : (
             <Stack gap="sm">
               <Row align="center" gap="sm">
-                <AppText variant="sectionTitle" style={{ fontWeight: "900" }}>
+                <AppText variant="sectionTitle" style={styles.starsText}>
                   {stars}
                 </AppText>
 
@@ -94,10 +97,12 @@ export function ActionsCard({
 
         {/* Share bonus */}
         <Stack gap="sm">
-          <AppText variant="hint">Optional: share a photo for a little bonus credit.</AppText>
+          <AppText variant="hint">
+            Optional: share a photo for a little bonus credit.
+          </AppText>
 
           {shareError ? (
-            <AppText variant="hint" style={{ opacity: 0.9 }}>
+            <AppText variant="hint" style={styles.errorText}>
               {shareError}
             </AppText>
           ) : null}
@@ -116,3 +121,12 @@ export function ActionsCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  starsText: {
+    fontWeight: "900",
+  },
+  errorText: {
+    opacity: 0.9,
+  },
+});

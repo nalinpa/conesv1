@@ -16,7 +16,14 @@ export function useCone(coneId: string | null | undefined) {
 
   const cone = useMemo(() => {
     if (!data || !ref) return null;
-    return { id: ref.id, ...data } as Cone;
+    return {
+      id: ref.id,
+      ...data,
+      name: data.name ?? "",
+      description: data.description ?? "",
+      region: data.region ?? "central",
+      category: data.category ?? "cone",
+    } as Cone;
   }, [data, ref]);
 
   return {

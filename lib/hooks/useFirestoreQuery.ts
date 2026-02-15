@@ -24,7 +24,7 @@ export function useFirestoreQuery<T>(queryRef: Query<T> | null | undefined) {
       (err) => {
         setError(err);
         setLoading(false);
-      }
+      },
     );
 
     return () => unsub();

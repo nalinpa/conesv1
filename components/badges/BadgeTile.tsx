@@ -1,4 +1,5 @@
-import { View } from "react-native";
+import React from "react";
+import { View, StyleSheet } from "react-native";
 import { Text } from "@ui-kitten/components";
 
 import { Pill } from "@/components/ui/Pill";
@@ -15,24 +16,17 @@ export function BadgeTile({
   progressLabel?: string | null;
 }) {
   return (
-    <View style={{ width: "100%", paddingVertical: 6 }}>
-      <View
-        style={{
-          borderWidth: 1,
-          borderRadius: 18,
-          padding: 12,
-          opacity: unlocked ? 1 : 0.55,
-        }}
-      >
-        <Text category="s1" style={{ fontWeight: "800" }}>
+    <View style={styles.container}>
+      <View style={[styles.card, unlocked ? styles.cardUnlocked : styles.cardLocked]}>
+        <Text category="s1" style={styles.name}>
           {name}
         </Text>
 
-        <Text appearance="hint" style={{ marginTop: 6 }}>
+        <Text appearance="hint" style={styles.description}>
           {unlockText}
         </Text>
 
-        <View style={{ marginTop: 10 }}>
+        <View style={styles.footer}>
           {unlocked ? (
             <Pill status="success">Earned</Pill>
           ) : progressLabel ? (
@@ -49,3 +43,30 @@ export function BadgeTile({
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    paddingVertical: 6,
+  },
+  card: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 12,
+  },
+  cardUnlocked: {
+    opacity: 1,
+  },
+  cardLocked: {
+    opacity: 0.55,
+  },
+  name: {
+    fontWeight: "800",
+  },
+  description: {
+    marginTop: 6,
+  },
+  footer: {
+    marginTop: 10,
+  },
+});

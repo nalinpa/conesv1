@@ -1,11 +1,10 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
-import { Pill } from "@/components/ui/Pill";
 
 import { goLogin } from "@/lib/routes";
 import { router } from "expo-router";
@@ -24,8 +23,8 @@ export function RequireAuthCard({
   return (
     <CardShell>
       <Stack gap="md">
-        <View style={{ gap: 6 }}>
-          <AppText variant="screenTitle" style={{ fontWeight: "900" }}>
+        <View style={styles.headerContainer}>
+          <AppText variant="screenTitle" style={styles.titleText}>
             {title}
           </AppText>
         </View>
@@ -56,3 +55,12 @@ export function RequireAuthCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  headerContainer: {
+    gap: 6,
+  },
+  titleText: {
+    fontWeight: "900",
+  },
+});

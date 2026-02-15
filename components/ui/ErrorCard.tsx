@@ -1,4 +1,5 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
@@ -18,7 +19,7 @@ type Action =
   | null
   | undefined;
 
-function mapSize(size?: Action extends infer _ ? any : never): "sm" | "md" {
+function mapSize(size?: string): "sm" | "md" {
   // keep it simple: tiny/small -> sm, everything else -> md
   if (!size) return "sm";
   return size === "tiny" || size === "small" ? "sm" : "md";
@@ -51,18 +52,14 @@ export function ErrorCard({
   const hasActions = !!action || !!secondaryAction;
 
   const cleanMessage =
-    typeof message === "string" && message.trim()
-      ? message.trim()
-      : "Please try again.";
+    typeof message === "string" && message.trim() ? message.trim() : "Please try again.";
 
   return (
     <CardShell status={status}>
       <Stack gap="md">
         <AppText variant="sectionTitle">{title}</AppText>
 
-        <AppText variant="hint">
-          {cleanMessage}
-        </AppText>
+        <AppText variant="hint">{cleanMessage}</AppText>
 
         {hasActions ? (
           secondaryAction ? (
@@ -70,13 +67,12 @@ export function ErrorCard({
               <AppButton
                 variant={mapVariant(
                   secondaryAction.appearance ?? "outline",
-                  secondaryAction.status ??
-                    (status === "warning" ? "warning" : "basic"),
+                  secondaryAction.status ?? (status === "warning" ? "warning" : "basic"),
                 )}
                 size={mapSize(secondaryAction.size ?? "small")}
                 onPress={secondaryAction.onPress}
                 disabled={secondaryAction.disabled}
-                style={{ flex: 1 }}
+                style={styles.flex1}
               >
                 {secondaryAction.label}
               </AppButton>
@@ -90,7 +86,7 @@ export function ErrorCard({
                   size={mapSize(action.size ?? "small")}
                   onPress={action.onPress}
                   disabled={action.disabled}
-                  style={{ flex: 1 }}
+                  style={styles.flex1}
                 >
                   {action.label}
                 </AppButton>
@@ -114,3 +110,9 @@ export function ErrorCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
+});

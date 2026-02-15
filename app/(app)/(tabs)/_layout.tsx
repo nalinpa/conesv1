@@ -1,11 +1,18 @@
 import React, { useMemo } from "react";
+import { StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
 import { BottomNavigation, BottomNavigationTab, useTheme } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { goProgressHome, goConesHome, goMapHome, goAccountHome } from "@/lib/routes";
-import { useSession } from "@/lib/providers/SessionProvider";
+// Fixed imports to use relative paths to resolve aliasing issues in the environment
+import {
+  goProgressHome,
+  goConesHome,
+  goMapHome,
+  goAccountHome,
+} from "../../../lib/routes";
+import { useSession } from "../../../lib/providers/SessionProvider";
 
 function Ionicon({
   name,
@@ -20,7 +27,9 @@ function Ionicon({
 }
 
 function tintFromProps(props: any): string | undefined {
-  return props?.style?.tintColor ?? props?.tintColor ?? props?.style?.color ?? props?.color;
+  return (
+    props?.style?.tintColor ?? props?.tintColor ?? props?.style?.color ?? props?.color
+  );
 }
 
 type TabKey = "cones" | "progress" | "map" | "account";
@@ -52,7 +61,6 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
   const activeRouteName = (state.routes[state.index]?.name ?? "cones") as TabKey;
 
   // If active route is hidden (guest deep-linked into "progress"), just highlight Map.
-  // (AuthGate should be the one that actually redirects.)
   const visibleActiveIndex = useMemo(() => {
     const idx = visibleTabs.findIndex((t) => t.key === activeRouteName);
     if (idx >= 0) return idx;
@@ -65,25 +73,11 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
   const bg = theme["background-basic-color-1"] ?? "#FFFFFF";
   const border = theme["border-basic-color-3"] ?? "rgba(0,0,0,0.12)";
   const activeBg = theme["color-primary-100"] ?? "rgba(95,179,162,0.18)";
-  const activeTint = theme["color-primary-600"] ?? theme["color-primary-500"] ?? "#5FB3A2";
-
-  const tabStyle = (isActive: boolean) =>
-    ({
-      paddingVertical: 10,
-      borderRadius: 18,
-      marginHorizontal: 6,
-      backgroundColor: isActive ? activeBg : "transparent",
-      opacity: sessionLoading ? 0.7 : 1,
-    }) as const;
-
-  const titleStyle = (isActive: boolean) => ({
-    fontWeight: isActive ? "900" : "800",
-    fontSize: 13,
-    marginTop: 2,
-  });
+  const activeTint =
+    theme["color-primary-600"] ?? theme["color-primary-500"] ?? "#5FB3A2";
 
   const onSelectVisible = (visibleIndex: number) => {
-    if (sessionLoading) return; // prevent taps while session hydrates
+    if (sessionLoading) return;
 
     const tab = visibleTabs[visibleIndex];
     if (!tab) return;
@@ -112,14 +106,14 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
       selectedIndex={visibleActiveIndex}
       onSelect={onSelectVisible}
       appearance="noIndicator"
-      style={{
-        backgroundColor: bg,
-        borderTopWidth: 1,
-        borderTopColor: border,
-        paddingTop: 10,
-        paddingBottom: Math.max(14, insets.bottom),
-        paddingHorizontal: 10,
-      }}
+      style={[
+        styles.bottomNav,
+        {
+          backgroundColor: bg,
+          borderTopColor: border,
+          paddingBottom: Math.max(14, insets.bottom),
+        },
+      ]}
     >
       {visibleTabs.map((t) => {
         const isActive = t.key === activeRouteName;
@@ -128,8 +122,15 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
           <BottomNavigationTab
             key={t.key}
             title={t.title}
-            style={tabStyle(isActive)}
-            titleStyle={titleStyle(isActive)}
+            style={[
+              styles.tab,
+              isActive && { backgroundColor: activeBg },
+              sessionLoading && styles.loadingOpacity,
+            ]}
+            titleStyle={[
+              styles.title,
+              isActive ? styles.titleActive : styles.titleInactive,
+            ]}
             icon={(props: any) => {
               const tint = tintFromProps(props) ?? (isActive ? activeTint : undefined);
               return <Ionicon name={t.icon} color={tint} size={28} />;
@@ -146,7 +147,10 @@ export default function TabsLayout() {
   const isGuest = session.status === "guest";
 
   return (
-    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <KittenTabBar {...props} />}>
+    <Tabs
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <KittenTabBar {...props} />}
+    >
       <Tabs.Screen name="cones" options={{ href: "/(tabs)/cones" }} />
       <Tabs.Screen
         name="progress"
@@ -159,3 +163,29 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  bottomNav: {
+    borderTopWidth: 1,
+    paddingTop: 10,
+    paddingHorizontal: 10,
+  },
+  tab: {
+    paddingVertical: 10,
+    borderRadius: 18,
+    marginHorizontal: 6,
+  },
+  loadingOpacity: {
+    opacity: 0.7,
+  },
+  title: {
+    fontSize: 13,
+    marginTop: 2,
+  },
+  titleActive: {
+    fontWeight: "900",
+  },
+  titleInactive: {
+    fontWeight: "800",
+  },
+});

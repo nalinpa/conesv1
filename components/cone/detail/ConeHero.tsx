@@ -1,4 +1,4 @@
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Text } from "@ui-kitten/components";
 import type { Cone } from "@/lib/models";
 import { Pill } from "@/components/ui/Pill";
@@ -8,29 +8,16 @@ function prettyLabel(s: string) {
   return s.length ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-export function ConeHero({
-  cone,
-  completed,
-}: {
-  cone: Cone;
-  completed: boolean;
-}) {
+export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }) {
   const metaLabel = `${prettyLabel(cone.region)} • ${prettyLabel(cone.category)}`;
   const desc = cone.description.trim();
 
   return (
-    <View style={{ gap: 10 }}>
+    <View style={styles.container}>
       {/* Top row */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <View style={{ flex: 1 }}>
-          <Text category="h4" style={{ fontWeight: "900" }} numberOfLines={2}>
+      <View style={styles.headerRow}>
+        <View style={styles.headerTextContainer}>
+          <Text category="h4" style={styles.titleText} numberOfLines={2}>
             {cone.name}
           </Text>
 
@@ -48,9 +35,25 @@ export function ConeHero({
         </Pill>
       </View>
 
-      <Text appearance="hint">
-        {desc ? desc : "No description yet."}
-      </Text>
+      <Text appearance="hint">{desc ? desc : "No description yet."}</Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    gap: 10,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  headerTextContainer: {
+    flex: 1,
+  },
+  titleText: {
+    fontWeight: "900",
+  },
+});

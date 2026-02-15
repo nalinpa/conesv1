@@ -1,6 +1,5 @@
 import React from "react";
-import { View } from "react-native";
-import { Button } from "@ui-kitten/components";
+import { View, StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -27,7 +26,7 @@ export function NearestUnclimbedCard({
   cone: ConeLite | null;
   distanceMeters: number | null;
   locErr?: string;
-  onOpenCone: (coneId: string) => void;
+  onOpenCone: (id: string) => void;
 }) {
   const hasDistance = distanceMeters != null;
 
@@ -37,8 +36,7 @@ export function NearestUnclimbedCard({
       ? "Turn on location to see what’s closest"
       : "Finding what’s closest…";
 
-  const pillLabel =
-    distanceMeters != null ? formatDistanceMeters(distanceMeters) : "—";
+  const pillLabel = distanceMeters != null ? formatDistanceMeters(distanceMeters) : "—";
 
   return (
     <CardShell>
@@ -50,12 +48,14 @@ export function NearestUnclimbedCard({
 
         {!cone ? (
           <AppText variant="hint">
-            {locErr ? "Turn on location to see a nearby volcano." : "No volcanoes to show yet."}
+            {locErr
+              ? "Turn on location to see a nearby volcano."
+              : "No volcanoes to show yet."}
           </AppText>
         ) : (
           <Stack gap="sm">
-            <View style={{ gap: space.xs }}>
-              <AppText variant="sectionTitle" style={{ fontWeight: "800" }}>
+            <View style={styles.infoContainer}>
+              <AppText variant="sectionTitle" style={styles.coneName}>
                 {cone.name}
               </AppText>
 
@@ -68,10 +68,8 @@ export function NearestUnclimbedCard({
               <AppText variant="hint">{distanceLabel}</AppText>
             </View>
 
-            <View style={{ marginTop: space.xs }}>
-             <AppButton onPress={() => onOpenCone(cone.id)}>
-                View details
-              </AppButton>
+            <View style={styles.buttonContainer}>
+              <AppButton onPress={() => onOpenCone(cone.id)}>View details</AppButton>
             </View>
           </Stack>
         )}
@@ -79,3 +77,15 @@ export function NearestUnclimbedCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  infoContainer: {
+    gap: space.xs,
+  },
+  coneName: {
+    fontWeight: "800",
+  },
+  buttonContainer: {
+    marginTop: space.xs,
+  },
+});
