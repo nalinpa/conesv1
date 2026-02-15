@@ -1,32 +1,25 @@
 import React from "react";
-import { View, type ViewStyle } from "react-native";
+import { View, StyleSheet, type ViewStyle } from "react-native";
 import { Spinner, Text } from "@ui-kitten/components";
+
+interface LoadingStateProps {
+  label?: string;
+  fullScreen?: boolean;
+  size?: "tiny" | "small" | "medium" | "large" | "giant";
+  style?: ViewStyle;
+}
 
 export function LoadingState({
   label = "Loading…",
   fullScreen = true,
   size = "giant",
   style,
-}: {
-  label?: string;
-  fullScreen?: boolean;
-  size?: "tiny" | "small" | "medium" | "large" | "giant";
-  style?: ViewStyle;
-}) {
+}: LoadingStateProps) {
   const content = (
-    <View
-      style={[
-        {
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 14,
-        },
-        style,
-      ]}
-    >
+    <View style={[styles.contentContainer, style]}>
       <Spinner size={size} />
       {label ? (
-        <Text appearance="hint" category="s1" style={{ fontWeight: "700" }}>
+        <Text appearance="hint" category="s1" style={styles.labelText}>
           {label}
         </Text>
       ) : null}
@@ -37,16 +30,22 @@ export function LoadingState({
     return content;
   }
 
-  return (
-    <View
-      style={{
-        flex: 1,
-        alignItems: "center",
-        justifyContent: "center",
-        paddingBottom: 48,
-      }}
-    >
-      {content}
-    </View>
-  );
+  return <View style={styles.fullScreenContainer}>{content}</View>;
 }
+
+const styles = StyleSheet.create({
+  contentContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+  },
+  labelText: {
+    fontWeight: "700",
+  },
+  fullScreenContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 48,
+  },
+});

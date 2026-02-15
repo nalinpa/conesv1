@@ -6,7 +6,7 @@ import {
   query,
   serverTimestamp,
   runTransaction,
-  where
+  where,
 } from "firebase/firestore";
 
 import { db } from "@/lib/firebase";
@@ -160,7 +160,6 @@ export const reviewService = {
 
       return { ok: true };
     } catch (e: any) {
-      console.warn("[reviews] saveReview failed", { coneId, uid, e });
       return { ok: false, err: e?.message ?? "Failed to save review." };
     }
   },

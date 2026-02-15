@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { ScrollView, View } from "react-native";
+import { ScrollView, View, StyleSheet } from "react-native";
 
 import type { ConeCategory, ConeRegion } from "@/lib/models";
 
@@ -40,12 +40,6 @@ export type ConeFiltersValue = {
   category: ConeCategory | "all";
 };
 
-const DEFAULT_FILTERS: ConeFiltersValue = {
-  hideCompleted: true,
-  region: "all",
-  category: "all",
-};
-
 function labelFor<T extends string>(
   opts: Array<{ label: string; value: T }>,
   v: T,
@@ -68,14 +62,10 @@ function Chip({
 }) {
   return (
     <AppButton
-      size="xs"
+      size="sm"
       variant={selected ? "secondary" : "ghost"}
       onPress={onPress}
-      style={{
-        borderRadius: 999,
-        minHeight: 32,
-        paddingHorizontal: space.sm,
-      }}
+      style={styles.chip}
     >
       {label}
     </AppButton>
@@ -113,8 +103,7 @@ export function ConeFiltersCard({
   const summary = useMemo(() => {
     const parts: string[] = [];
     if (value.hideCompleted) parts.push("hide completed");
-    if (value.region !== "all")
-      parts.push(labelFor(REGIONS as any, value.region as any));
+    if (value.region !== "all") parts.push(labelFor(REGIONS as any, value.region as any));
     if (value.category !== "all")
       parts.push(labelFor(CATEGORIES as any, value.category as any));
     return parts.length ? parts.join(" • ") : "none";
@@ -125,17 +114,7 @@ export function ConeFiltersCard({
    * ============================ */
   if (!expanded) {
     return (
-      <View
-        style={{
-            marginHorizontal: -space.md,
-            paddingVertical: space.sm,
-            paddingHorizontal: space.md,
-            borderTopWidth: 1,
-            borderBottomWidth: 1,
-            borderColor: "rgba(0,0,0,0.06)",
-            backgroundColor: "rgba(0,0,0,0.02)",
-        }}
-        >
+      <View style={styles.collapsedBar}>
         <Row justify="space-between" align="center">
           <AppText variant="hint" numberOfLines={1}>
             Filters: {summary}
@@ -173,7 +152,7 @@ export function ConeFiltersCard({
         <Stack gap="xs">
           <AppText variant="hint">Completed</AppText>
 
-          <Row gap="xs" align="center" style={{ flexWrap: "wrap" }}>
+          <Row gap="xs" align="center" style={styles.wrapRow}>
             <Chip
               label="Hide"
               selected={value.hideCompleted}
@@ -185,12 +164,10 @@ export function ConeFiltersCard({
               onPress={() => patch({ hideCompleted: false })}
             />
 
-            <View style={{ flex: 1 }} />
+            <View style={styles.flex1} />
 
             <AppText variant="hint">
-              {completionsLoading
-                ? "Loading…"
-                : `${completedCount} completed`}
+              {completionsLoading ? "Loading…" : `${completedCount} completed`}
             </AppText>
           </Row>
 
@@ -206,7 +183,7 @@ export function ConeFiltersCard({
           <AppText variant="hint">Region</AppText>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Row gap="xs" style={{ paddingVertical: 2 }}>
+            <Row gap="xs" style={styles.scrollRow}>
               {REGIONS.map((r) => (
                 <Chip
                   key={r.value}
@@ -224,7 +201,7 @@ export function ConeFiltersCard({
           <AppText variant="hint">Type</AppText>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Row gap="xs" style={{ paddingVertical: 2 }}>
+            <Row gap="xs" style={styles.scrollRow}>
               {CATEGORIES.map((c) => (
                 <Chip
                   key={c.value}
@@ -244,3 +221,23 @@ export function ConeFiltersCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  chip: {
+    borderRadius: 999,
+    minHeight: 32,
+    paddingHorizontal: space.sm,
+  },
+  collapsedBar: {
+    marginHorizontal: -space.md,
+    paddingVertical: space.sm,
+    paddingHorizontal: space.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "rgba(0,0,0,0.06)",
+    backgroundColor: "rgba(0,0,0,0.02)",
+  },
+  wrapRow: { flexWrap: "wrap" },
+  flex1: { flex: 1 },
+  scrollRow: { paddingVertical: 2 },
+});

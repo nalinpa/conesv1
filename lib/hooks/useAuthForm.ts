@@ -21,7 +21,8 @@ function normalizeAuthError(err: unknown): string {
   if (code.includes("auth/wrong-password")) return "Incorrect password.";
   if (code.includes("auth/invalid-credential")) return "Incorrect email or password.";
   if (code.includes("auth/email-already-in-use")) return "That email is already in use.";
-  if (code.includes("auth/weak-password")) return "Password must be at least 6 characters.";
+  if (code.includes("auth/weak-password"))
+    return "Password must be at least 6 characters.";
   if (code.includes("auth/too-many-requests"))
     return "Too many attempts. Try again in a bit.";
 

@@ -8,6 +8,7 @@ import {
   Platform,
   Keyboard,
   type ViewStyle,
+  StyleSheet,
 } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 
@@ -37,8 +38,8 @@ export function ReviewModal({
   saving: boolean;
   draftRating: number | null;
   draftText: string;
-  onChangeRating: (n: number | null) => void; // ✅ allow null
-  onChangeText: (t: string) => void;
+  onChangeRating: (rating: number | null) => void;
+  onChangeText: (text: string) => void;
   onClose: () => void;
   onSave: () => void;
 }) {
@@ -99,7 +100,7 @@ export function ReviewModal({
     >
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
+        style={styles.keyboardView}
       >
         {/* Backdrop (tap to dismiss) */}
         <Pressable
@@ -108,12 +109,7 @@ export function ReviewModal({
             Keyboard.dismiss();
             handleClose();
           }}
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.45)",
-            justifyContent: "center",
-            padding: space.lg,
-          }}
+          style={styles.backdrop}
         >
           {/* Content wrapper: prevent backdrop dismiss */}
           <Pressable
@@ -122,11 +118,11 @@ export function ReviewModal({
               // but nesting this Pressable prevents the parent onPress from firing.
               e?.preventDefault?.();
             }}
-            style={{ width: "100%" }}
+            style={styles.contentWrapper}
           >
             <CardShell>
               <Stack gap="lg">
-                <View style={{ gap: space.xs }}>
+                <View style={styles.headerGap}>
                   <AppText variant="sectionTitle">Add a review</AppText>
                   <AppText variant="hint">
                     Your review is public. You can leave one review per volcano.
@@ -137,7 +133,7 @@ export function ReviewModal({
                 <Row justify="space-between" align="center">
                   <AppText variant="label">
                     Your rating{" "}
-                    <AppText variant="hint" style={{ fontWeight: "800" }}>
+                    <AppText variant="hint" style={styles.boldText}>
                       • {ratingLabel}
                     </AppText>
                   </AppText>
@@ -146,7 +142,7 @@ export function ReviewModal({
                 </Row>
 
                 {/* Rating buttons */}
-                <Row wrap gap="sm" style={{ alignItems: "center" }}>
+                <Row wrap gap="sm" style={styles.ratingRow}>
                   {[1, 2, 3, 4, 5].map((n) => {
                     const selected = draftRating === n;
                     return (
@@ -160,7 +156,7 @@ export function ReviewModal({
                         hitSlop={8}
                         style={ratingPillStyle(selected)}
                       >
-                        <AppText style={{ fontWeight: selected ? "900" : "800" }}>
+                        <AppText style={selected ? styles.textHeavy : styles.textBold}>
                           {"⭐".repeat(n)}
                         </AppText>
                       </Pressable>
@@ -169,22 +165,21 @@ export function ReviewModal({
                 </Row>
 
                 {touchedSave && !isValidRating(draftRating) ? (
-                  <AppText variant="hint" style={{ fontWeight: "800" }}>
+                  <AppText variant="hint" style={styles.boldText}>
                     Pick a rating to save your review.
                   </AppText>
                 ) : null}
 
                 {/* Text input */}
                 <View
-                  style={{
-                    borderWidth: borderTok.thick,
-                    borderColor: theme["color-basic-500"] ?? "rgba(100,116,139,0.35)",
-                    borderRadius: radius.md,
-                    paddingHorizontal: space.md,
-                    paddingVertical: space.sm,
-                    opacity: saving ? 0.75 : 1,
-                    backgroundColor: theme["color-basic-100"] ?? "#FFFFFF",
-                  }}
+                  style={[
+                    styles.inputContainer,
+                    {
+                      borderColor: theme["color-basic-500"] ?? "rgba(100,116,139,0.35)",
+                      opacity: saving ? 0.75 : 1,
+                      backgroundColor: theme["color-basic-100"] ?? "#FFFFFF",
+                    },
+                  ]}
                 >
                   <TextInput
                     value={draftText}
@@ -195,30 +190,32 @@ export function ReviewModal({
                     }
                     multiline
                     editable={!saving}
-                    style={{
-                      minHeight: 96,
-                      color: theme["text-basic-color"] ?? "#0f172a",
-                      fontSize: 16,
-                      fontWeight: "500",
-                    }}
+                    style={[
+                      styles.textInput,
+                      { color: theme["text-basic-color"] ?? "#0f172a" },
+                    ]}
                     maxLength={280}
                     textAlignVertical="top"
                   />
 
-                  <View style={{ marginTop: space.xs }}>
+                  <View style={styles.charCountWrapper}>
                     <AppText variant="hint">{draftText.length} / 280</AppText>
                   </View>
                 </View>
 
                 {/* Actions */}
                 <Row gap="sm">
-                  <View style={{ flex: 1 }}>
-                    <AppButton variant="secondary" disabled={saving} onPress={handleClose}>
+                  <View style={styles.flex1}>
+                    <AppButton
+                      variant="secondary"
+                      disabled={saving}
+                      onPress={handleClose}
+                    >
                       Cancel
                     </AppButton>
                   </View>
 
-                  <View style={{ flex: 1 }}>
+                  <View style={styles.flex1}>
                     <AppButton
                       disabled={!canSave}
                       loading={saving}
@@ -237,3 +234,50 @@ export function ReviewModal({
     </Modal>
   );
 }
+
+const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    padding: space.lg,
+  },
+  contentWrapper: {
+    width: "100%",
+  },
+  headerGap: {
+    gap: space.xs,
+  },
+  boldText: {
+    fontWeight: "800",
+  },
+  ratingRow: {
+    alignItems: "center",
+  },
+  textBold: {
+    fontWeight: "800",
+  },
+  textHeavy: {
+    fontWeight: "900",
+  },
+  inputContainer: {
+    borderWidth: borderTok.thick,
+    borderRadius: radius.md,
+    paddingHorizontal: space.md,
+    paddingVertical: space.sm,
+  },
+  textInput: {
+    minHeight: 96,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  charCountWrapper: {
+    marginTop: space.xs,
+  },
+  flex1: {
+    flex: 1,
+  },
+});

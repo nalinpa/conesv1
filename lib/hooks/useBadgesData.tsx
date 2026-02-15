@@ -4,7 +4,6 @@ import type { ConeMeta, BadgeProgress } from "@/lib/badges";
 import { BADGES, getBadgeState } from "@/lib/badges";
 
 import type { Cone } from "@/lib/models";
-import { useSession } from "@/lib/providers/SessionProvider";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useMyReviews } from "@/lib/hooks/useMyReviews";
 import { useCones } from "@/lib/hooks/useCones";
@@ -46,8 +45,6 @@ type BadgesData = {
 };
 
 export function useBadgesData(): BadgesData {
-  const { session } = useSession();
-
   const { cones, loading: conesLoading, err: conesErr } = useCones();
 
   const my = useMyCompletions();

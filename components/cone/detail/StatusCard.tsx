@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { StyleSheet } from "react-native";
 import * as Linking from "expo-linking";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -32,8 +33,8 @@ export function StatusCard({
   locStatus,
   accuracyMeters,
   inRange,
-  distanceMeters,
-  checkpointRadiusMeters,
+  distanceMeters: _distanceMeters,
+  checkpointRadiusMeters: _checkpointRadiusMeters,
   onRefreshGPS,
   refreshingGPS = false,
   maxAccuracyMeters = 50,
@@ -54,6 +55,19 @@ export function StatusCard({
 
   maxAccuracyMeters?: number;
 }) {
+  // Hooks must be called before early returns
+  const status = normalizeLocStatus(locStatus);
+
+  const gpsState: GPSState = useMemo(() => {
+    if (status === "denied") return "denied";
+    if (status === "unknown") return "unknown_permission";
+    if (!loc) return "requesting";
+    if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters)
+      return "low_accuracy";
+    if (!inRange) return "too_far";
+    return "ready";
+  }, [status, loc, accuracyMeters, maxAccuracyMeters, inRange]);
+
   /* ---------------------------------
    * HARD COMPLETED EXIT
    * --------------------------------- */
@@ -68,17 +82,6 @@ export function StatusCard({
     );
   }
 
-  const status = normalizeLocStatus(locStatus);
-
-  const gpsState: GPSState = useMemo(() => {
-    if (status === "denied") return "denied";
-    if (status === "unknown") return "unknown_permission";
-    if (!loc) return "requesting";
-    if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters) return "low_accuracy";
-    if (!inRange) return "too_far";
-    return "ready";
-  }, [status, loc, accuracyMeters, maxAccuracyMeters, inRange]);
-
   const accuracyLabel = accuracyMeters == null ? "—" : `${Math.round(accuracyMeters)} m`;
   const refreshLabel = refreshingGPS ? "Checking…" : "Refresh location";
 
@@ -91,7 +94,7 @@ export function StatusCard({
 
           <AppText variant="hint">
             We use location to show your distance and let you tap{" "}
-            <AppText variant="hint" style={{ fontWeight: "900" }}>
+            <AppText variant="hint" style={styles.boldText}>
               I’m here
             </AppText>{" "}
             when you’re nearby.
@@ -105,7 +108,7 @@ export function StatusCard({
               disabled={refreshingGPS}
               loading={refreshingGPS}
               loadingLabel="Opening…"
-              style={{ flex: 1 }}
+              style={styles.flex1}
             >
               Open Settings
             </AppButton>
@@ -118,7 +121,7 @@ export function StatusCard({
                 disabled={refreshingGPS}
                 loading={refreshingGPS}
                 loadingLabel="Checking…"
-                style={{ flex: 1 }}
+                style={styles.flex1}
               >
                 Try again
               </AppButton>
@@ -194,7 +197,7 @@ export function StatusCard({
 
           <AppText variant="hint">
             Current accuracy:{" "}
-            <AppText variant="hint" style={{ fontWeight: "900" }}>
+            <AppText variant="hint" style={styles.boldText}>
               {accuracyLabel}
             </AppText>
             . Try standing still for a moment, then refresh.
@@ -226,7 +229,7 @@ export function StatusCard({
 
           <AppText variant="hint">
             Head a little closer and you’ll be able to tap{" "}
-            <AppText variant="hint" style={{ fontWeight: "900" }}>
+            <AppText variant="hint" style={styles.boldText}>
               I’m here
             </AppText>
             .
@@ -257,7 +260,7 @@ export function StatusCard({
 
         <AppText variant="hint">
           When you’re ready, tap{" "}
-          <AppText variant="hint" style={{ fontWeight: "900" }}>
+          <AppText variant="hint" style={styles.boldText}>
             I’m here
           </AppText>
           .
@@ -266,3 +269,12 @@ export function StatusCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  boldText: {
+    fontWeight: "900",
+  },
+  flex1: {
+    flex: 1,
+  },
+});

@@ -1,8 +1,4 @@
-import {
-  doc,
-  serverTimestamp,
-  runTransaction,
-} from "firebase/firestore";
+import { doc, serverTimestamp, runTransaction } from "firebase/firestore";
 import type { LocationObject } from "expo-location";
 
 import { db } from "@/lib/firebase";

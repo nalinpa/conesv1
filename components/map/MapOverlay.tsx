@@ -1,18 +1,20 @@
 import React from "react";
+import { StyleSheet } from "react-native";
 import * as Linking from "expo-linking";
 
+// Relative imports to ensure resolution
 import { CardShell } from "../ui/CardShell";
-import { formatDistanceMeters } from "@/lib/formatters";
+import { Stack } from "../ui/Stack";
+import { Row } from "../ui/Row";
+import { AppText } from "../ui/AppText";
+import { AppButton } from "../ui/AppButton";
 
-import { Stack } from "@/components/ui/Stack";
-import { Row } from "@/components/ui/Row";
-import { AppText } from "@/components/ui/AppText";
-import { AppButton } from "@/components/ui/AppButton";
+import { formatDistanceMeters } from "../../lib/formatters";
 
 type LocStatus = "unknown" | "granted" | "denied";
 
 function normalizeLocStatus(v: unknown): LocStatus {
-  if (v === "granted" || v === "denied" || v === "unknown") return v;
+  if (v === "granted" || v === "denied" || v === "unknown") return v as LocStatus;
   return "unknown";
 }
 
@@ -28,25 +30,20 @@ export function MapOverlayCard({
   hasLoc,
   onRefreshGPS,
   refreshingGPS = false,
-
   checkpointLabel,
   checkpointRadiusMeters,
 }: {
   title: string;
   distanceMeters: number | null;
   onOpen: () => void;
-
   locStatus: unknown;
   hasLoc: boolean;
   onRefreshGPS?: () => void;
-
   refreshingGPS?: boolean;
-
   checkpointLabel?: string | null;
   checkpointRadiusMeters?: number | null;
 }) {
   const status = normalizeLocStatus(locStatus);
-
   const denied = status === "denied";
   const requesting = !denied && !hasLoc;
 
@@ -68,7 +65,7 @@ export function MapOverlayCard({
               disabled={refreshingGPS}
               loading={refreshingGPS}
               loadingLabel="Opening…"
-              style={{ flex: 1 }}
+              style={styles.flex1}
             >
               Open Settings
             </AppButton>
@@ -81,16 +78,14 @@ export function MapOverlayCard({
                 disabled={refreshingGPS}
                 loading={refreshingGPS}
                 loadingLabel="Please wait…"
-                style={{ flex: 1 }}
+                style={styles.flex1}
               >
                 Try again
               </AppButton>
             ) : null}
           </Row>
 
-          {refreshingGPS ? (
-            <AppText variant="hint">Re-checking…</AppText>
-          ) : null}
+          {refreshingGPS ? <AppText variant="hint">Re-checking…</AppText> : null}
         </Stack>
       </CardShell>
     );
@@ -119,16 +114,13 @@ export function MapOverlayCard({
             </AppButton>
           ) : null}
 
-          {refreshingGPS ? (
-            <AppText variant="hint">Getting a better fix…</AppText>
-          ) : null}
+          {refreshingGPS ? <AppText variant="hint">Getting a better fix…</AppText> : null}
         </Stack>
       </CardShell>
     );
   }
 
   const distanceLabel = formatDistanceMeters(distanceMeters, "label");
-
   const cpLabelRaw = typeof checkpointLabel === "string" ? checkpointLabel.trim() : "";
   const cpLabel = cpLabelRaw ? titleCase(cpLabelRaw) : "Main point";
 
@@ -158,10 +150,14 @@ export function MapOverlayCard({
           View cone
         </AppButton>
 
-        {refreshingGPS ? (
-          <AppText variant="hint">Refreshing GPS…</AppText>
-        ) : null}
+        {refreshingGPS ? <AppText variant="hint">Refreshing GPS…</AppText> : null}
       </Stack>
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
+});

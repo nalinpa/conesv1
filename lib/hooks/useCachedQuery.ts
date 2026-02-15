@@ -10,7 +10,7 @@ type UseCachedQueryResult<T> = {
 export function useCachedQuery<T>(
   key: unknown[] | string | null,
   fetcher: () => Promise<T>,
-  opts?: { enabled?: boolean }
+  opts?: { enabled?: boolean },
 ): UseCachedQueryResult<T> {
   const enabled = opts?.enabled ?? true;
   const isKeyValid = key !== null;
@@ -43,6 +43,7 @@ export function useCachedQuery<T>(
 
   useEffect(() => {
     if (shouldFetch) void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldFetch, refresh, ...deps]);
 
   return { data, loading, error, refresh };

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, FlatList } from "react-native";
+import { View, FlatList, StyleSheet } from "react-native";
 import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -16,7 +16,7 @@ export function ConesListView({
 }: {
   rows: ConeRow[];
   header?: React.ReactElement<any> | null;
-  onPressCone: (coneId: string) => void;
+  onPressCone: (id: string) => void;
   completedIds?: Set<string>;
   hideCompleted?: boolean;
 }) {
@@ -31,12 +31,8 @@ export function ConesListView({
       data={visibleRows}
       keyExtractor={(item) => item.cone.id}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{
-        paddingHorizontal: 16,
-        paddingTop: 16,
-        paddingBottom: 24,
-      }}
-      ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+      contentContainerStyle={styles.listContent}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListHeaderComponent={header ?? null}
       renderItem={({ item }) => {
         const { cone, distanceMeters } = item;
@@ -47,8 +43,6 @@ export function ConesListView({
             name={cone.name}
             description={cone.description}
             distanceMeters={distanceMeters}
-            region={cone.region}
-            category={cone.category}
             completed={completedIds ? completedIds.has(cone.id) : false}
             onPress={onPressCone}
           />
@@ -66,3 +60,12 @@ export function ConesListView({
     />
   );
 }
+
+const styles = StyleSheet.create({
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  separator: { height: 12 },
+});

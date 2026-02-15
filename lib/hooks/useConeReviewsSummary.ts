@@ -18,7 +18,7 @@ type ReviewsSummaryState = {
   err: string | null;
 
   saving: boolean;
-  saveReview: (args: {
+  saveReview: (_args: {
     coneId: string;
     coneSlug: string;
     coneName: string;
@@ -34,22 +34,32 @@ export function useConeReviewsSummary(
 
   const [saving, setSaving] = useState(false);
 
+  const uid = session.status === "authed" ? session.uid : null;
+
   // 1. Cone Doc (for avgRating, ratingCount)
   const coneRef = useMemo(() => {
     if (!coneId) return null;
     return doc(db, COL.cones, coneId);
   }, [coneId]);
 
-  const { data: coneData, loading: coneLoading, error: coneError } = useFirestoreDoc(coneRef);
+  const {
+    data: coneData,
+    loading: coneLoading,
+    error: coneError,
+  } = useFirestoreDoc(coneRef);
 
   // 2. My Review Doc (assuming deterministic ID: uid_coneId)
   const reviewRef = useMemo(() => {
-    if (session.status !== "authed" || !coneId) return null;
-    const reviewId = `${session.uid}_${coneId}`;
+    if (!uid || !coneId) return null;
+    const reviewId = `${uid}_${coneId}`;
     return doc(db, COL.coneReviews, reviewId);
-  }, [session.status, session.status === "authed" ? session.uid : null, coneId]);
+  }, [uid, coneId]);
 
-  const { data: reviewData, loading: reviewLoading, error: reviewError } = useFirestoreDoc(reviewRef);
+  const {
+    data: reviewData,
+    loading: reviewLoading,
+    error: reviewError,
+  } = useFirestoreDoc(reviewRef);
 
   const avgRating = coneData?.avgRating ?? null;
   const ratingCount = coneData?.ratingCount ?? 0;
@@ -75,8 +85,6 @@ export function useConeReviewsSummary(
 
       if (!args.coneId) return { ok: false as const, err: "Missing coneId" };
 
-      const uid = session.uid;
-
       setSaving(true);
       try {
         return await reviewService.saveReview({
@@ -91,7 +99,7 @@ export function useConeReviewsSummary(
         setSaving(false);
       }
     },
-    [session.status, session.status === "authed" ? session.uid : null],
+    [session.status, uid],
   );
 
   return useMemo(

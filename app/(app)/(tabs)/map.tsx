@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 import { goCone } from "@/lib/routes";
 
@@ -118,15 +118,19 @@ export default function MapScreen() {
 
   // distance: use gate distance for selected; otherwise nearest-unclimbed distance
   const overlayDistanceMeters =
-    selectedCone && gate ? gate.distanceMeters ?? null : nearestUnclimbed?.distanceMeters ?? null;
+    selectedCone && gate
+      ? (gate.distanceMeters ?? null)
+      : (nearestUnclimbed?.distanceMeters ?? null);
 
   // checkpoint info: only meaningful for selected cone (gate)
-  const overlayCheckpointLabel = selectedCone && gate ? gate.checkpointLabel ?? null : null;
-  const overlayCheckpointRadius = selectedCone && gate ? gate.checkpointRadius ?? null : null;
+  const overlayCheckpointLabel =
+    selectedCone && gate ? (gate.checkpointLabel ?? null) : null;
+  const overlayCheckpointRadius =
+    selectedCone && gate ? (gate.checkpointRadius ?? null) : null;
 
   return (
     <Screen padded={false}>
-      <View style={{ flex: 1 }}>
+      <View style={styles.flex1}>
         <ConesMapView
           cones={mapCones}
           completedIds={completedIds}
@@ -136,7 +140,7 @@ export default function MapScreen() {
         />
 
         {activeCone ? (
-          <View style={{ position: "absolute", left: 16, right: 16, bottom: 16 }}>
+          <View style={styles.overlayBottom}>
             <MapOverlayCard
               title={overlayTitle}
               distanceMeters={overlayDistanceMeters}
@@ -152,8 +156,8 @@ export default function MapScreen() {
         ) : null}
 
         {locErr ? (
-          <View style={{ position: "absolute", left: 16, right: 16, top: 16 }}>
-            <CardShell status="warning" style={{ borderRadius: 16 }}>
+          <View style={styles.overlayTop}>
+            <CardShell status="warning" style={styles.warningCard}>
               <Text status="warning">{locErr}</Text>
             </CardShell>
           </View>
@@ -162,3 +166,22 @@ export default function MapScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
+  overlayBottom: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
+  },
+  overlayTop: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    top: 16,
+  },
+  warningCard: { borderRadius: 16 },
+});

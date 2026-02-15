@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { AppState, View, ScrollView } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { AppState, View, ScrollView, StyleSheet } from "react-native";
 import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
 
 import { Screen } from "@/components/ui/screen";
@@ -12,6 +12,7 @@ import { useSession } from "@/lib/providers/SessionProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
+import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 
@@ -20,7 +21,6 @@ import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard"
 import { StatusCard } from "@/components/cone/detail/StatusCard";
 import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
-import { completionService } from "@/lib/services/completionService";
 
 const MAX_ACCURACY_METERS = 50;
 
@@ -46,8 +46,15 @@ export default function ConeDetailRoute() {
   } = useUserLocation();
 
   // Completion
-  const { completedId, shareBonus, err: completionErr } =
-    useConeCompletion(coneId);
+  const { completedId, shareBonus, err: completionErr } = useConeCompletion(coneId);
+
+  // Completion Mutation
+  const {
+    completeCone: triggerComplete,
+    loading: completing,
+    err: mutationErr,
+    reset: resetMutationErr,
+  } = useConeCompletionMutation();
 
   // GPS gate
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
@@ -65,7 +72,6 @@ export default function ConeDetailRoute() {
 
   // UI state
   const [err, setErr] = useState<string>("");
-  const [saving, setSaving] = useState(false);
 
   // Review modal draft
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -74,9 +80,7 @@ export default function ConeDetailRoute() {
   const [optimisticReviewRating, setOptimisticReviewRating] = useState<number | null>(
     null,
   );
-  const [optimisticReviewText, setOptimisticReviewText] = useState<string | null>(
-    null,
-  );
+  const [optimisticReviewText, setOptimisticReviewText] = useState<string | null>(null);
 
   const refreshGPS = useCallback(async () => {
     // If permission is unknown, request first (updates hook state)
@@ -147,6 +151,7 @@ export default function ConeDetailRoute() {
     if (completedId) return;
 
     setErr("");
+    resetMutationErr();
 
     if (sessionLoading) {
       setErr("Loading your session…");
@@ -195,22 +200,12 @@ export default function ConeDetailRoute() {
       return;
     }
 
-    setSaving(true);
-    try {
-      await completionService.completeCone({
-        uid,
-        cone,
-        loc,
-        gate,
-      });
-
-      // live snapshot (useConeCompletion) will update completedId + shareBonus
-    } catch (e: any) {
-      console.error(e);
-      setErr(e?.message ?? "We couldn’t mark this visit. Try again.");
-    } finally {
-      setSaving(false);
-    }
+    await triggerComplete({
+      uid,
+      cone,
+      loc,
+      gate,
+    });
   }
 
   function doShareBonus() {
@@ -331,7 +326,7 @@ export default function ConeDetailRoute() {
 
   const hasReview = displayReviewRating != null;
 
-  const topErr = err || completionErr || locErr || reviewsErr || "";
+  const topErr = err || mutationErr || completionErr || locErr || reviewsErr || "";
   void topErr;
 
   return (
@@ -339,21 +334,17 @@ export default function ConeDetailRoute() {
       <Stack.Screen options={{ title: headerTitle }} />
 
       <ScrollView
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 16,
-          paddingBottom: 24,
-        }}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <ConeHero cone={cone} completed={completed} />
 
-        <View style={{ height: 14 }} />
+        <View style={styles.spacer} />
 
-        {err ? (
+        {topErr ? (
           <>
-            <ErrorCard title="Heads up" message={err} status="warning" />
-            <View style={{ height: 14 }} />
+            <ErrorCard title="Heads up" message={topErr} status="warning" />
+            <View style={styles.spacer} />
           </>
         ) : null}
 
@@ -363,7 +354,7 @@ export default function ConeDetailRoute() {
           onViewAll={() => goConeReviews(cone.id, cone.name)}
         />
 
-        <View style={{ height: 14 }} />
+        <View style={styles.spacer} />
 
         <StatusCard
           completed={completed}
@@ -376,11 +367,11 @@ export default function ConeDetailRoute() {
           maxAccuracyMeters={MAX_ACCURACY_METERS}
         />
 
-        <View style={{ height: 14 }} />
+        <View style={styles.spacer} />
 
         <ActionsCard
           completed={completed}
-          saving={saving}
+          saving={completing}
           hasLoc={!!loc}
           onComplete={() => void completeCone()}
           hasReview={hasReview}
@@ -405,3 +396,14 @@ export default function ConeDetailRoute() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  spacer: {
+    height: 14,
+  },
+});

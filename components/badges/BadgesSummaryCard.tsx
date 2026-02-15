@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Pressable } from "react-native";
+import { View, Pressable, StyleSheet } from "react-native";
 import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -22,13 +22,7 @@ export function BadgesSummaryCard({
 
   return (
     <CardShell>
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
+      <View style={styles.headerRow}>
         <Text category="h6">Badges</Text>
 
         <Pressable onPress={onViewAll} hitSlop={10}>
@@ -38,13 +32,13 @@ export function BadgesSummaryCard({
         </Pressable>
       </View>
 
-      <View style={{ height: 12 }} />
+      <View style={styles.spacerSmall} />
 
       {nextUp?.badge ? (
-        <View style={{ gap: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+        <View style={styles.nextUpContainer}>
+          <View style={styles.nextUpHeader}>
             <Pill status="info">Next up</Pill>
-            <Text category="s1" style={{ fontWeight: "800", flexShrink: 1 }} numberOfLines={1}>
+            <Text category="s1" style={styles.nextUpTitle} numberOfLines={1}>
               {nextUp.badge.name}
             </Text>
           </View>
@@ -65,16 +59,9 @@ export function BadgesSummaryCard({
 
       {recentTop.length ? (
         <>
-          <View style={{ height: 16 }} />
+          <View style={styles.spacerMedium} />
 
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-              marginBottom: 8,
-            }}
-          >
+          <View style={styles.recentHeader}>
             <Text category="s2" appearance="hint">
               Recently unlocked
             </Text>
@@ -82,23 +69,15 @@ export function BadgesSummaryCard({
             {extraCount > 0 ? <Pill status="basic">+{extraCount} more</Pill> : null}
           </View>
 
-          <View style={{ gap: 8 }}>
+          <View style={styles.recentList}>
             {recentTop.map((u, idx) => {
               const baseId = u?.badge?.id != null ? String(u.badge.id) : "recent";
               const key = `${baseId}_${idx}`;
               const name = u?.badge?.name ?? "Badge";
 
               return (
-                <View
-                  key={key}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 10,
-                  }}
-                >
-                  <Text category="s1" style={{ flexShrink: 1 }} numberOfLines={1}>
+                <View key={key} style={styles.recentItem}>
+                  <Text category="s1" style={styles.flexShrink} numberOfLines={1}>
                     {name}
                   </Text>
                   <Pill status="success">Unlocked</Pill>
@@ -111,3 +90,47 @@ export function BadgesSummaryCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  spacerSmall: {
+    height: 12,
+  },
+  spacerMedium: {
+    height: 16,
+  },
+  nextUpContainer: {
+    gap: 8,
+  },
+  nextUpHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  nextUpTitle: {
+    fontWeight: "800",
+    flexShrink: 1,
+  },
+  recentHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  recentList: {
+    gap: 8,
+  },
+  recentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  flexShrink: {
+    flexShrink: 1,
+  },
+});

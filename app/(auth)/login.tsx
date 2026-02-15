@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import { KeyboardAvoidingView, Platform } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { Stack, router } from "expo-router";
 
 import { Screen } from "@/components/ui/screen";
@@ -26,7 +26,7 @@ export default function LoginScreen() {
       <Screen padded>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}
+          style={styles.container}
         >
           <AuthCard
             mode={f.mode}
@@ -55,3 +55,9 @@ export default function LoginScreen() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});

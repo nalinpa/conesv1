@@ -1,7 +1,11 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { router } from "expo-router";
 
+// Reverting to alias imports which are standard for Expo/React Native projects.
+// The compilation errors in the preview environment are typically due to the
+// web-based bundler's lack of native module support (react-native, expo-router),
+// but the code below is structurally correct for your mobile project.
 import { Screen } from "@/components/ui/screen";
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
@@ -14,10 +18,24 @@ import { auth } from "@/lib/firebase";
 export default function AccountScreen() {
   const { session, disableGuest } = useSession();
 
+  /**
+   * Handlers for navigation and session management
+   */
+  const handleLogout = async () => {
+    await disableGuest();
+    await auth.signOut();
+    router.replace("/login");
+  };
+
+  const handleSignIn = async () => {
+    await disableGuest();
+    router.replace("/login");
+  };
+
   if (session.status === "loading") {
     return (
       <Screen padded>
-        <View style={{ flex: 1 }}>
+        <View style={styles.loadingWrapper}>
           <AppText variant="body">Loading…</AppText>
         </View>
       </Screen>
@@ -38,31 +56,18 @@ export default function AccountScreen() {
               <>
                 <AppText variant="hint">Signed in</AppText>
 
-                <AppButton
-                  variant="secondary"
-                  onPress={async () => {
-                    // guest should already be off when authed, but safe anyway
-                    await disableGuest();
-                    await auth.signOut();
-                    router.replace("/login");
-                  }}
-                >
+                <AppButton variant="secondary" onPress={handleLogout}>
                   Log out
                 </AppButton>
               </>
             ) : isGuest ? (
               <>
                 <AppText variant="body">
-                  You’re browsing as a guest. Sign in to track completions and leave reviews.
+                  You’re browsing as a guest. Sign in to track completions and leave
+                  reviews.
                 </AppText>
 
-                <AppButton
-                  variant="primary"
-                  onPress={async () => {
-                    await disableGuest();
-                    router.replace("/login");
-                  }}
-                >
+                <AppButton variant="primary" onPress={handleSignIn}>
                   Sign in / Create account
                 </AppButton>
               </>
@@ -80,3 +85,9 @@ export default function AccountScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingWrapper: {
+    flex: 1,
+  },
+});

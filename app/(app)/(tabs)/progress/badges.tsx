@@ -1,5 +1,6 @@
-import { View, ScrollView } from "react-native";
-import { Layout, Text, Button } from "@ui-kitten/components";
+import React from "react";
+import { View, ScrollView, StyleSheet } from "react-native";
+import { Layout, Text } from "@ui-kitten/components";
 
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { goProgressHome, goBadges } from "@/lib/routes";
@@ -35,7 +36,7 @@ export default function BadgesScreen() {
   if (loading) {
     return (
       <Screen padded={false}>
-        <Layout style={{ flex: 1 }}>
+        <Layout style={styles.container}>
           <LoadingState label="Loading badges…" />
         </Layout>
       </Screen>
@@ -45,7 +46,7 @@ export default function BadgesScreen() {
   if (err) {
     return (
       <Screen padded={false}>
-        <Layout style={{ flex: 1, justifyContent: "center", paddingHorizontal: 16 }}>
+        <Layout style={styles.errorContainer}>
           <ErrorCard
             title="Badges"
             message={err}
@@ -102,66 +103,52 @@ export default function BadgesScreen() {
 
   return (
     <Screen padded={false}>
-      <Layout style={{ flex: 1 }}>
+      <Layout style={styles.container}>
         <ScrollView
-          contentContainerStyle={{
-            paddingHorizontal: 16,
-            paddingTop: 16,
-            paddingBottom: 24,
-          }}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
+          <View style={styles.headerRow}>
             <View>
               <Text category="h1">Badges</Text>
-              <Text appearance="hint" style={{ marginTop: 4 }}>
+              <Text appearance="hint" style={styles.headerSubtitle}>
                 {badgeTotals.unlocked} of {badgeTotals.total} earned
               </Text>
             </View>
 
-              <AppButton
-                variant="secondary"
-                size="sm"
-                onPress={goProgressHome}
-              >
-                Back
-              </AppButton>
+            <AppButton variant="secondary" size="sm" onPress={goProgressHome}>
+              Back
+            </AppButton>
           </View>
 
-          <View style={{ marginTop: 14 }}>
+          <View style={styles.nextUpSection}>
             <CardShell>
               <Text category="h6">Next up</Text>
 
               {!badgeState.nextUp ? (
-                <Text appearance="hint" style={{ marginTop: 8 }}>
+                <Text appearance="hint" style={styles.noNextUpText}>
                   Nothing new right now.
                 </Text>
               ) : (
-                <View
-                  style={{
-                    marginTop: 12,
-                    borderWidth: 1,
-                    borderRadius: 16,
-                    paddingHorizontal: 12,
-                    paddingVertical: 12,
-                  }}
-                >
-                  <Text category="s1" style={{ fontWeight: "800" }} numberOfLines={1}>
+                <View style={styles.nextUpCard}>
+                  <Text category="s1" style={styles.boldText} numberOfLines={1}>
                     {badgeState.nextUp.badge.name}
                   </Text>
 
-                  <Text appearance="hint" style={{ marginTop: 6 }} numberOfLines={2}>
+                  <Text
+                    appearance="hint"
+                    style={styles.nextUpDescription}
+                    numberOfLines={2}
+                  >
                     {badgeState.nextUp.badge.unlockText}
                   </Text>
 
                   {badgeState.nextUp.progressLabel ? (
-                    <Text appearance="hint" style={{ marginTop: 10 }} numberOfLines={2}>
+                    <Text
+                      appearance="hint"
+                      style={styles.nextUpProgress}
+                      numberOfLines={2}
+                    >
                       {badgeState.nextUp.progressLabel}
                     </Text>
                   ) : null}
@@ -170,10 +157,10 @@ export default function BadgesScreen() {
             </CardShell>
           </View>
 
-          <View style={{ marginTop: 14, gap: 12 }}>
+          <View style={styles.groupsContainer}>
             {groups.map((g) => (
               <CardShell key={g.section}>
-                <Text category="h6" style={{ marginBottom: 10 }}>
+                <Text category="h6" style={styles.groupTitle}>
                   {g.section}
                 </Text>
 
@@ -196,3 +183,56 @@ export default function BadgesScreen() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: 16,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerSubtitle: {
+    marginTop: 4,
+  },
+  nextUpSection: {
+    marginTop: 14,
+  },
+  noNextUpText: {
+    marginTop: 8,
+  },
+  nextUpCard: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  boldText: {
+    fontWeight: "800",
+  },
+  nextUpDescription: {
+    marginTop: 6,
+  },
+  nextUpProgress: {
+    marginTop: 10,
+  },
+  groupsContainer: {
+    marginTop: 14,
+    gap: 12,
+  },
+  groupTitle: {
+    marginBottom: 10,
+  },
+});

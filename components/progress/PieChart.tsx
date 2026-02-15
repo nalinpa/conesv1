@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 import Svg, { Circle } from "react-native-svg";
 
@@ -27,7 +27,7 @@ export function PieChart({
   const progress = theme["color-primary-500"] ?? "#3FAE8F";
 
   return (
-    <View style={{ alignItems: "center", justifyContent: "center" }}>
+    <View style={styles.container}>
       <Svg width={size} height={size}>
         {/* Track */}
         <Circle
@@ -56,17 +56,32 @@ export function PieChart({
         />
       </Svg>
 
-      <View style={{ position: "absolute", alignItems: "center" }}>
-        <AppText variant="sectionTitle" style={{ fontWeight: "900" }}>
+      <View style={styles.labelContainer}>
+        <AppText variant="sectionTitle" style={styles.percentText}>
           {Math.round(clamped * 100)}%
         </AppText>
-        <AppText
-          variant="hint"
-          style={{ marginTop: space.xs, fontWeight: "700" }}
-        >
+        <AppText variant="hint" style={styles.completeText}>
           complete
         </AppText>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  labelContainer: {
+    position: "absolute",
+    alignItems: "center",
+  },
+  percentText: {
+    fontWeight: "900",
+  },
+  completeText: {
+    marginTop: space.xs,
+    fontWeight: "700",
+  },
+});

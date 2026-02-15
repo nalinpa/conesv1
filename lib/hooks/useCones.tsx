@@ -19,7 +19,15 @@ export function useCones() {
 
   const cones = useMemo(() => {
     if (!data) return [];
-    return data.docs.map((d) => ({ id: d.id, ...d.data() }) as Cone);
+    return data.docs.map((d) => {
+      const val = d.data();
+      return {
+        id: d.id,
+        ...val,
+        region: val.region ?? "central",
+        category: val.category ?? "cone",
+      } as Cone;
+    });
   }, [data]);
 
   return { cones, loading, err: error?.message ?? "" };

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { View, ScrollView } from "react-native";
+import { View, ScrollView, StyleSheet } from "react-native";
 
 import { Screen } from "@/components/ui/screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -34,7 +34,7 @@ export default function ProgressScreen() {
   if (session.status === "loading") {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex1}>
           <LoadingState label="Loading…" />
         </View>
       </Screen>
@@ -52,11 +52,7 @@ function GuestProgress() {
     <Screen padded={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: space.md,
-          paddingTop: space.md,
-          paddingBottom: space.xl,
-        }}
+        contentContainerStyle={styles.scrollContent}
       >
         <Stack gap="lg">
           <Section>
@@ -65,11 +61,11 @@ function GuestProgress() {
                 <AppText variant="screenTitle">Progress</AppText>
 
                 <AppText variant="body">
-                  You can browse cones and read reviews without signing in. Sign in to track
-                  completions and earn badges.
+                  You can browse cones and read reviews without signing in. Sign in to
+                  track completions and earn badges.
                 </AppText>
 
-                <Stack gap="sm" style={{ marginTop: 6 }}>
+                <Stack gap="sm" style={styles.guestActions}>
                   <AppButton variant="primary" onPress={goLogin}>
                     Sign in
                   </AppButton>
@@ -126,7 +122,7 @@ function AuthedProgress() {
   if (loading) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1 }}>
+        <View style={styles.flex1}>
           <LoadingState label="Loading progress…" />
         </View>
       </Screen>
@@ -136,7 +132,7 @@ function AuthedProgress() {
   if (fatalErr) {
     return (
       <Screen padded={false}>
-        <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: space.md }}>
+        <View style={styles.errorContainer}>
           <ErrorCard
             title="Progress"
             message={fatalErr}
@@ -151,11 +147,7 @@ function AuthedProgress() {
     <Screen padded={false}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: space.md,
-          paddingTop: space.md,
-          paddingBottom: space.xl,
-        }}
+        contentContainerStyle={styles.scrollContent}
       >
         <Stack gap="lg">
           <Section>
@@ -210,3 +202,22 @@ function AuthedProgress() {
     </Screen>
   );
 }
+
+const styles = StyleSheet.create({
+  flex1: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: space.md,
+    paddingTop: space.md,
+    paddingBottom: space.xl,
+  },
+  guestActions: {
+    marginTop: 6,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    paddingHorizontal: space.md,
+  },
+});

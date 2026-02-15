@@ -1,6 +1,5 @@
 import React from "react";
-import { View } from "react-native";
-import { Button } from "@ui-kitten/components";
+import { View, StyleSheet } from "react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -22,7 +21,7 @@ export function ConesToReviewCard({
   onOpenCone,
 }: {
   cones: ConeLite[];
-  onOpenCone: (coneId: string) => void;
+  onOpenCone: (id: string) => void;
 }) {
   if (!cones || cones.length === 0) return null;
 
@@ -47,8 +46,8 @@ export function ConesToReviewCard({
           {visible.map((cone) => (
             <CardShell key={cone.id} status="basic">
               <Stack gap="sm">
-                <View style={{ gap: space.xs }}>
-                  <AppText variant="sectionTitle" style={{ fontWeight: "800" }}>
+                <View style={styles.textContainer}>
+                  <AppText variant="sectionTitle" style={styles.coneName}>
                     {cone.name}
                   </AppText>
 
@@ -59,9 +58,7 @@ export function ConesToReviewCard({
                   ) : null}
                 </View>
 
-                <AppButton onPress={() => onOpenCone(cone.id)}>
-                  Add a review
-                </AppButton>
+                <AppButton onPress={() => onOpenCone(cone.id)}>Add a review</AppButton>
               </Stack>
             </CardShell>
           ))}
@@ -77,3 +74,12 @@ export function ConesToReviewCard({
     </CardShell>
   );
 }
+
+const styles = StyleSheet.create({
+  textContainer: {
+    gap: space.xs,
+  },
+  coneName: {
+    fontWeight: "800",
+  },
+});
