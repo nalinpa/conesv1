@@ -86,7 +86,7 @@ export function ConeFiltersCard({
   defaultExpanded = false,
 }: {
   value: ConeFiltersValue;
-  onChange: (next: ConeFiltersValue) => void;
+  onChange: (_next: ConeFiltersValue) => void;
   completedCount: number;
   completionsLoading: boolean;
   completionsErr: string;

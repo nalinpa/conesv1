@@ -16,7 +16,7 @@ type ConeListItemProps = {
   completed?: boolean;
   distanceMeters?: number | null;
 
-  onPress: (id: string) => void;
+  onPress: (_id: string) => void;
 };
 
 export function ConeListItem({

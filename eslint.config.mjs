@@ -50,19 +50,19 @@ export default [
     },
 
     rules: {
-      // Make formatting issues show as ESLint errors
-      "prettier/prettier": "error",
+      "no-unused-vars": "off",
 
-      // React / hooks
-      "react/react-in-jsx-scope": "off", // not needed with modern React
+      "@typescript-eslint/no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }],
+
+      "prettier/prettier": "error",
+      "react/react-in-jsx-scope": "off",
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
-
-      // React Native
       "react-native/no-inline-styles": "warn",
-
-      // TS tweaks
-      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
     },
   },
 ];

@@ -16,7 +16,7 @@ export function ConesListView({
 }: {
   rows: ConeRow[];
   header?: React.ReactElement<any> | null;
-  onPressCone: (id: string) => void;
+  onPressCone: (_id: string) => void;
   completedIds?: Set<string>;
   hideCompleted?: boolean;
 }) {

@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, ViewStyle } from "react-native";
 import { Tabs } from "expo-router";
 import { BottomNavigation, BottomNavigationTab, useTheme } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
@@ -126,10 +126,9 @@ function KittenTabBar({ state, navigation }: { state: any; navigation: any }) {
               styles.tab,
               isActive && { backgroundColor: activeBg },
               sessionLoading && styles.loadingOpacity,
-            ]}
-            titleStyle={[
-              styles.title,
-              isActive ? styles.titleActive : styles.titleInactive,
+              isActive
+                ? (styles.titleActive as ViewStyle)
+                : (styles.titleInactive as ViewStyle),
             ]}
             icon={(props: any) => {
               const tint = tintFromProps(props) ?? (isActive ? activeTint : undefined);

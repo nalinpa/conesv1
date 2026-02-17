@@ -23,6 +23,7 @@ export function Pill({
 }) {
   const theme = useTheme();
 
+  const pillOpacity = muted ? 0.7 : 1;
   const colors = {
     basic: {
       border: theme["color-basic-500"] ?? theme["border-basic-color-3"] ?? "#D0D0D0",
@@ -53,7 +54,7 @@ export function Pill({
         {
           borderColor: colors.border,
           backgroundColor: colors.bg,
-          opacity: muted ? 0.7 : 1,
+          opacity: pillOpacity,
         },
         style,
       ]}

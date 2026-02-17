@@ -27,18 +27,7 @@ function normalizeLocStatus(v: unknown): "unknown" | "granted" | "denied" {
   return "unknown";
 }
 
-export function StatusCard({
-  completed,
-  loc,
-  locStatus,
-  accuracyMeters,
-  inRange,
-  distanceMeters: _distanceMeters,
-  checkpointRadiusMeters: _checkpointRadiusMeters,
-  onRefreshGPS,
-  refreshingGPS = false,
-  maxAccuracyMeters = 50,
-}: {
+interface StatusCardProps {
   completed: boolean;
 
   loc: any | null;
@@ -54,7 +43,18 @@ export function StatusCard({
   refreshingGPS?: boolean;
 
   maxAccuracyMeters?: number;
-}) {
+}
+
+export function StatusCard({
+  completed,
+  loc,
+  locStatus,
+  accuracyMeters,
+  inRange,
+  onRefreshGPS,
+  refreshingGPS = false,
+  maxAccuracyMeters = 50,
+}: StatusCardProps) {
   // Hooks must be called before early returns
   const status = normalizeLocStatus(locStatus);
 

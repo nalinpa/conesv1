@@ -1,5 +1,5 @@
 import React from "react";
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
@@ -12,7 +12,7 @@ export function StatRow({ label, value }: { label: string; value: React.ReactNod
       <AppText variant="hint">{label}</AppText>
 
       {isPrimitive ? (
-        <AppText variant="sectionTitle" style={{ fontWeight: "900" }}>
+        <AppText variant="sectionTitle" style={styles.valueText}>
           {value}
         </AppText>
       ) : (
@@ -21,3 +21,9 @@ export function StatRow({ label, value }: { label: string; value: React.ReactNod
     </Row>
   );
 }
+
+const styles = StyleSheet.create({
+  valueText: {
+    fontWeight: "900",
+  },
+});

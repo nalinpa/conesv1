@@ -70,10 +70,6 @@ export function ActionsCard({
 
           {!hasReview ? (
             <Stack gap="sm">
-              <AppText variant="hint">
-                Drop a quick rating — you can only leave one.
-              </AppText>
-
               <AppButton variant="secondary" onPress={onOpenReview}>
                 Add a review
               </AppButton>
@@ -97,9 +93,7 @@ export function ActionsCard({
 
         {/* Share bonus */}
         <Stack gap="sm">
-          <AppText variant="hint">
-            Optional: share a photo for a little bonus credit.
-          </AppText>
+          <AppText variant="hint">Share a photo of yourself at the volcano.</AppText>
 
           {shareError ? (
             <AppText variant="hint" style={styles.errorText}>
@@ -114,7 +108,7 @@ export function ActionsCard({
             loadingLabel="Preparing…"
             onPress={onShareBonus}
           >
-            {shareBonus ? "Bonus credit added ✓" : "Share for bonus credit"}
+            {shareBonus ? "Bonus credit added ✓" : "Share the view"}
           </AppButton>
         </Stack>
       </Stack>

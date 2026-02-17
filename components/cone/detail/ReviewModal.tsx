@@ -24,6 +24,17 @@ function isValidRating(n: number | null): n is number {
   return n != null && Number.isFinite(n) && n >= 1 && n <= 5;
 }
 
+interface ReviewModalProps {
+  visible: boolean;
+  saving: boolean;
+  draftRating: number | null;
+  draftText: string;
+  onChangeRating: (_rating: number | null) => void;
+  onChangeText: (_text: string) => void;
+  onClose: () => void;
+  onSave: () => void;
+}
+
 export function ReviewModal({
   visible,
   saving,
@@ -33,16 +44,7 @@ export function ReviewModal({
   onChangeText,
   onClose,
   onSave,
-}: {
-  visible: boolean;
-  saving: boolean;
-  draftRating: number | null;
-  draftText: string;
-  onChangeRating: (rating: number | null) => void;
-  onChangeText: (text: string) => void;
-  onClose: () => void;
-  onSave: () => void;
-}) {
+}: ReviewModalProps) {
   const theme = useTheme();
   const [touchedSave, setTouchedSave] = useState(false);
 
@@ -58,6 +60,16 @@ export function ReviewModal({
     if (!isValidRating(draftRating)) return "Pick a rating";
     return "Save";
   }, [saving, draftRating]);
+
+  // Memoize dynamic styles to avoid inline-style warnings
+  const inputContainerDynamicStyle = useMemo<ViewStyle>(
+    () => ({
+      borderColor: theme["color-basic-500"] ?? "rgba(100,116,139,0.35)",
+      opacity: saving ? 0.75 : 1,
+      backgroundColor: theme["color-basic-100"] ?? "#FFFFFF",
+    }),
+    [theme, saving],
+  );
 
   function handleClose() {
     if (saving) return;
@@ -171,16 +183,7 @@ export function ReviewModal({
                 ) : null}
 
                 {/* Text input */}
-                <View
-                  style={[
-                    styles.inputContainer,
-                    {
-                      borderColor: theme["color-basic-500"] ?? "rgba(100,116,139,0.35)",
-                      opacity: saving ? 0.75 : 1,
-                      backgroundColor: theme["color-basic-100"] ?? "#FFFFFF",
-                    },
-                  ]}
-                >
+                <View style={[styles.inputContainer, inputContainerDynamicStyle]}>
                   <TextInput
                     value={draftText}
                     onChangeText={setText}

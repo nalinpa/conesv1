@@ -65,7 +65,8 @@ function GuestProgress() {
                   track completions and earn badges.
                 </AppText>
 
-                <Stack gap="sm" style={styles.guestActions}>
+                {/* Replaced Stack with View to support 'style' prop */}
+                <View style={[styles.guestActions, { gap: space.sm }]}>
                   <AppButton variant="primary" onPress={goLogin}>
                     Sign in
                   </AppButton>
@@ -73,7 +74,7 @@ function GuestProgress() {
                   <AppButton variant="secondary" onPress={goConesHome}>
                     Browse cones
                   </AppButton>
-                </Stack>
+                </View>
               </Stack>
             </CardShell>
           </Section>
