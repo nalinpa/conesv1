@@ -1,10 +1,9 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { MessageCircle } from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
-import { Stack } from "@/components/ui/Stack";
-import { Row } from "@/components/ui/Row";
+// Stack and Row removed to fix type errors; using View with gap instead
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppIcon } from "@/components/ui/AppIcon";
@@ -19,7 +18,8 @@ export function ReviewsEmptyStateCard({
 }) {
   return (
     <CardShell style={styles.card}>
-      <Stack gap="md" style={styles.container}>
+      {/* Replaced Stack with View to support 'style' prop */}
+      <View style={[styles.container, { gap: space.md }]}>
         <AppIcon icon={MessageCircle} size={28} />
 
         <AppText variant="sectionTitle" style={styles.centerText}>
@@ -30,7 +30,8 @@ export function ReviewsEmptyStateCard({
           Be the first to leave a rating after you’ve visited this volcano.
         </AppText>
 
-        <Row gap="sm" style={styles.buttonRow}>
+        {/* Replaced Row with View (flexDirection: row) to support 'style' prop */}
+        <View style={[styles.buttonRow, { flexDirection: "row", gap: space.sm }]}>
           <AppButton variant="secondary" onPress={onBack} style={styles.button}>
             Back
           </AppButton>
@@ -38,8 +39,8 @@ export function ReviewsEmptyStateCard({
           <AppButton variant="ghost" onPress={onRetry} style={styles.button}>
             Try again
           </AppButton>
-        </Row>
-      </Stack>
+        </View>
+      </View>
     </CardShell>
   );
 }
@@ -50,6 +51,7 @@ const styles = StyleSheet.create({
   },
   container: {
     alignItems: "center",
+    // default flexDirection is 'column', which matches Stack behavior
   },
   centerText: {
     textAlign: "center",
@@ -60,6 +62,8 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     marginTop: space.sm,
+    // alignItems 'center' is usually good for button rows to align varying heights
+    alignItems: "center",
   },
   button: {
     minWidth: 120,

@@ -1,5 +1,5 @@
 import React from "react";
-import { Pressable, ViewStyle } from "react-native";
+import { Pressable, ViewStyle, StyleSheet } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 import type { LucideIcon } from "lucide-react-native";
 
@@ -28,16 +28,19 @@ export function AppIconButton({
       onPress={onPress}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
-      style={[
-        {
-          padding: 6,
-          borderRadius: 999,
-          opacity: disabled ? 0.5 : 1,
-        },
-        style,
-      ]}
+      style={[styles.base, disabled && styles.disabled, style]}
     >
       <Icon size={size} color={color} />
     </Pressable>
   );
 }
+
+const styles = StyleSheet.create({
+  base: {
+    padding: 6,
+    borderRadius: 999,
+  },
+  disabled: {
+    opacity: 0.5,
+  },
+});

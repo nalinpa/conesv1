@@ -80,7 +80,7 @@ export const reviewService = {
 
   // ✅ Write (one per user per cone enforced by doc id)
   async saveReview(args: {
-    uid: string;
+    uid: string | null | undefined; // Allow null to flow in, handled by check below
     coneId: string;
     coneSlug: string;
     coneName: string;

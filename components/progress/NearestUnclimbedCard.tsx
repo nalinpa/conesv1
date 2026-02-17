@@ -26,7 +26,7 @@ export function NearestUnclimbedCard({
   cone: ConeLite | null;
   distanceMeters: number | null;
   locErr?: string;
-  onOpenCone: (id: string) => void;
+  onOpenCone: (_id: string) => void;
 }) {
   const hasDistance = distanceMeters != null;
 

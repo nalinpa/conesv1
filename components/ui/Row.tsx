@@ -1,5 +1,5 @@
-import React from "react";
-import { View, type ViewStyle, type FlexAlignType } from "react-native";
+import React, { useMemo } from "react";
+import { View, type ViewStyle, type FlexAlignType, StyleSheet } from "react-native";
 import { space } from "@/lib/ui/tokens";
 
 type Gap = "xs" | "sm" | "md" | "lg" | "xl";
@@ -33,20 +33,21 @@ export function Row({
   wrap?: boolean;
   style?: ViewStyle;
 }) {
-  return (
-    <View
-      style={[
-        {
-          flexDirection: "row",
-          alignItems: align,
-          justifyContent: justify,
-          gap: GAP_PX[gap],
-          flexWrap: wrap ? "wrap" : "nowrap",
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
+  const dynamicStyle = useMemo(
+    () => ({
+      alignItems: align,
+      justifyContent: justify,
+      gap: GAP_PX[gap],
+      flexWrap: wrap ? ("wrap" as const) : ("nowrap" as const),
+    }),
+    [align, justify, gap, wrap],
   );
+
+  return <View style={[styles.row, dynamicStyle, style]}>{children}</View>;
 }
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+  },
+});

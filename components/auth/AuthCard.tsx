@@ -39,10 +39,10 @@ export function AuthCard({
   err: string | null;
   notice: string | null;
   canSubmit: boolean;
-  onChangeMode: (mode: AuthMode) => void;
-  onChangeEmail: (value: string) => void;
-  onChangePassword: (value: string) => void;
-  onChangeConfirm: (value: string) => void;
+  onChangeMode: (_mode: AuthMode) => void;
+  onChangeEmail: (_value: string) => void;
+  onChangePassword: (_value: string) => void;
+  onChangeConfirm: (_value: string) => void;
   onGuest?: () => void | Promise<void>;
   onSubmit: () => void;
 }) {

@@ -177,14 +177,14 @@ function countCompleted(cones: ConeMeta[], completedIds: Set<string>) {
   return n;
 }
 
-function filterTotal(cones: ConeMeta[], pred: (c: ConeMeta) => boolean) {
+function filterTotal(cones: ConeMeta[], pred: (_c: ConeMeta) => boolean) {
   return cones.filter(pred);
 }
 
 function countCompletedWhere(
   cones: ConeMeta[],
   completedIds: Set<string>,
-  pred: (c: ConeMeta) => boolean,
+  pred: (_c: ConeMeta) => boolean,
 ) {
   let n = 0;
   for (const c of cones) if (pred(c) && completedIds.has(c.id)) n++;
@@ -201,7 +201,7 @@ function timesForCones(
   cones: ConeMeta[],
   completedConeIds: Set<string>,
   completedAtByConeId?: Record<string, number>,
-  pred?: (c: ConeMeta) => boolean,
+  pred?: (_c: ConeMeta) => boolean,
 ): number[] {
   if (!completedAtByConeId) return [];
   const out: number[] = [];
@@ -219,7 +219,7 @@ function timesForReviewed(
   cones: ConeMeta[],
   reviewedConeIds: Set<string>,
   reviewedAtByConeId?: Record<string, number>,
-  pred?: (c: ConeMeta) => boolean,
+  pred?: (_c: ConeMeta) => boolean,
 ): number[] {
   if (!reviewedAtByConeId) return [];
   const out: number[] = [];

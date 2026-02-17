@@ -3,6 +3,22 @@ import { StyleSheet } from "react-native";
 import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import { VolcanoMarker } from "@/components/map/VolcanoMarker";
 
+/**
+ * BOUNDARY DEFINITION
+ * These coordinates define the rectangle that the user is allowed to pan within.
+ * Locked strictly to the Auckland Volcanic Field region.
+ */
+const AUCKLAND_BOUNDS = {
+  northEast: {
+    latitude: -36.56,
+    longitude: 175.15,
+  },
+  southWest: {
+    latitude: -37.15,
+    longitude: 174.4,
+  },
+};
+
 type ConeMapPoint = {
   id: string;
   name: string;
@@ -55,33 +71,38 @@ export const ConesMapView = React.memo(function ConesMapView({
   completedIds: Set<string>;
   initialRegion: Region;
   selectedConeId: string | null;
-  onPressCone: (coneId: string) => void;
+  onPressCone: (_coneId: string) => void;
 }) {
+  const mapRef = useRef<MapView>(null);
+  const prevSelectedRef = useRef<string | null>(null);
+
   /**
-   * ✅ Android custom marker reliability:
-   * Keep tracksViewChanges enabled for a longer "warmup" window,
-   * and also do a one-time thaw for all markers.
+   * ✅ FLICKER PREVENTION & PERFORMANCE
+   * warmupTracking: Gives Android time to render all markers initially.
+   * extraThawedId: Forces the marker being unselected to stay "active" during the transition.
+   * thawIds: A set of IDs currently allowed to re-render.
    */
   const [warmupTracking, setWarmupTracking] = useState(true);
+  const [extraThawedId, setExtraThawedId] = useState<string | null>(null);
+  const [thawIds, setThawIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    // Give Android enough time to snapshot marker children into bitmaps.
-    const t = setTimeout(() => setWarmupTracking(false), 1000);
+    // Extended warmup for better initial stability on Android
+    const t = setTimeout(() => setWarmupTracking(false), 2000);
     return () => clearTimeout(t);
   }, []);
 
-  // ✅ track previous selection so we can “unselect” it visually
-  const prevSelectedRef = useRef<string | null>(null);
-
-  // ✅ ids that should be allowed to update for a brief window (old+new selection)
-  const [thawIds, setThawIds] = useState<Set<string>>(new Set());
-
-  // ✅ Detect selection change synchronously during render to avoid 1-frame lag
+  // Synchronous selection detection
   const prevSelected = prevSelectedRef.current;
   const isSelectionChange = prevSelected !== selectedConeId;
 
   useEffect(() => {
     if (!isSelectionChange) return;
+
+    // Immediately "thaw" the one we are moving away from to prevent flicker
+    if (prevSelected) {
+      setExtraThawedId(prevSelected);
+    }
 
     const ids = new Set<string>();
     if (prevSelected) ids.add(prevSelected);
@@ -90,11 +111,16 @@ export const ConesMapView = React.memo(function ConesMapView({
     setThawIds(ids);
     prevSelectedRef.current = selectedConeId;
 
-    const t = setTimeout(() => setThawIds(new Set()), 150);
+    // Maintain thaw long enough for native state to settle (covering shrink animation)
+    const t = setTimeout(() => {
+      setThawIds(new Set());
+      setExtraThawedId(null);
+    }, 400);
+
     return () => clearTimeout(t);
   }, [selectedConeId, isSelectionChange, prevSelected]);
 
-  // ✅ Thaw all markers whenever data changes (cones list or completion status)
+  // Thaw markers on data changes (e.g. marking a cone as completed)
   useEffect(() => {
     if (!cones.length) return;
     const all = new Set(cones.map((c) => c.id));
@@ -110,28 +136,46 @@ export const ConesMapView = React.memo(function ConesMapView({
     [onPressCone],
   );
 
+  const handleMapReady = useCallback(() => {
+    // Apply the boundary lock strictly to the Auckland region via instance method
+    if (mapRef.current) {
+      mapRef.current.setMapBoundaries(
+        AUCKLAND_BOUNDS.northEast,
+        AUCKLAND_BOUNDS.southWest,
+      );
+    }
+  }, []);
+
   return (
     <MapView
+      ref={mapRef}
       provider={PROVIDER_GOOGLE}
       style={styles.flex1}
       initialRegion={initialRegion}
       showsUserLocation
       showsMyLocationButton={false}
       toolbarEnabled={false}
+      onMapReady={handleMapReady}
+      /** 🔒 ZOOM CONSTRAINTS
+       * Restricts zoom level so users can't see the whole world.
+       */
+      minZoomLevel={10}
+      maxZoomLevel={20}
     >
       {cones.map((c) => {
         const completed = completedIds.has(c.id);
         const selected = selectedConeId === c.id;
 
-        // ✅ tracking policy:
-        // - during warmup: true for all markers
-        // - after warmup: only thawed ids update (selection + one-time initial thaw)
-        // - selected: always track current selection (prevents lag on select)
-        // - isSelectionChange + prevSelected: track the one being unselected (prevents lag on unselect)
+        /**
+         * ✅ TRACKING POLICY:
+         * To prevent Android flicker, tracksViewChanges is true if:
+         * 1. Global warmup is active.
+         * 2. Marker is in the explicit thaw set.
+         * 3. Marker was the previously selected one (handling the transition/shrink).
+         * 4. Marker is the current selection (keeping it responsive).
+         */
         const tracksViewChanges =
-          warmupTracking ||
-          thawIds.has(c.id) ||
-          (isSelectionChange && (c.id === prevSelected || c.id === selectedConeId));
+          warmupTracking || thawIds.has(c.id) || c.id === extraThawedId || selected;
 
         return (
           <Marker

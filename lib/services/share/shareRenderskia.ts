@@ -1,6 +1,6 @@
-// lib/services/share/shareRenderskia.ts
 import * as FileSystem from "expo-file-system";
 import { Asset } from "expo-asset";
+import type { SkFont, SkPaint, Skia as SkiaType } from "@shopify/react-native-skia";
 
 import type { ShareConePayload } from "./types";
 import { SURF_GREEN, formatRegionLabel, formatVisitedLabel } from "./shareTheme";
@@ -142,8 +142,8 @@ export async function renderShareCardPngAsync(
         label,
         pillX + pillPadX,
         pillY + pillPadY + m.height,
-        fontSmall,
         textWhite,
+        fontSmall,
       );
     }
 
@@ -154,12 +154,12 @@ export async function renderShareCardPngAsync(
     const [l1, l2] = wrapTwoLines(coneName, fontTitle, textDark, contentW);
     const lineH = 90;
 
-    canvas.drawText(l1, contentX, titleTopY, fontTitle, textDark);
-    if (l2) canvas.drawText(l2, contentX, titleTopY + lineH, fontTitle, textDark);
+    canvas.drawText(l1, contentX, titleTopY, textDark, fontTitle);
+    if (l2) canvas.drawText(l2, contentX, titleTopY + lineH, textDark, fontTitle);
 
     // Tagline
     const tagY = titleTopY + (l2 ? 2 : 1) * lineH + 46;
-    canvas.drawText("Cones", contentX, tagY, fontMeta, textHint);
+    canvas.drawText("Cones", contentX, tagY, textHint, fontMeta);
 
     // VISITED stamp
     {
@@ -186,7 +186,7 @@ export async function renderShareCardPngAsync(
       canvas.rotate(-10, sx + boxW / 2, sy + boxH / 2);
 
       canvas.drawRRect(Skia.RRectXY(Skia.XYWHRect(sx, sy, boxW, boxH), 26, 26), stroke);
-      canvas.drawText(stampText, sx + 45, sy + 56 + m.height, fontStamp, fillText);
+      canvas.drawText(stampText, sx + 45, sy + 56 + m.height, fillText, fontStamp);
 
       canvas.restore();
     }
@@ -197,7 +197,7 @@ export async function renderShareCardPngAsync(
       p.setAntiAlias(true);
       p.setColor(Skia.Color(SURF_GREEN["primary-800"]));
       canvas.drawRect(Skia.XYWHRect(0, H - 120, W, 120), p);
-      canvas.drawText("Auckland Volcanic Cones", 72, H - 120 + 78, fontSmall, textWhite);
+      canvas.drawText("Auckland Volcanic Cones", 72, H - 120 + 78, textWhite, fontSmall);
     }
 
     const img = surface.makeImageSnapshot();
@@ -208,7 +208,7 @@ export async function renderShareCardPngAsync(
 
     const base64 = uint8ToBase64(bytes);
 
-    const uri = `${FileSystem.cacheDirectory}cone-share-${payload.coneId}-${Date.now()}.png`;
+    const uri = `${(FileSystem as any).cacheDirectory}cone-share-${payload.coneId}-${Date.now()}.png`;
     await FileSystem.writeAsStringAsync(uri, base64, { encoding: "base64" });
 
     return uri;
@@ -221,7 +221,7 @@ export async function renderShareCardPngAsync(
 /**
  * Load a bundled TTF and create a Skia Typeface from its bytes.
  */
-async function loadBundledTypefaceAsync(Skia: any): Promise<any | null> {
+async function loadBundledTypefaceAsync(Skia: typeof SkiaType): Promise<any | null> {
   try {
     const asset = Asset.fromModule(require("../../../assets/fonts/InterVariable.ttf"));
     await asset.downloadAsync();
@@ -234,9 +234,10 @@ async function loadBundledTypefaceAsync(Skia: any): Promise<any | null> {
 
     const data = Skia.Data.fromBytes(bytes);
 
-    if (Skia?.Typeface?.MakeFreeTypeFaceFromData)
+    // FIX: Only use the standard method available in modern Skia types
+    if (Skia?.Typeface?.MakeFreeTypeFaceFromData) {
       return Skia.Typeface.MakeFreeTypeFaceFromData(data);
-    if (Skia?.Typeface?.MakeFromData) return Skia.Typeface.MakeFromData(data);
+    }
 
     return null;
   } catch (e) {
@@ -247,8 +248,8 @@ async function loadBundledTypefaceAsync(Skia: any): Promise<any | null> {
 
 function wrapTwoLines(
   text: string,
-  font: any,
-  paint: any,
+  font: SkFont,
+  paint: SkPaint,
   maxWidth: number,
 ): [string, string?] {
   const words = text.split(/\s+/).filter(Boolean);

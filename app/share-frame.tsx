@@ -220,7 +220,7 @@ export default function ShareFrameRoute() {
 
       const res =
         previewUri && imageCapable
-          ? await shareService.shareImageUriAsync(previewUri, payload)
+          ? await shareService.shareImageUriAsync(previewUri) // FIX: Removed extra 'payload' argument
           : await shareService.shareConeAsync(payload);
 
       if (!res.ok) {

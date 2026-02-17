@@ -21,7 +21,7 @@ export function ConesToReviewCard({
   onOpenCone,
 }: {
   cones: ConeLite[];
-  onOpenCone: (id: string) => void;
+  onOpenCone: (_id: string) => void;
 }) {
   if (!cones || cones.length === 0) return null;
 
