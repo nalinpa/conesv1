@@ -1,9 +1,12 @@
 import React from "react";
-import { View, Pressable, StyleSheet } from "react-native";
-import { Text } from "@ui-kitten/components";
+import { View, Pressable, StyleSheet, Text } from "react-native";
+import { useTheme } from "@ui-kitten/components";
 
-import { CardShell } from "@/components/ui/CardShell";
-import { Pill } from "@/components/ui/Pill";
+// Relative path fixes
+import { CardShell } from "../ui/CardShell";
+import { Pill } from "../ui/Pill";
+import { Row } from "../ui/Row";
+import { Stack } from "../ui/Stack";
 
 import type { BadgeProgress } from "@/lib/badges";
 
@@ -16,6 +19,7 @@ export function BadgesSummaryCard({
   recentlyUnlocked: BadgeProgress[];
   onViewAll: () => void;
 }) {
+  const theme = useTheme();
   const recent = Array.isArray(recentlyUnlocked) ? recentlyUnlocked.filter(Boolean) : [];
   const recentTop = recent.slice(0, 3);
   const extraCount = Math.max(0, recent.length - recentTop.length);
@@ -23,10 +27,12 @@ export function BadgesSummaryCard({
   return (
     <CardShell>
       <View style={styles.headerRow}>
-        <Text category="h6">Badges</Text>
+        <Text style={[styles.title, { color: theme?.['text-basic-color'] ?? '#000' }]}>
+          Badges
+        </Text>
 
         <Pressable onPress={onViewAll} hitSlop={10}>
-          <Text status="primary" category="s2">
+          <Text style={{ color: theme?.['color-primary-500'] ?? '#5FB3A2', fontWeight: '700' }}>
             View all
           </Text>
         </Pressable>
@@ -34,57 +40,61 @@ export function BadgesSummaryCard({
 
       <View style={styles.spacerSmall} />
 
+      {/* Next Up section with Emoji */}
       {nextUp?.badge ? (
         <View style={styles.nextUpContainer}>
-          <View style={styles.nextUpHeader}>
+          <Row gap="sm" align="center">
             <Pill status="info">Next up</Pill>
-            <Text category="s1" style={styles.nextUpTitle} numberOfLines={1}>
-              {nextUp.badge.name}
-            </Text>
-          </View>
+            <Row gap="xs" align="center">
+              <Text style={styles.emojiIcon}>{nextUp.badge.icon}</Text>
+              <Text numberOfLines={1} style={styles.badgeName}>
+                {nextUp.badge.name}
+              </Text>
+            </Row>
+          </Row>
 
-          <Text appearance="hint" numberOfLines={2}>
+          <Text style={styles.unlockText} numberOfLines={2}>
             {nextUp.badge.unlockText}
           </Text>
 
           {nextUp.progressLabel ? (
-            <Text appearance="hint" category="c1">
+            <Text style={styles.progressHint}>
               {nextUp.progressLabel}
             </Text>
           ) : null}
         </View>
       ) : (
-        <Text appearance="hint">No next badge right now.</Text>
+        <Text style={styles.emptyText}>No next badge right now.</Text>
       )}
 
+      {/* Recently Unlocked list with Emojis */}
       {recentTop.length ? (
         <>
           <View style={styles.spacerMedium} />
 
           <View style={styles.recentHeader}>
-            <Text category="s2" appearance="hint">
-              Recently unlocked
-            </Text>
-
+            <Text style={styles.recentTitle}>Recently unlocked</Text>
             {extraCount > 0 ? <Pill status="basic">+{extraCount} more</Pill> : null}
           </View>
 
-          <View style={styles.recentList}>
+          <Stack gap="sm">
             {recentTop.map((u, idx) => {
               const baseId = u?.badge?.id != null ? String(u.badge.id) : "recent";
               const key = `${baseId}_${idx}`;
-              const name = u?.badge?.name ?? "Badge";
-
+              
               return (
                 <View key={key} style={styles.recentItem}>
-                  <Text category="s1" style={styles.flexShrink} numberOfLines={1}>
-                    {name}
-                  </Text>
-                  <Pill status="success">Unlocked</Pill>
+                  <Row align="center" gap="sm" style={styles.flexShrink}>
+                    <Text style={styles.smallEmoji}>{u.badge.icon}</Text>
+                    <Text numberOfLines={1} style={[styles.flexShrink, styles.recentBadgeName]}>
+                      {u.badge.name}
+                    </Text>
+                  </Row>
+                  <Pill status="success">Earned</Pill>
                 </View>
               );
             })}
-          </View>
+          </Stack>
         </>
       ) : null}
     </CardShell>
@@ -97,6 +107,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+  },
   spacerSmall: {
     height: 12,
   },
@@ -106,14 +120,27 @@ const styles = StyleSheet.create({
   nextUpContainer: {
     gap: 8,
   },
-  nextUpHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+  emojiIcon: {
+    fontSize: 20,
   },
-  nextUpTitle: {
+  badgeName: {
     fontWeight: "800",
+    fontSize: 16,
     flexShrink: 1,
+  },
+  unlockText: {
+    color: "#64748B",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  progressHint: {
+    fontSize: 12,
+    color: "#94A3B8",
+    fontWeight: "600",
+  },
+  emptyText: {
+    color: "#94A3B8",
+    fontSize: 14,
   },
   recentHeader: {
     flexDirection: "row",
@@ -121,14 +148,23 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  recentList: {
-    gap: 8,
+  recentTitle: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "600",
   },
   recentItem: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 10,
+  },
+  smallEmoji: {
+    fontSize: 18,
+  },
+  recentBadgeName: {
+    fontSize: 15,
+    fontWeight: "700",
   },
   flexShrink: {
     flexShrink: 1,

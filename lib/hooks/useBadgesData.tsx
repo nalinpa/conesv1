@@ -11,6 +11,7 @@ import { useCones } from "@/lib/hooks/useCones";
 export type BadgeTileItem = {
   id: string;
   name: string;
+  icon: string;
   unlockText: string;
   unlocked: boolean;
   progressLabel: string | null;
@@ -113,6 +114,7 @@ export function useBadgesData(): BadgesData {
       return {
         id: b.id,
         name: b.name,
+        icon: b.icon,
         unlockText: b.unlockText,
         unlocked,
         progressLabel: unlocked ? null : (progress?.progressLabel ?? null),

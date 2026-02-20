@@ -2,15 +2,16 @@ import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { Layout, Text } from "@ui-kitten/components";
 
-import { useBadgesData } from "@/lib/hooks/useBadgesData";
-import { goProgressHome, goBadges } from "@/lib/routes";
+// Resolving aliases to relative paths to fix compilation errors
+import { useBadgesData } from "../../../../lib/hooks/useBadgesData";
+import { goProgressHome, goBadges } from "../../../../lib/routes";
 
-import { LoadingState } from "@/components/ui/LoadingState";
-import { CardShell } from "@/components/ui/CardShell";
-import { Screen } from "@/components/ui/screen";
-import { ErrorCard } from "@/components/ui/ErrorCard";
-import { BadgeTile } from "@/components/badges/BadgeTile";
-import { AppButton } from "@/components/ui/AppButton";
+import { LoadingState } from "../../../../components/ui/LoadingState";
+import { CardShell } from "../../../../components/ui/CardShell";
+import { Screen } from "../../../../components/ui/screen";
+import { ErrorCard } from "../../../../components/ui/ErrorCard";
+import { BadgeTile } from "../../../../components/badges/BadgeTile";
+import { AppButton } from "../../../../components/ui/AppButton";
 
 const SECTION_ORDER = ["Core", "Social", "Types", "Regions", "Reviews", "Completionist"];
 
@@ -19,6 +20,7 @@ type BadgeGroup = {
   items: Array<{
     id: string;
     name: string;
+    icon: string; // The emoji icon
     unlockText: string;
     unlocked: boolean;
     progressLabel: string | null;
@@ -108,6 +110,7 @@ export default function BadgesScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+          {/* Header Section */}
           <View style={styles.headerRow}>
             <View>
               <Text category="h1">Badges</Text>
@@ -121,9 +124,10 @@ export default function BadgesScreen() {
             </AppButton>
           </View>
 
+          {/* "Next Up" Badge Card with Emoji Icon */}
           <View style={styles.nextUpSection}>
             <CardShell>
-              <Text category="h6">Next up</Text>
+              <Text category="h6" style={styles.sectionLabel}>Next up</Text>
 
               {!badgeState.nextUp ? (
                 <Text appearance="hint" style={styles.noNextUpText}>
@@ -131,9 +135,12 @@ export default function BadgesScreen() {
                 </Text>
               ) : (
                 <View style={styles.nextUpCard}>
-                  <Text category="s1" style={styles.boldText} numberOfLines={1}>
-                    {badgeState.nextUp.badge.name}
-                  </Text>
+                  <View style={styles.nextUpIconRow}>
+                    <Text style={styles.nextUpIcon}>{badgeState.nextUp.badge.icon}</Text>
+                    <Text category="s1" style={styles.boldText} numberOfLines={1}>
+                      {badgeState.nextUp.badge.name}
+                    </Text>
+                  </View>
 
                   <Text
                     appearance="hint"
@@ -157,6 +164,7 @@ export default function BadgesScreen() {
             </CardShell>
           </View>
 
+          {/* Grouped Badge Lists - icons are passed to BadgeTile */}
           <View style={styles.groupsContainer}>
             {groups.map((g) => (
               <CardShell key={g.section}>
@@ -169,6 +177,7 @@ export default function BadgesScreen() {
                     <BadgeTile
                       key={b.id}
                       name={b.name}
+                      icon={b.icon}
                       unlockText={b.unlockText}
                       unlocked={b.unlocked}
                       progressLabel={b.progressLabel}
@@ -209,24 +218,41 @@ const styles = StyleSheet.create({
   nextUpSection: {
     marginTop: 14,
   },
+  sectionLabel: {
+    marginBottom: 4,
+  },
   noNextUpText: {
     marginTop: 8,
   },
   nextUpCard: {
     marginTop: 12,
     borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
     borderRadius: 16,
     paddingHorizontal: 12,
     paddingVertical: 12,
+    backgroundColor: 'rgba(0,0,0,0.02)',
+  },
+  nextUpIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  nextUpIcon: {
+    fontSize: 24,
   },
   boldText: {
     fontWeight: "800",
   },
   nextUpDescription: {
-    marginTop: 6,
+    marginTop: 2,
+    lineHeight: 18,
   },
   nextUpProgress: {
     marginTop: 10,
+    fontWeight: '700',
+    fontSize: 12,
   },
   groupsContainer: {
     marginTop: 14,

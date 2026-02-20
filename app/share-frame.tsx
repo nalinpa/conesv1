@@ -12,19 +12,18 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { captureRef } from "react-native-view-shot";
 import * as ImagePicker from "expo-image-picker";
 
-// Switching to relative paths to resolve aliasing issues in the environment
-import { Screen } from "../components/ui/screen";
-import { CardShell } from "../components/ui/CardShell";
-import { Stack as VStack } from "../components/ui/Stack";
-import { AppText } from "../components/ui/AppText";
-import { AppButton } from "../components/ui/AppButton";
-import { ErrorCard } from "../components/ui/ErrorCard";
-import { LoadingState } from "../components/ui/LoadingState";
+import { Screen } from "@/components/ui/screen";
+import { CardShell } from "@/components/ui/CardShell";
+import { Stack as VStack } from "@/components/ui/Stack";
+import { AppText } from "@/components/ui/AppText";
+import { AppButton } from "@/components/ui/AppButton";
+import { ErrorCard } from "@/components/ui/ErrorCard";
+import { LoadingState } from "@/components/ui/LoadingState";
 
-import { useSession } from "../lib/providers/SessionProvider";
-import type { ShareConePayload } from "../lib/services/share/types";
-import { shareService } from "../lib/services/share/shareService";
-import { completionService } from "../lib/services/completionService";
+import { useSession } from "@/lib/providers/SessionProvider";
+import type { ShareConePayload } from "@/lib/services/share/types";
+import { shareService } from "@/lib/services/share/shareService";
+import { completionService } from "@/lib/services/completionService";
 
 /* ───────────────── constants ───────────────── */
 
@@ -96,6 +95,7 @@ export default function ShareFrameRoute() {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [shareSuccess, setShareSuccess] = useState(false);
   const [picking, setPicking] = useState(false);
   const [hint, setHint] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -216,11 +216,16 @@ export default function ShareFrameRoute() {
     setErr(null);
 
     try {
-      await refreshPreview();
+      // Capture a fresh image to guarantee we have the latest crop
+      let shareUri = previewUri;
+      if (imageCapable && shareCardRef.current) {
+        const freshUri = await captureShareCard();
+        if (freshUri) shareUri = freshUri;
+      }
 
       const res =
-        previewUri && imageCapable
-          ? await shareService.shareImageUriAsync(previewUri) // FIX: Removed extra 'payload' argument
+        shareUri && imageCapable
+          ? await shareService.shareImageUriAsync(shareUri)
           : await shareService.shareConeAsync(payload);
 
       if (!res.ok) {
@@ -228,18 +233,22 @@ export default function ShareFrameRoute() {
         return;
       }
 
-      // ✅ Only signed-in users get share bonuses.
+      // ✅ Immediately trigger success state to prevent UI hanging!
+      setShareSuccess(true);
+
+      // ✅ Fire-and-forget the bonus update. Awaiting Firestore writes
+      // will hang indefinitely if the user is offline/backgrounded.
       if (canClaimBonus && uid) {
-        await completionService.confirmShareBonus({
+        completionService.confirmShareBonus({
           uid,
           coneId: payload.coneId,
           platform: "share-frame",
+        }).catch(() => {
+          // Ignore background sync errors, Firestore handles retries locally
         });
-      } else {
-        setHint("Shared! Sign in to earn share bonuses.");
       }
-
-      router.back();
+    } catch (e) {
+      setErr("Something went wrong while sharing.");
     } finally {
       setSharing(false);
     }
@@ -259,6 +268,42 @@ export default function ShareFrameRoute() {
           message="Missing cone details."
           action={{ label: "Back", onPress: () => router.back() }}
         />
+      </Screen>
+    );
+  }
+
+  if (shareSuccess) {
+    return (
+      <Screen padded={true}>
+        <Stack.Screen options={{ title: "Shared!" }} />
+        <View style={styles.successContainer}>
+          <CardShell status="success">
+            <VStack gap="lg" style={styles.successContent}>
+              <AppText variant="screenTitle" style={styles.centerText}>🎉</AppText>
+              
+              <VStack gap="sm" style={styles.centerText}>
+                <AppText variant="sectionTitle" style={styles.centerText}>High Five!</AppText>
+                <AppText variant="body" style={styles.centerText}>
+                  You successfully shared your visit to {payload.coneName}.
+                </AppText>
+              </VStack>
+
+              {canClaimBonus && uid ? (
+                <AppText variant="hint" style={styles.centerText}>
+                  Keep going!
+                </AppText>
+              ) : (
+                <AppText variant="hint" style={styles.centerText}>
+                  Sign in next time to earn bonuses.
+                </AppText>
+              )}
+
+              <AppButton onPress={() => router.back()} size="md" style={styles.fullWidthButton}>
+                Done
+              </AppButton>
+            </VStack>
+          </CardShell>
+        </View>
       </Screen>
     );
   }
@@ -484,5 +529,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 2,
     borderColor: "rgba(0,0,0,0.1)",
+  },
+  successContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  successContent: {
+    alignItems: "center",
+    paddingVertical: 24,
+    paddingHorizontal: 12,
+  },
+  centerText: {
+    textAlign: "center",
+    alignItems: "center",
+  },
+  fullWidthButton: {
+    width: "100%",
+    marginTop: 12,
   },
 });
