@@ -12,6 +12,7 @@ export type BadgeDefinition = {
   name: string;
   unlockText: string;
   section: string;
+  icon: string;
 };
 
 export type BadgeProgress = {
@@ -29,25 +30,35 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Steps",
     unlockText: "Visit your first volcano.",
     section: "Core",
+    icon: "👟"
   },
-  { id: "explorer", name: "Explorer", unlockText: "Visit 5 volcanoes.", section: "Core" },
+  { 
+    id: "explorer", 
+    name: "Explorer", 
+    unlockText: "Visit 5 volcanoes.", 
+    section: "Core", 
+    icon: "🧭" 
+  },
   {
     id: "wayfinder",
     name: "Wayfinder",
     unlockText: "Visit 10 volcanoes.",
     section: "Core",
+    icon: "🗺️"
   },
   {
     id: "halfway_there",
     name: "Halfway There",
     unlockText: "Visit 20 volcanoes.",
     section: "Core",
+    icon: "🧗"
   },
   {
     id: "cone_collector",
     name: "Cone Collector",
     unlockText: "Visit every active volcano.",
     section: "Core",
+    icon: "👑"
   },
 
   {
@@ -55,12 +66,14 @@ export const BADGES: BadgeDefinition[] = [
     name: "Shared the View",
     unlockText: "Get a share bonus once.",
     section: "Social",
+    icon: "📸"
   },
   {
     id: "show_off",
     name: "Show-Off",
     unlockText: "Get 5 share bonuses.",
     section: "Social",
+    icon: "✨"
   },
 
   {
@@ -68,42 +81,49 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Cone",
     unlockText: "Visit your first cone-type volcano.",
     section: "Types",
+    icon: "🌋"
   },
   {
     id: "first_crater",
     name: "First Crater",
     unlockText: "Visit your first crater.",
     section: "Types",
+    icon: "🕳️"
   },
   {
     id: "five_craters",
     name: "Crater Fan",
     unlockText: "Visit 5 craters.",
     section: "Types",
+    icon: "🌒"
   },
   {
     id: "all_cones_type",
     name: "All Cones",
     unlockText: "Visit every cone-type volcano.",
     section: "Types",
+    icon: "⛰️"
   },
   {
     id: "all_craters_type",
     name: "All Craters",
     unlockText: "Visit every crater.",
     section: "Types",
+    icon: "🌑"
   },
   {
     id: "first_lake",
     name: "First Lake",
     unlockText: "Visit your first lake.",
     section: "Types",
+    icon: "💧"
   },
   {
     id: "all_lakes_type",
     name: "All Lakes",
     unlockText: "Visit every lake.",
     section: "Types",
+    icon: "🌊"
   },
 
   {
@@ -111,30 +131,35 @@ export const BADGES: BadgeDefinition[] = [
     name: "North Master",
     unlockText: "Visit every volcano in the North region.",
     section: "Regions",
+    icon: "🌲"
   },
   {
     id: "central_master",
     name: "Central Master",
     unlockText: "Visit every volcano in the Central region.",
     section: "Regions",
+    icon: "🏙️"
   },
   {
     id: "east_master",
     name: "East Master",
     unlockText: "Visit every volcano in the East region.",
     section: "Regions",
+    icon: "🌅"
   },
   {
     id: "south_master",
     name: "South Master",
     unlockText: "Visit every volcano in the South region.",
     section: "Regions",
+    icon: "🛤️"
   },
   {
     id: "harbour_master",
     name: "Harbour Master",
     unlockText: "Visit every volcano in the Harbour region.",
     section: "Regions",
+    icon: "⛴️"
   },
 
   {
@@ -142,19 +167,28 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Review",
     unlockText: "Write your first review.",
     section: "Reviews",
+    icon: "📝"
   },
-  { id: "critic", name: "Critic", unlockText: "Write 5 reviews.", section: "Reviews" },
+  { 
+    id: "critic", 
+    name: "Critic", 
+    unlockText: "Write 5 reviews.", 
+    section: "Reviews", 
+    icon: "⭐" 
+  },
   {
     id: "trusted_reviewer",
     name: "Trusted Reviewer",
     unlockText: "Write 10 reviews.",
     section: "Reviews",
+    icon: "🏆"
   },
   {
     id: "review_every_cone",
     name: "Reviewed Everything",
     unlockText: "Review every active volcano you’ve visited.",
     section: "Reviews",
+    icon: "💯"
   },
 
   {
@@ -162,6 +196,7 @@ export const BADGES: BadgeDefinition[] = [
     name: "Completionist",
     unlockText: "Visit, share, and review every active volcano.",
     section: "Completionist",
+    icon: "💎"
   },
 ];
 

@@ -18,7 +18,6 @@ export function ActionsCard({
   myReviewRating,
   myReviewText,
   onOpenReview,
-
   shareBonus,
   onShareBonus,
   shareLoading = false,
@@ -33,7 +32,6 @@ export function ActionsCard({
   myReviewRating: number | null;
   myReviewText: string | null;
   onOpenReview: () => void;
-
   shareBonus: boolean;
   onShareBonus: () => void;
   shareLoading?: boolean;
@@ -108,7 +106,7 @@ export function ActionsCard({
             loadingLabel="Preparing…"
             onPress={onShareBonus}
           >
-            {shareBonus ? "Bonus credit added ✓" : "Share the view"}
+            {shareBonus ? "You have shared" : "Share the view"}
           </AppButton>
         </Stack>
       </Stack>

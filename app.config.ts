@@ -5,7 +5,7 @@ const config: ExpoConfig = {
   name: "Cones",
   slug: "cones",
   scheme: "cones",
-  version: "1.0.0",
+  version: "1.0.2",
 
   android: {
     package: "com.anonymous.cones",
@@ -17,12 +17,16 @@ const config: ExpoConfig = {
   },
 
   ios: {
+    bundleIdentifier: "com.anonymous.cones",
     config: {
       googleMapsApiKey: process.env.GMAPS_API_KEY,
     },
   },
 
   extra: {
+    eas: {
+      projectId: "96e0a072-322d-4e01-a3b4-b4c6edc4cd9f", 
+    },
     firebase: {
       apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
       authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
