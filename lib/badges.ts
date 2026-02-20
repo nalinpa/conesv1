@@ -131,35 +131,35 @@ export const BADGES: BadgeDefinition[] = [
     name: "North Master",
     unlockText: "Visit every volcano in the North region.",
     section: "Regions",
-    icon: "🌲"
+    icon: "🌉" // Harbour Bridge
   },
   {
     id: "central_master",
     name: "Central Master",
     unlockText: "Visit every volcano in the Central region.",
     section: "Regions",
-    icon: "🏙️"
+    icon: "🏙️" // Cityscape
   },
   {
     id: "east_master",
     name: "East Master",
     unlockText: "Visit every volcano in the East region.",
     section: "Regions",
-    icon: "🌅"
+    icon: "⛵" // Sailing/Bays
   },
   {
     id: "south_master",
     name: "South Master",
     unlockText: "Visit every volcano in the South region.",
     section: "Regions",
-    icon: "🛤️"
+    icon: "🎡" // Updated: Ferris wheel for Rainbow's End landmark in Manukau
   },
   {
     id: "harbour_master",
     name: "Harbour Master",
     unlockText: "Visit every volcano in the Harbour region.",
     section: "Regions",
-    icon: "⛴️"
+    icon: "⛴️" // Ferry
   },
 
   {
@@ -200,6 +200,7 @@ export const BADGES: BadgeDefinition[] = [
   },
 ];
 
+// Helper functions for logic processing
 function indexBadges(badges: BadgeDefinition[]) {
   const byId: Record<string, BadgeDefinition> = Object.create(null);
   for (const b of badges) byId[b.id] = b;
@@ -614,9 +615,9 @@ export function getBadgeState(
           ? "central_master"
           : r === "east"
             ? "east_master"
-            : r === "south"
-              ? "south_master"
-              : "harbour_master";
+              : r === "south"
+                ? "south_master"
+                : "harbour_master";
     unlockAtByBadgeId[id] = maxTimeForAllRequired(
       activeCones.filter((c) => c.region === r),
       completedConeIds,
