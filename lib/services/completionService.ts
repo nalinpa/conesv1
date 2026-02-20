@@ -1,4 +1,4 @@
-import { doc, serverTimestamp, runTransaction } from "firebase/firestore";
+import { doc, serverTimestamp, runTransaction, updateDoc } from "firebase/firestore";
 import type { LocationObject } from "expo-location";
 
 import { db } from "@/lib/firebase";
@@ -22,7 +22,7 @@ export type WatchMyCompletionsResult = {
 
 export const completionService = {
   // ===============================
-  // Complete cone (transactional + idempotent)
+  // Complete cone
   // ===============================
   async completeCone(args: {
     uid: string;
@@ -89,9 +89,6 @@ export const completionService = {
     }
   },
 
-  // ===============================
-  // Confirm share bonus (transactional + idempotent)
-  // ===============================
   async confirmShareBonus(args: {
     uid: string;
     coneId: string;
@@ -106,26 +103,17 @@ export const completionService = {
     const ref = doc(db, COL.coneCompletions, completionId);
 
     try {
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(ref);
-
-        if (!snap.exists()) {
-          throw new Error("Completion not found");
-        }
-
-        const data = snap.data();
-        if (data?.shareConfirmed) return; // idempotent
-
-        tx.update(ref, {
-          shareBonus: true,
-          shareConfirmed: true,
-          sharedAt: serverTimestamp(),
-          sharedPlatform: platform ?? "share-frame",
-        });
+      await updateDoc(ref, {
+        shareBonus: true,
+        shareConfirmed: true,
+        sharedAt: serverTimestamp(),
+        sharedPlatform: platform ?? "share-frame",
+        updatedAt: serverTimestamp(),
       });
 
       return { ok: true };
     } catch (e: any) {
+      console.error("[completionService] confirmShareBonus error:", e);
       return { ok: false, err: e?.message ?? "Failed to confirm share" };
     }
   },
