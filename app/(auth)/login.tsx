@@ -2,22 +2,45 @@ import React, { useEffect } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { Stack, router } from "expo-router";
 
+// Restoring standard path aliases for your project structure
 import { Screen } from "@/components/ui/screen";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { useAuthForm } from "@/lib/hooks/useAuthForm";
 import { useSession } from "@/lib/providers/SessionProvider";
 
+/**
+ * Login Screen
+ * Manages the UI for sign-in, sign-up, and password resets.
+ * Utilizes the useAuthForm hook which is now powered by userService for all Firebase operations.
+ */
 export default function LoginScreen() {
   const f = useAuthForm("login");
   const { session, enableGuest } = useSession();
 
-  // If session changes while we're on login, leave immediately.
+  // Handle automatic navigation when the authentication state changes
   useEffect(() => {
-    if (session.status === "guest") router.replace("/(tabs)/map");
-    if (session.status === "authed") router.replace("/(tabs)/progress");
+    if (session.status === "guest") {
+      router.replace("/(tabs)/map");
+    }
+    if (session.status === "authed") {
+      router.replace("/(tabs)/progress");
+    }
   }, [session.status]);
 
   const busy = f.busy || session.status === "loading";
+
+  /**
+   * Triggers the guest mode logic in the SessionProvider.
+   * Navigation is automatically handled by the useEffect above once the status updates.
+   */
+  const handleGuestEntry = async () => {
+    if (session.status !== "loggedOut") return;
+    try {
+      await enableGuest();
+    } catch (e) {
+      console.error("Failed to enable guest mode:", e);
+    }
+  };
 
   return (
     <>
@@ -44,11 +67,7 @@ export default function LoginScreen() {
             onChangePassword={f.setPassword}
             onChangeConfirm={f.setConfirm}
             onSubmit={() => void f.submit()}
-            onGuest={async () => {
-              if (session.status !== "loggedOut") return;
-              await enableGuest();
-              router.replace("/(tabs)/map");
-            }}
+            onGuest={handleGuestEntry}
           />
         </KeyboardAvoidingView>
       </Screen>
