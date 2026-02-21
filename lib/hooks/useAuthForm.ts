@@ -1,10 +1,6 @@
 import { useMemo, useState } from "react";
-import {
-  createUserWithEmailAndPassword,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-} from "firebase/auth";
-import { auth } from "@/lib/firebase";
+// Switching to relative path to resolve import issues
+import { userService } from "../services/userService";
 
 export type AuthMode = "login" | "signup" | "reset";
 
@@ -12,8 +8,12 @@ function isEmailLike(v: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 }
 
+/**
+ * Maps technical Firebase error codes to user-friendly messages.
+ * We keep this here because it is specific to the UI strings 
+ * presented in the form.
+ */
 function normalizeAuthError(err: unknown): string {
-  const msg = String((err as any)?.message ?? "");
   const code = String((err as any)?.code ?? "");
 
   if (code.includes("auth/invalid-email")) return "That email doesn’t look right.";
@@ -26,6 +26,7 @@ function normalizeAuthError(err: unknown): string {
   if (code.includes("auth/too-many-requests"))
     return "Too many attempts. Try again in a bit.";
 
+  const msg = String((err as any)?.message ?? "");
   if (msg) return msg.replace(/^Firebase:\s*/i, "");
   return "Something went wrong. Please try again.";
 }
@@ -85,7 +86,8 @@ export function useAuthForm(initialMode: AuthMode = "login") {
       setBusy(true);
 
       if (mode === "reset") {
-        await sendPasswordResetEmail(auth, e);
+        // Delegate to service
+        await userService.sendResetEmail(e);
         setNotice("Reset link sent. Check your inbox (and spam).");
         return { ok: true as const };
       }
@@ -99,11 +101,13 @@ export function useAuthForm(initialMode: AuthMode = "login") {
           setErr("Passwords don’t match.");
           return { ok: false as const };
         }
-        await createUserWithEmailAndPassword(auth, e, password);
+        // Delegate to service
+        await userService.signup(e, password);
         return { ok: true as const };
       }
 
-      await signInWithEmailAndPassword(auth, e, password);
+      // Default: Delegate login to service
+      await userService.login(e, password);
       return { ok: true as const };
     } catch (e) {
       setErr(normalizeAuthError(e));
@@ -114,7 +118,6 @@ export function useAuthForm(initialMode: AuthMode = "login") {
   }
 
   return {
-    // state
     mode,
     email,
     password,
@@ -122,13 +125,9 @@ export function useAuthForm(initialMode: AuthMode = "login") {
     busy,
     err,
     notice,
-
-    // derived
     title,
     subtitle,
     canSubmit,
-
-    // setters
     setEmail: (v: string) => {
       setEmail(v);
       clearMessages();
@@ -141,8 +140,6 @@ export function useAuthForm(initialMode: AuthMode = "login") {
       setConfirm(v);
       clearMessages();
     },
-
-    // actions
     setMode: setModeSafe,
     submit,
   };
