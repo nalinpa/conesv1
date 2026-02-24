@@ -1,18 +1,20 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Redirect, Slot } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
 import { useSession } from "@/lib/providers/SessionProvider";
-import { Screen } from "@/components/ui/screen";
-import { LoadingState } from "@/components/ui/LoadingState";
 
 export default function AuthLayout() {
   const { session } = useSession();
 
+  useEffect(() => {
+    if (session.status !== "loading") {
+      SplashScreen.hideAsync();
+    }
+  }, [session.status]);
+
   if (session.status === "loading") {
-    return (
-      <Screen>
-        <LoadingState fullScreen={false} label="Loading…" />
-      </Screen>
-    );
+    // Return null to keep the native splash screen visible
+    return null;
   }
 
   if (session.status === "authed") {

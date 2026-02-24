@@ -278,30 +278,34 @@ export default function ShareFrameRoute() {
         <Stack.Screen options={{ title: "Shared!" }} />
         <View style={styles.successContainer}>
           <CardShell status="success">
-            <VStack gap="lg" style={styles.successContent}>
-              <AppText variant="screenTitle" style={styles.centerText}>🎉</AppText>
-              
-              <VStack gap="sm" style={styles.centerText}>
-                <AppText variant="sectionTitle" style={styles.centerText}>High Five!</AppText>
-                <AppText variant="body" style={styles.centerText}>
-                  You successfully shared your visit to {payload.coneName}.
-                </AppText>
+            <View style={styles.successContent}>
+              <VStack gap="lg">
+                <AppText variant="screenTitle" style={styles.centerText}>🎉</AppText>
+                
+                <View style={styles.centerText}>
+                  <VStack gap="sm">
+                    <AppText variant="sectionTitle" style={styles.centerText}>High Five!</AppText>
+                    <AppText variant="body" style={styles.centerText}>
+                      You successfully shared your visit to {payload.coneName}.
+                    </AppText>
+                  </VStack>
+                </View>
+
+                {canClaimBonus && uid ? (
+                  <AppText variant="hint" style={styles.centerText}>
+                    Keep going!
+                  </AppText>
+                ) : (
+                  <AppText variant="hint" style={styles.centerText}>
+                    Sign in next time to earn bonuses.
+                  </AppText>
+                )}
+
+                <AppButton onPress={() => router.back()} size="md" style={styles.fullWidthButton}>
+                  Done
+                </AppButton>
               </VStack>
-
-              {canClaimBonus && uid ? (
-                <AppText variant="hint" style={styles.centerText}>
-                  Keep going!
-                </AppText>
-              ) : (
-                <AppText variant="hint" style={styles.centerText}>
-                  Sign in next time to earn bonuses.
-                </AppText>
-              )}
-
-              <AppButton onPress={() => router.back()} size="md" style={styles.fullWidthButton}>
-                Done
-              </AppButton>
-            </VStack>
+            </View>
           </CardShell>
         </View>
       </Screen>
