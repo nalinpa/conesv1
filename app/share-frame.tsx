@@ -130,7 +130,7 @@ export default function ShareFrameRoute() {
 
     setRendering(true);
     try {
-      await sleep(120);
+      await sleep(250);
       const uri = await captureShareCard();
       setPreviewUri(uri);
       setHint(uri ? "Framed image ready to share." : "Preview unavailable.");
@@ -301,9 +301,11 @@ export default function ShareFrameRoute() {
                   </AppText>
                 )}
 
-                <AppButton onPress={() => router.back()} size="md" style={styles.fullWidthButton}>
-                  Done
-                </AppButton>
+                <View style={styles.doneButtonWrapper}>
+                  <AppButton onPress={() => router.back()} size="md">
+                    Done
+                  </AppButton>
+                </View>
               </VStack>
             </View>
           </CardShell>
@@ -323,13 +325,13 @@ export default function ShareFrameRoute() {
             {/* Header */}
             <View style={styles.headerRow}>
               <View style={styles.headerTextContainer}>
-                <AppText variant="screenTitle" style={styles.textWhite}>
+                <AppText style={styles.hiddenHeaderTitle}>
                   {payload.coneName}
                 </AppText>
               </View>
 
               <View style={styles.stampContainer}>
-                <AppText variant="sectionTitle" style={styles.textWhite}>
+                <AppText style={styles.hiddenStampText}>
                   {payload.visitedLabel}
                 </AppText>
               </View>
@@ -348,8 +350,8 @@ export default function ShareFrameRoute() {
 
             {/* Footer */}
             <View style={styles.footer}>
-              <AppText variant="hint" style={styles.footerText}>
-                Auckland Volcanic Cones • Cones App
+              <AppText style={styles.footerText}>
+                kompletion.app/cones  •  @kompletionapp
               </AppText>
             </View>
           </View>
@@ -454,12 +456,8 @@ export default function ShareFrameRoute() {
 const styles = StyleSheet.create({
   hiddenCaptureContainer: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    width: 1,
-    height: 1,
-    overflow: "hidden",
-    opacity: 0,
+    top: -10000,
+    left: -10000,
   },
   captureCanvas: {
     width: 1080,
@@ -469,35 +467,43 @@ const styles = StyleSheet.create({
     width: 1080,
     height: 1350,
     backgroundColor: SURF,
-    padding: 22,
+    padding: 32,
     justifyContent: "space-between",
   },
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   headerTextContainer: {
     flex: 1,
     paddingRight: 10,
   },
-  textWhite: {
+  hiddenHeaderTitle: {
     color: "white",
+    fontSize: 72,
+    fontWeight: "bold",
   },
   stampContainer: {
     transform: [{ rotate: "-10deg" }],
-    borderWidth: 3,
+    borderWidth: 4,
     borderColor: "rgba(255,255,255,0.9)",
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 14,
-    backgroundColor: "rgba(0,0,0,0.10)",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: "rgba(0,0,0,0.15)",
+  },
+  hiddenStampText: {
+    color: "white",
+    fontSize: 48,
+    fontWeight: "bold",
   },
   photoWindow: {
     flex: 1,
-    marginVertical: 18,
-    borderRadius: 22,
+    marginVertical: 24,
+    borderRadius: 32,
     overflow: "hidden",
-    borderWidth: 3,
+    borderWidth: 6,
     borderColor: "rgba(255,255,255,0.65)",
     backgroundColor: "rgba(255,255,255,0.05)",
     position: "relative",
@@ -507,14 +513,16 @@ const styles = StyleSheet.create({
     height: "100%",
   },
   footer: {
-    height: 62,
-    borderRadius: 18,
+    height: 80,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: SURF_DARK,
   },
   footerText: {
     color: "white",
+    fontSize: 32,
+    fontWeight: "600",
     opacity: 0.95,
   },
   scrollContent: {
@@ -547,8 +555,9 @@ const styles = StyleSheet.create({
     textAlign: "center",
     alignItems: "center",
   },
-  fullWidthButton: {
+  doneButtonWrapper: {
+    marginTop: 24,
+    alignItems: "center",
     width: "100%",
-    marginTop: 12,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, StyleSheet } from "react-native";
 
 import { Screen } from "@/components/ui/screen";
@@ -54,9 +54,27 @@ function ConeListGuest() {
 
   const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
 
+  // Lock the location so the list doesn't constantly reshuffle
+  const [lockedLoc, setLockedLoc] = useState<typeof loc>(loc);
+
+  useEffect(() => {
+    if (!lockedLoc && loc) {
+      setLockedLoc(loc);
+    }
+  }, [loc, lockedLoc]);
+
+  const handleRefreshGPS = () => {
+    setLockedLoc(null); // Clear locked location to grab the fresh one
+    if (loc) {
+      refreshGPS();
+    } else {
+      request();
+    }
+  };
+
   const activeCones = useMemo(() => cones.filter((c) => !!c.active), [cones]);
 
-  const rows = useSortedConeRows(activeCones, loc);
+  const rows = useSortedConeRows(activeCones, lockedLoc);
 
   if (loading) {
     return (
@@ -84,7 +102,7 @@ function ConeListGuest() {
         status={status}
         hasLoc={!!loc}
         locErr={locErr}
-        onPressGPS={() => void (loc ? refreshGPS() : request())}
+        onPressGPS={handleRefreshGPS}
       />
 
       {/* Guests: hide filters entirely */}
@@ -139,6 +157,24 @@ function ConeListAuthed() {
 
   const { loc, status, err: locErr, request, refresh: refreshGPS } = useUserLocation();
 
+  // Lock the location so the list doesn't constantly reshuffle
+  const [lockedLoc, setLockedLoc] = useState<typeof loc>(loc);
+
+  useEffect(() => {
+    if (!lockedLoc && loc) {
+      setLockedLoc(loc);
+    }
+  }, [loc, lockedLoc]);
+
+  const handleRefreshGPS = () => {
+    setLockedLoc(null); // Clear locked location to grab the fresh one
+    if (loc) {
+      refreshGPS();
+    } else {
+      request();
+    }
+  };
+
   const {
     completedConeIds,
     loading: completionsLoading,
@@ -168,7 +204,7 @@ function ConeListAuthed() {
     return list;
   }, [activeCones, filters, completedConeIds]);
 
-  const rows = useSortedConeRows(filteredCones, loc);
+  const rows = useSortedConeRows(filteredCones, lockedLoc);
 
   if (loading) {
     return (
@@ -196,7 +232,7 @@ function ConeListAuthed() {
         status={status}
         hasLoc={!!loc}
         locErr={locErr}
-        onPressGPS={() => void (loc ? refreshGPS() : request())}
+        onPressGPS={handleRefreshGPS}
       />
 
       <ConeFiltersCard
