@@ -1,7 +1,7 @@
 import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
 import { router } from "expo-router";
-import { ChevronLeft, Trophy, Lock } from "lucide-react-native";
+import { ChevronLeft, Trophy } from "lucide-react-native";
 
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -13,20 +13,33 @@ import { AppButton } from "@/components/ui/AppButton";
 import { AppText } from "@/components/ui/AppText";
 import { Row } from "@/components/ui/Row";
 import { Stack } from "@/components/ui/Stack";
-import { space } from "@/lib/ui/tokens";
 
 const SECTION_ORDER = ["Core", "Social", "Types", "Regions", "Reviews", "Completionist"];
 
 export default function BadgesScreen() {
   const { loading, err, badgeState, badgeTotals, badgeItems } = useBadgesData();
 
-  if (loading) return <Screen><LoadingState label="Polishing your trophies..." /></Screen>;
-  if (err) return <Screen><ErrorCard title="Badges" message={err} action={{ label: "Retry", onPress: () => router.replace("/badges") }} /></Screen>;
+  if (loading)
+    return (
+      <Screen>
+        <LoadingState label="Polishing your trophies..." />
+      </Screen>
+    );
+  if (err)
+    return (
+      <Screen>
+        <ErrorCard
+          title="Badges"
+          message={err}
+          action={{ label: "Retry", onPress: () => router.replace("/badges") }}
+        />
+      </Screen>
+    );
 
   // Grouping Logic
   const groups = (() => {
     const map = new Map();
-    badgeItems.forEach(b => {
+    badgeItems.forEach((b) => {
       const section = badgeState.progressById[b.id]?.badge.section ?? "Other";
       if (!map.has(section)) map.set(section, { section, items: [] });
       map.get(section).items.push(b);
@@ -43,8 +56,10 @@ export default function BadgesScreen() {
 
   return (
     <Screen padded={false}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Header */}
         <Row justify="space-between" align="center" style={styles.header}>
           <Stack>
@@ -66,13 +81,17 @@ export default function BadgesScreen() {
           <View style={styles.section}>
             <CardShell status="surf">
               <Stack gap="sm">
-                <AppText variant="label" status="surf" style={styles.upper}>Next Milestone</AppText>
+                <AppText variant="label" status="surf" style={styles.upper}>
+                  Next Milestone
+                </AppText>
                 <Row gap="md" align="center">
                   <View style={styles.nextUpIconBg}>
                     <AppText style={styles.emojiIconLarge}>{nextUp.badge.icon}</AppText>
                   </View>
                   <Stack style={styles.flex1}>
-                    <AppText variant="sectionTitle" status="surf">{nextUp.badge.name}</AppText>
+                    <AppText variant="sectionTitle" status="surf">
+                      {nextUp.badge.name}
+                    </AppText>
                     <AppText variant="label" status="surf" opacity={0.8}>
                       {nextUp.badge.unlockText}
                     </AppText>
@@ -80,9 +99,9 @@ export default function BadgesScreen() {
                 </Row>
                 {nextUp.progressLabel && (
                   <View style={styles.progressBarContainer}>
-                     <AppText variant="label" status="surf" style={styles.bold}>
-                        {nextUp.progressLabel}
-                     </AppText>
+                    <AppText variant="label" status="surf" style={styles.bold}>
+                      {nextUp.progressLabel}
+                    </AppText>
                   </View>
                 )}
               </Stack>
@@ -126,7 +145,12 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, marginBottom: 24 },
   groupsContainer: { paddingHorizontal: 16 },
   bold: { fontWeight: "800" },
-  upper: { textTransform: "uppercase", letterSpacing: 1.2, fontWeight: "900", fontSize: 11 },
+  upper: {
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    fontWeight: "900",
+    fontSize: 11,
+  },
   nextUpIconBg: {
     width: 60,
     height: 60,
@@ -141,5 +165,5 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: "rgba(255,255,255,0.1)",
-  }
+  },
 });

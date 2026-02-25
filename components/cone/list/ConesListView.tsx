@@ -32,7 +32,7 @@ export function ConesListView({
       data={visibleRows}
       keyExtractor={(item) => item.cone.id}
       showsVerticalScrollIndicator={false}
-      keyboardShouldPersistTaps="handled" 
+      keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.listContent}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListHeaderComponent={header ?? null}
@@ -54,7 +54,9 @@ export function ConesListView({
       ListEmptyComponent={
         <CardShell status="basic" style={styles.emptyCard}>
           <Stack gap="xs" align="center">
-            <AppText variant="sectionTitle" status="hint">No Peaks Found</AppText>
+            <AppText variant="sectionTitle" status="hint">
+              No Peaks Found
+            </AppText>
             <AppText variant="body" status="hint" style={styles.centerText}>
               {hideCompleted && completedIds?.size
                 ? "You've conquered everything in this list!"
@@ -70,13 +72,13 @@ export function ConesListView({
 const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 40, 
+    paddingBottom: 40,
   },
   headerStyle: {
     marginBottom: 16,
   },
-  separator: { 
-    height: 12 
+  separator: {
+    height: 12,
   },
   emptyCard: {
     marginHorizontal: 16,

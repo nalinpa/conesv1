@@ -27,12 +27,15 @@ export function Row({
   wrap?: boolean;
   style?: ViewStyle;
 }) {
-  const dynamicStyle = useMemo(() => ({
-    alignItems: align,
-    justifyContent: justify,
-    gap: GAP_PX[gap],
-    flexWrap: wrap ? ("wrap" as const) : ("nowrap" as const),
-  }), [align, justify, gap, wrap]);
+  const dynamicStyle = useMemo(
+    () => ({
+      alignItems: align,
+      justifyContent: justify,
+      gap: GAP_PX[gap],
+      flexWrap: wrap ? ("wrap" as const) : ("nowrap" as const),
+    }),
+    [align, justify, gap, wrap],
+  );
 
   return <View style={[styles.row, dynamicStyle, style]}>{children}</View>;
 }

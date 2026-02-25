@@ -38,7 +38,7 @@ export function ReviewsEmptyStateCard({
               Go Back
             </AppButton>
           </View>
-          
+
           <View style={styles.flex1}>
             <AppButton variant="ghost" size="md" onPress={onRetry}>
               Refresh

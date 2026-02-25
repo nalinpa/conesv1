@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { ExpoConfig, ConfigContext } from "expo/config";
 
-export default ({ config }: ConfigContext): ExpoConfig => ({  
+export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "Cones",
   slug: "cones",
@@ -39,9 +39,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       googleMapsApiKey: process.env.GMAPS_API_KEY,
     },
     infoPlist: {
-      NSCameraUsageDescription: "We need camera access so you can take photos of your summit conquests.",
-      NSPhotoLibraryUsageDescription: "We need access to your photo library to memorialize your volcano visits.",
-      NSLocationWhenInUseUsageDescription: "Cones uses your location to verify your summit visits.",
+      NSCameraUsageDescription:
+        "We need camera access so you can take photos of your summit conquests.",
+      NSPhotoLibraryUsageDescription:
+        "We need access to your photo library to memorialize your volcano visits.",
+      NSLocationWhenInUseUsageDescription:
+        "Cones uses your location to verify your summit visits.",
     },
   },
 
@@ -51,20 +54,21 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-image-picker",
       {
         photosPermission: "We need access to your photo library.",
-        cameraPermission: "We need camera access."
-      }
+        cameraPermission: "We need camera access.",
+      },
     ],
     [
       "expo-location",
       {
-        locationAlwaysAndWhenInUsePermission: "Cones uses your location to verify summit visits."
-      }
-    ]
+        locationAlwaysAndWhenInUsePermission:
+          "Cones uses your location to verify summit visits.",
+      },
+    ],
   ],
 
   extra: {
     eas: {
-      projectId: "96e0a072-322d-4e01-a3b4-b4c6edc4cd9f", 
+      projectId: "96e0a072-322d-4e01-a3b4-b4c6edc4cd9f",
     },
     firebase: {
       apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,

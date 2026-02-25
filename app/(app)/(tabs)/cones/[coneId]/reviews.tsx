@@ -16,7 +16,10 @@ import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 import { space } from "@/lib/ui/tokens";
 
 export default function ConeReviewsPage() {
-  const { coneId, coneName } = useLocalSearchParams<{ coneId: string; coneName?: string }>();
+  const { coneId, coneName } = useLocalSearchParams<{
+    coneId: string;
+    coneName?: string;
+  }>();
   const id = String(coneId);
 
   const title = coneName?.trim() || "Volcano";
@@ -29,10 +32,13 @@ export default function ConeReviewsPage() {
   const { loading, err, reviews, refresh } = usePublicConeReviews(id);
   const { avgRating, ratingCount } = useConeReviewsSummary(id);
 
-  const summary = useMemo(() => ({
-    avg: avgRating == null ? null : Math.round(Number(avgRating) * 10) / 10,
-    count: ratingCount
-  }), [avgRating, ratingCount]);
+  const summary = useMemo(
+    () => ({
+      avg: avgRating == null ? null : Math.round(Number(avgRating) * 10) / 10,
+      count: ratingCount,
+    }),
+    [avgRating, ratingCount],
+  );
 
   if (loading) {
     return (
@@ -97,7 +103,7 @@ export default function ConeReviewsPage() {
 
 const styles = StyleSheet.create({
   listContent: {
-    paddingTop: 10, 
+    paddingTop: 10,
     paddingBottom: 40,
   },
   headerWrapper: {

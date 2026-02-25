@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import { Navigation, CheckCircle2, ChevronRight } from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
@@ -36,11 +36,9 @@ export function ConeListItem({
         {/* Top Header Row */}
         <Row justify="space-between" align="center">
           <Row gap="xs" align="center" style={styles.flex1}>
-            {completed && (
-              <AppIcon icon={CheckCircle2} size={18} variant="success" />
-            )}
-            <AppText 
-              variant="sectionTitle" 
+            {completed && <AppIcon icon={CheckCircle2} size={18} variant="success" />}
+            <AppText
+              variant="sectionTitle"
               style={[styles.title, completed && styles.completedText]}
               numberOfLines={1}
             >
@@ -61,9 +59,9 @@ export function ConeListItem({
 
         {/* Full-Width Description */}
         {description?.trim() ? (
-          <AppText 
-            variant="body" 
-            status="hint" 
+          <AppText
+            variant="body"
+            status="hint"
             numberOfLines={3}
             style={[styles.description, completed && styles.completedText]}
           >
@@ -74,13 +72,17 @@ export function ConeListItem({
         {/* Footer Action */}
         <Row justify="flex" style={styles.footer}>
           <Row gap="xs" align="center">
-            <AppText variant="label" status={completed ? "hint" : "surf"} style={styles.bold}>
+            <AppText
+              variant="label"
+              status={completed ? "hint" : "surf"}
+              style={styles.bold}
+            >
               View Details
             </AppText>
-            <AppIcon 
-              icon={ChevronRight} 
-              size={14} 
-              variant={completed ? "hint" : "surf"} 
+            <AppIcon
+              icon={ChevronRight}
+              size={14}
+              variant={completed ? "hint" : "surf"}
             />
           </Row>
         </Row>
@@ -100,7 +102,7 @@ const styles = StyleSheet.create({
   },
   description: {
     lineHeight: 20,
-    width: "100%", 
+    width: "100%",
   },
   completedText: {
     opacity: 0.5,
@@ -113,5 +115,5 @@ const styles = StyleSheet.create({
   },
   bold: {
     fontWeight: "800",
-  }
+  },
 });

@@ -47,8 +47,8 @@ export function ConesToReviewCard({
         {/* List of Cones */}
         <Stack gap="sm">
           {visible.map((cone) => (
-            <CardShell 
-              key={cone.id} 
+            <CardShell
+              key={cone.id}
               onPress={() => onOpenCone(cone.id)}
               style={styles.innerCard}
             >

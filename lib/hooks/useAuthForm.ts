@@ -10,7 +10,7 @@ function isEmailLike(v: string): boolean {
 
 /**
  * Maps technical Firebase error codes to user-friendly messages.
- * We keep this here because it is specific to the UI strings 
+ * We keep this here because it is specific to the UI strings
  * presented in the form.
  */
 function normalizeAuthError(err: unknown): string {

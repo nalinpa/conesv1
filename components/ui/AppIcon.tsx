@@ -39,11 +39,5 @@ export function AppIcon({
     }
   };
 
-  return (
-    <Icon
-      size={size}
-      strokeWidth={strokeWidth}
-      color={getIconColor()}
-    />
-  );
+  return <Icon size={size} strokeWidth={strokeWidth} color={getIconColor()} />;
 }

@@ -27,14 +27,20 @@ export function ReviewsHeader({
       {/* Navigation and Title Row */}
       <Row justify="space-between" align="center">
         <Stack style={styles.flex1}>
-          <AppText variant="screenTitle" numberOfLines={1}>{title}</AppText>
-          <AppText variant="label" status="hint">Community Reviews</AppText>
+          <AppText variant="screenTitle" numberOfLines={1}>
+            {title}
+          </AppText>
+          <AppText variant="label" status="hint">
+            Community Reviews
+          </AppText>
         </Stack>
 
         <AppButton variant="ghost" size="sm" onPress={onBack} style={styles.backButton}>
           <Row gap="xs" align="center">
             <ChevronLeft size={18} color="#64748B" />
-            <AppText variant="label" status="hint">Back</AppText>
+            <AppText variant="label" status="hint">
+              Back
+            </AppText>
           </Row>
         </AppButton>
       </Row>
@@ -67,7 +73,7 @@ export function ReviewsHeader({
           </AppText>
         </View>
       )}
-      
+
       <View style={styles.divider} />
     </Stack>
   );

@@ -48,7 +48,8 @@ function GuestProgress() {
         <CardShell status="surf">
           <Stack gap="md">
             <AppText variant="body">
-              Join the community to track your climbs, earn badges for reaching summits, and share your experiences.
+              Join the community to track your climbs, earn badges for reaching summits,
+              and share your experiences.
             </AppText>
             <Stack gap="sm">
               <AppButton variant="primary" onPress={goLogin}>
@@ -83,15 +84,20 @@ function AuthedProgress() {
   const nearestUnclimbed = useNearestUnclimbed(cones, my.completedConeIds, loc);
 
   const conesToReview = useMemo(() => {
-    return cones.filter((c) => 
-      my.completedConeIds.has(c.id) && !myReviews.reviewedConeIds.has(c.id)
+    return cones.filter(
+      (c) => my.completedConeIds.has(c.id) && !myReviews.reviewedConeIds.has(c.id),
     );
   }, [cones, my.completedConeIds, myReviews.reviewedConeIds]);
 
   const loading = conesLoading || my.loading || myReviews.loading;
   const fatalErr = conesErr || my.err || myReviews.err;
 
-  if (loading) return <Screen><LoadingState /></Screen>;
+  if (loading)
+    return (
+      <Screen>
+        <LoadingState />
+      </Screen>
+    );
 
   if (fatalErr) {
     return (
@@ -135,10 +141,7 @@ function AuthedProgress() {
         {/* Action Required */}
         {conesToReview.length > 0 && (
           <Section>
-            <ConesToReviewCard 
-              cones={conesToReview} 
-              onOpenCone={goCone} 
-            />
+            <ConesToReviewCard cones={conesToReview} onOpenCone={goCone} />
           </Section>
         )}
 

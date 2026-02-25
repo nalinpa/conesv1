@@ -27,11 +27,7 @@ export function LoadingState({
     </View>
   );
 
-  return (
-    <View style={fullScreen ? styles.fullScreenContainer : style}>
-      {content}
-    </View>
-  );
+  return <View style={fullScreen ? styles.fullScreenContainer : style}>{content}</View>;
 }
 
 const styles = StyleSheet.create({

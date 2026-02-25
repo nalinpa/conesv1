@@ -3,8 +3,8 @@ import { View, StyleSheet } from "react-native";
 import { Check, MountainIcon } from "lucide-react-native";
 
 // Total canvas size needs to be larger than the circle to account for shadows and badges
-const CANVAS_SIZE = 37; 
-const CIRCLE_SIZE = 32; 
+const CANVAS_SIZE = 37;
+const CIRCLE_SIZE = 32;
 const BG_COLOR = "white";
 
 export function VolcanoMarker({
@@ -18,17 +18,12 @@ export function VolcanoMarker({
 
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.circle,
-          selected ? styles.selected : styles.unselected,
-        ]}
-      >
-        <MountainIcon 
-          size={20} 
-          color={coneColor} 
-          fill={selected ? coneColor : "transparent"} 
-          strokeWidth={2.5} 
+      <View style={[styles.circle, selected ? styles.selected : styles.unselected]}>
+        <MountainIcon
+          size={20}
+          color={coneColor}
+          fill={selected ? coneColor : "transparent"}
+          strokeWidth={2.5}
         />
       </View>
 
@@ -47,7 +42,7 @@ const styles = StyleSheet.create({
     height: CANVAS_SIZE,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent", 
+    backgroundColor: "transparent",
   },
   circle: {
     alignItems: "center",
@@ -69,7 +64,7 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: "rgba(95,179,162,1)",
     borderWidth: 3,
-    transform: [{ scale: 1.1 }], 
+    transform: [{ scale: 1.1 }],
     elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },

@@ -1,11 +1,16 @@
 import React, { useMemo } from "react";
-import { StyleSheet, ViewStyle } from "react-native";
+import { StyleSheet } from "react-native";
 import { Tabs } from "expo-router";
 import { BottomNavigation, BottomNavigationTab, useTheme } from "@ui-kitten/components";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { goProgressHome, goConesHome, goMapHome, goAccountHome } from "../../../lib/routes";
+import {
+  goProgressHome,
+  goConesHome,
+  goMapHome,
+  goAccountHome,
+} from "../../../lib/routes";
 import { useSession } from "../../../lib/providers/SessionProvider";
 
 const ALL_TABS: Array<{
@@ -15,12 +20,17 @@ const ALL_TABS: Array<{
   activeIcon: keyof typeof Ionicons.glyphMap;
 }> = [
   { key: "cones", title: "Cones", icon: "triangle-outline", activeIcon: "triangle" },
-  { key: "progress", title: "Progress", icon: "stats-chart-outline", activeIcon: "stats-chart" },
+  {
+    key: "progress",
+    title: "Progress",
+    icon: "stats-chart-outline",
+    activeIcon: "stats-chart",
+  },
   { key: "map", title: "Map", icon: "map-outline", activeIcon: "map" },
   { key: "account", title: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
-function KittenTabBar({ state, navigation }: any) {
+function KittenTabBar({ state }: any) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { session } = useSession();
@@ -28,19 +38,20 @@ function KittenTabBar({ state, navigation }: any) {
   const isGuest = session.status === "guest";
   const sessionLoading = session.status === "loading";
 
-  const visibleTabs = useMemo(() => 
-    isGuest ? ALL_TABS.filter((t) => t.key !== "progress") : ALL_TABS
-  , [isGuest]);
+  const visibleTabs = useMemo(
+    () => (isGuest ? ALL_TABS.filter((t) => t.key !== "progress") : ALL_TABS),
+    [isGuest],
+  );
 
   const activeRouteName = state.routes[state.index]?.name ?? "cones";
-  
+
   const visibleActiveIndex = useMemo(() => {
     const idx = visibleTabs.findIndex((t) => t.key === activeRouteName);
     return idx >= 0 ? idx : 0;
   }, [visibleTabs, activeRouteName]);
 
-  const activeTint = "#66B2A2"; 
-  const activeBg = "#66B2A215"; 
+  const activeTint = "#66B2A2";
+  const activeBg = "#66B2A215";
 
   const onSelect = (index: number) => {
     if (sessionLoading) return;
@@ -72,11 +83,11 @@ function KittenTabBar({ state, navigation }: any) {
             key={t.key}
             title={t.title}
             style={[styles.tab, isActive && { backgroundColor: activeBg }]}
-            icon={(props) => (
-              <Ionicons 
-                name={isActive ? t.activeIcon : t.icon} 
-                size={24} 
-                color={isActive ? activeTint : theme["text-hint-color"]} 
+            icon={() => (
+              <Ionicons
+                name={isActive ? t.activeIcon : t.icon}
+                size={24}
+                color={isActive ? activeTint : theme["text-hint-color"]}
               />
             )}
           />
@@ -89,9 +100,15 @@ function KittenTabBar({ state, navigation }: any) {
 export default function TabsLayout() {
   const { session } = useSession();
   return (
-    <Tabs screenOptions={{ headerShown: false }} tabBar={(props) => <KittenTabBar {...props} />}>
+    <Tabs
+      screenOptions={{ headerShown: false }}
+      tabBar={(props) => <KittenTabBar {...props} />}
+    >
       <Tabs.Screen name="cones" options={{ href: "/(tabs)/cones" }} />
-      <Tabs.Screen name="progress" options={{ href: session.status === "guest" ? null : "/(tabs)/progress" }} />
+      <Tabs.Screen
+        name="progress"
+        options={{ href: session.status === "guest" ? null : "/(tabs)/progress" }}
+      />
       <Tabs.Screen name="map" options={{ href: "/(tabs)/map" }} />
       <Tabs.Screen name="account" options={{ href: "/(tabs)/account" }} />
     </Tabs>
@@ -108,5 +125,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 14,
     marginHorizontal: 4,
-  }
+  },
 });

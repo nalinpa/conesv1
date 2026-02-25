@@ -8,7 +8,6 @@ import { Row } from "@/components/ui/Row";
 import { Stack } from "@/components/ui/Stack";
 import { AppIcon } from "@/components/ui/AppIcon";
 import type { Cone } from "@/lib/models";
-import { space } from "@/lib/ui/tokens";
 
 function prettyLabel(s: string) {
   return s?.length ? s[0].toUpperCase() + s.slice(1) : s;
@@ -29,8 +28,8 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
               {metaLabel}
             </AppText>
           </Row>
-          <Pill 
-            status={completed ? "success" : "basic"} 
+          <Pill
+            status={completed ? "success" : "basic"}
             icon={completed ? CheckCircle2 : undefined}
           >
             {completed ? "Visited" : "Unclimbed"}
@@ -44,7 +43,9 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
 
         {/* Description */}
         <AppText variant="body" status="hint" style={styles.description}>
-          {desc ? desc : "A unique peak in the Auckland Volcanic Field awaiting exploration."}
+          {desc
+            ? desc
+            : "A unique peak in the Auckland Volcanic Field awaiting exploration."}
         </AppText>
       </Stack>
     </View>

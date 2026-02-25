@@ -1,6 +1,12 @@
 import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, TouchableOpacity } from "react-native";
-import { ChevronDown, ChevronUp, Filter, CheckCircle2, Circle } from "lucide-react-native";
+import {
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  CheckCircle2,
+  Circle,
+} from "lucide-react-native";
 
 import { Stack } from "@/components/ui/Stack";
 import { Row } from "@/components/ui/Row";
@@ -36,8 +42,8 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
     <View style={styles.fullWidthContainer}>
       <Stack gap="md">
         {/* Top Toggle Bar */}
-        <TouchableOpacity 
-          activeOpacity={0.7} 
+        <TouchableOpacity
+          activeOpacity={0.7}
           onPress={() => setExpanded(!expanded)}
           style={styles.mainToggle}
         >
@@ -58,27 +64,36 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
             <TouchableOpacity onPress={toggleHideCompleted} style={styles.filterRow}>
               <Row justify="space-between" align="center">
                 <AppText variant="body">Hide visited peaks</AppText>
-                <AppIcon 
-                  icon={value.hideCompleted ? CheckCircle2 : Circle} 
-                  variant={value.hideCompleted ? "surf" : "hint"} 
-                  size={24} 
+                <AppIcon
+                  icon={value.hideCompleted ? CheckCircle2 : Circle}
+                  variant={value.hideCompleted ? "surf" : "hint"}
+                  size={24}
                 />
               </Row>
             </TouchableOpacity>
 
             {/* Region Selector */}
             <Stack gap="xs">
-              <AppText variant="label" status="hint" style={styles.label}>REGION</AppText>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+              <AppText variant="label" status="hint" style={styles.label}>
+                REGION
+              </AppText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipScroll}
+              >
                 {REGIONS.map((r) => (
                   <TouchableOpacity
                     key={r.value}
                     onPress={() => onChange({ ...value, region: r.value })}
                     style={[styles.chip, value.region === r.value && styles.activeChip]}
                   >
-                    <AppText 
-                      variant="label" 
-                      style={[styles.chipText, value.region === r.value && styles.activeChipText]}
+                    <AppText
+                      variant="label"
+                      style={[
+                        styles.chipText,
+                        value.region === r.value && styles.activeChipText,
+                      ]}
                     >
                       {r.label}
                     </AppText>
@@ -89,17 +104,26 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
 
             {/* Category Selector */}
             <Stack gap="xs">
-              <AppText variant="label" status="hint" style={styles.label}>TYPE</AppText>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+              <AppText variant="label" status="hint" style={styles.label}>
+                TYPE
+              </AppText>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipScroll}
+              >
                 {CATEGORIES.map((c) => (
                   <TouchableOpacity
                     key={c.value}
                     onPress={() => onChange({ ...value, category: c.value })}
                     style={[styles.chip, value.category === c.value && styles.activeChip]}
                   >
-                    <AppText 
-                      variant="label" 
-                      style={[styles.chipText, value.category === c.value && styles.activeChipText]}
+                    <AppText
+                      variant="label"
+                      style={[
+                        styles.chipText,
+                        value.category === c.value && styles.activeChipText,
+                      ]}
                     >
                       {c.label}
                     </AppText>
@@ -122,7 +146,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "#E2E8F0",
     paddingVertical: space.md,
     // Negative margin to bleed out of parent padding if necessary
-    marginHorizontal: -16, 
+    marginHorizontal: -16,
     paddingHorizontal: 16,
   },
   mainToggle: {

@@ -10,11 +10,7 @@ import { AppIcon } from "@/components/ui/AppIcon";
 import { Pill } from "@/components/ui/Pill";
 import { space, radius } from "@/lib/ui/tokens";
 
-export function BadgesSummaryCard({
-  nextUp,
-  recentlyUnlocked,
-  onViewAll,
-}: any) {
+export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) {
   return (
     <CardShell status="basic" onPress={onViewAll}>
       <Stack gap="md">
@@ -22,10 +18,14 @@ export function BadgesSummaryCard({
         <Row justify="space-between" align="center">
           <Row gap="xs" align="center">
             <AppIcon icon={Award} variant="surf" size={18} />
-            <AppText variant="sectionTitle" style={styles.darkText}>Achievements</AppText>
+            <AppText variant="sectionTitle" style={styles.darkText}>
+              Achievements
+            </AppText>
           </Row>
           <Row gap="xs" align="center">
-            <AppText variant="label" status="hint">View All</AppText>
+            <AppText variant="label" status="hint">
+              View All
+            </AppText>
             <AppIcon icon={ChevronRight} variant="hint" size={14} />
           </Row>
         </Row>
@@ -35,13 +35,17 @@ export function BadgesSummaryCard({
           <Stack gap="xs">
             <Row gap="xs" align="center">
               <Sparkles size={10} color="#22C55E" />
-              <AppText variant="label" status="hint" style={styles.upper}>Recently Earned</AppText>
+              <AppText variant="label" status="hint" style={styles.upper}>
+                Recently Earned
+              </AppText>
             </Row>
             {recentlyUnlocked.slice(0, 1).map((badge: any) => (
-              <View key={badge.id || 'recent'} style={styles.unlockedBox}>
+              <View key={badge.id || "recent"} style={styles.unlockedBox}>
                 <Row gap="md" align="center">
                   <View style={styles.emojiWrapper}>
-                    <AppText style={styles.emoji}>{badge.icon || badge.emoji || "🏆"}</AppText>
+                    <AppText style={styles.emoji}>
+                      {badge.icon || badge.emoji || "🏆"}
+                    </AppText>
                   </View>
                   <View style={styles.flex1}>
                     <AppText variant="body" style={styles.boldDark}>
@@ -60,7 +64,9 @@ export function BadgesSummaryCard({
         {/* Next Goal / Progress */}
         {nextUp && (
           <Stack gap="xs">
-            <AppText variant="label" status="hint" style={styles.upper}>Next Goal</AppText>
+            <AppText variant="label" status="hint" style={styles.upper}>
+              Next Goal
+            </AppText>
             <View style={styles.goalBox}>
               <Row gap="md" align="center">
                 <View style={styles.lockCircle}>
@@ -75,7 +81,9 @@ export function BadgesSummaryCard({
                   </AppText>
                 </View>
                 {nextUp.percent != null && (
-                  <Pill status="basic" style={styles.pillText}>{nextUp.percent}%</Pill>
+                  <Pill status="basic" style={styles.pillText}>
+                    {nextUp.percent}%
+                  </Pill>
                 )}
               </Row>
             </View>
@@ -91,17 +99,22 @@ const styles = StyleSheet.create({
   darkText: { color: "#0F172A" },
   boldDark: { fontWeight: "900", color: "#0F172A" },
   bold: { fontWeight: "800" },
-  upper: { textTransform: "uppercase", letterSpacing: 1, fontSize: 10, fontWeight: "900" },
+  upper: {
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    fontSize: 10,
+    fontWeight: "900",
+  },
   emoji: { fontSize: 28 },
   emojiWrapper: {
     width: 48,
     height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   unlockedBox: {
     padding: space.md,
-    backgroundColor: "#F0FDF4", 
+    backgroundColor: "#F0FDF4",
     borderColor: "#BBF7D0",
     borderWidth: 1,
     borderRadius: radius.md,
@@ -125,5 +138,5 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontWeight: "900",
-  }
+  },
 });
