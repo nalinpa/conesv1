@@ -1,24 +1,15 @@
-import React, { useCallback, useMemo, useState } from "react";
-import { ScrollView, View, StyleSheet } from "react-native";
-
-import type { ConeCategory, ConeRegion } from "@/lib/models";
+import React, { useState } from "react";
+import { ScrollView, View, StyleSheet, TouchableOpacity } from "react-native";
+import { ChevronDown, ChevronUp, Filter, CheckCircle2, Circle } from "lucide-react-native";
 
 import { Stack } from "@/components/ui/Stack";
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
-import { CardShell } from "@/components/ui/CardShell";
-import { AppButton } from "@/components/ui/AppButton";
-import { AppIconButton } from "@/components/ui/AppIconButton";
-
-import { ChevronDown, ChevronUp } from "lucide-react-native";
+import { AppIcon } from "@/components/ui/AppIcon";
 import { space } from "@/lib/ui/tokens";
 
-/* ---------------------------------
- * Options
- * --------------------------------- */
-
-const REGIONS: Array<{ label: string; value: ConeRegion | "all" }> = [
-  { label: "All", value: "all" },
+const REGIONS = [
+  { label: "All Regions", value: "all" },
   { label: "North", value: "north" },
   { label: "Central", value: "central" },
   { label: "East", value: "east" },
@@ -26,218 +17,152 @@ const REGIONS: Array<{ label: string; value: ConeRegion | "all" }> = [
   { label: "Harbour", value: "harbour" },
 ];
 
-const CATEGORIES: Array<{ label: string; value: ConeCategory | "all" }> = [
-  { label: "All", value: "all" },
+const CATEGORIES = [
+  { label: "All Types", value: "all" },
   { label: "Cone", value: "cone" },
   { label: "Crater", value: "crater" },
   { label: "Lake", value: "lake" },
   { label: "Other", value: "other" },
 ];
 
-export type ConeFiltersValue = {
-  hideCompleted: boolean;
-  region: ConeRegion | "all";
-  category: ConeCategory | "all";
-};
+export function ConeFiltersCard({ value, onChange, shownCount }: any) {
+  const [expanded, setExpanded] = useState(false);
 
-function labelFor<T extends string>(
-  opts: Array<{ label: string; value: T }>,
-  v: T,
-): string {
-  return opts.find((o) => o.value === v)?.label ?? String(v);
-}
+  const toggleHideCompleted = () => {
+    onChange({ ...value, hideCompleted: !value.hideCompleted });
+  };
 
-/* ---------------------------------
- * Chip (quiet)
- * --------------------------------- */
-
-function Chip({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
   return (
-    <AppButton
-      size="sm"
-      variant={selected ? "secondary" : "ghost"}
-      onPress={onPress}
-      style={styles.chip}
-    >
-      {label}
-    </AppButton>
-  );
-}
-
-/* ---------------------------------
- * Component
- * --------------------------------- */
-
-export function ConeFiltersCard({
-  value,
-  onChange,
-  completedCount,
-  completionsLoading,
-  completionsErr,
-  shownCount,
-  defaultExpanded = false,
-}: {
-  value: ConeFiltersValue;
-  onChange: (_next: ConeFiltersValue) => void;
-  completedCount: number;
-  completionsLoading: boolean;
-  completionsErr: string;
-  shownCount: number;
-  defaultExpanded?: boolean;
-}) {
-  const [expanded, setExpanded] = useState(defaultExpanded);
-
-  const patch = useCallback(
-    (p: Partial<ConeFiltersValue>) => onChange({ ...value, ...p }),
-    [onChange, value],
-  );
-
-  const summary = useMemo(() => {
-    const parts: string[] = [];
-    if (value.hideCompleted) parts.push("hide completed");
-    if (value.region !== "all") parts.push(labelFor(REGIONS as any, value.region as any));
-    if (value.category !== "all")
-      parts.push(labelFor(CATEGORIES as any, value.category as any));
-    return parts.length ? parts.join(" • ") : "none";
-  }, [value]);
-
-  /* ============================
-   * COLLAPSED BAR
-   * ============================ */
-  if (!expanded) {
-    return (
-      <View style={styles.collapsedBar}>
-        <Row justify="space-between" align="center">
-          <AppText variant="hint" numberOfLines={1}>
-            Filters: {summary}
-          </AppText>
-
-          <AppIconButton
-            icon={ChevronDown}
-            size={18}
-            onPress={() => setExpanded(true)}
-            accessibilityLabel="Show filters"
-          />
-        </Row>
-      </View>
-    );
-  }
-
-  /* ============================
-   * EXPANDED PANEL
-   * ============================ */
-  return (
-    <CardShell>
-      <Stack gap="sm">
-        <Row justify="space-between" align="center">
-          <AppText variant="label">Filters</AppText>
-
-          <AppIconButton
-            icon={ChevronUp}
-            size={18}
-            onPress={() => setExpanded(false)}
-            accessibilityLabel="Hide filters"
-          />
-        </Row>
-
-        {/* Completed */}
-        <Stack gap="xs">
-          <AppText variant="hint">Completed</AppText>
-
-          <Row gap="xs" align="center" style={styles.wrapRow}>
-            <Chip
-              label="Hide"
-              selected={value.hideCompleted}
-              onPress={() => patch({ hideCompleted: true })}
-            />
-            <Chip
-              label="Show"
-              selected={!value.hideCompleted}
-              onPress={() => patch({ hideCompleted: false })}
-            />
-
-            <View style={styles.flex1} />
-
-            <AppText variant="hint">
-              {completionsLoading ? "Loading…" : `${completedCount} completed`}
-            </AppText>
+    <View style={styles.fullWidthContainer}>
+      <Stack gap="md">
+        {/* Top Toggle Bar */}
+        <TouchableOpacity 
+          activeOpacity={0.7} 
+          onPress={() => setExpanded(!expanded)}
+          style={styles.mainToggle}
+        >
+          <Row justify="space-between" align="center">
+            <Row gap="sm" align="center">
+              <AppIcon icon={Filter} variant="surf" size={18} />
+              <AppText variant="body" style={styles.bold}>
+                {shownCount} Volcanoes shown
+              </AppText>
+            </Row>
+            <AppIcon icon={expanded ? ChevronUp : ChevronDown} variant="hint" size={20} />
           </Row>
+        </TouchableOpacity>
 
-          {completionsErr ? (
-            <AppText variant="hint" numberOfLines={2}>
-              {completionsErr}
-            </AppText>
-          ) : null}
-        </Stack>
-
-        {/* Region */}
-        <Stack gap="xs">
-          <AppText variant="hint">Region</AppText>
-
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Row gap="xs" style={styles.scrollRow}>
-              {REGIONS.map((r) => (
-                <Chip
-                  key={r.value}
-                  label={r.label}
-                  selected={value.region === r.value}
-                  onPress={() => patch({ region: r.value })}
+        {expanded && (
+          <Stack gap="lg" style={styles.expandedContent}>
+            {/* Hide Completed Toggle */}
+            <TouchableOpacity onPress={toggleHideCompleted} style={styles.filterRow}>
+              <Row justify="space-between" align="center">
+                <AppText variant="body">Hide visited peaks</AppText>
+                <AppIcon 
+                  icon={value.hideCompleted ? CheckCircle2 : Circle} 
+                  variant={value.hideCompleted ? "surf" : "hint"} 
+                  size={24} 
                 />
-              ))}
-            </Row>
-          </ScrollView>
-        </Stack>
+              </Row>
+            </TouchableOpacity>
 
-        {/* Category */}
-        <Stack gap="xs">
-          <AppText variant="hint">Type</AppText>
+            {/* Region Selector */}
+            <Stack gap="xs">
+              <AppText variant="label" status="hint" style={styles.label}>REGION</AppText>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                {REGIONS.map((r) => (
+                  <TouchableOpacity
+                    key={r.value}
+                    onPress={() => onChange({ ...value, region: r.value })}
+                    style={[styles.chip, value.region === r.value && styles.activeChip]}
+                  >
+                    <AppText 
+                      variant="label" 
+                      style={[styles.chipText, value.region === r.value && styles.activeChipText]}
+                    >
+                      {r.label}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Stack>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <Row gap="xs" style={styles.scrollRow}>
-              {CATEGORIES.map((c) => (
-                <Chip
-                  key={c.value}
-                  label={c.label}
-                  selected={value.category === c.value}
-                  onPress={() => patch({ category: c.value })}
-                />
-              ))}
-            </Row>
-          </ScrollView>
-        </Stack>
-
-        <Row justify="flex-end">
-          <AppText variant="hint">Showing {shownCount}</AppText>
-        </Row>
+            {/* Category Selector */}
+            <Stack gap="xs">
+              <AppText variant="label" status="hint" style={styles.label}>TYPE</AppText>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
+                {CATEGORIES.map((c) => (
+                  <TouchableOpacity
+                    key={c.value}
+                    onPress={() => onChange({ ...value, category: c.value })}
+                    style={[styles.chip, value.category === c.value && styles.activeChip]}
+                  >
+                    <AppText 
+                      variant="label" 
+                      style={[styles.chipText, value.category === c.value && styles.activeChipText]}
+                    >
+                      {c.label}
+                    </AppText>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Stack>
+          </Stack>
+        )}
       </Stack>
-    </CardShell>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  chip: {
-    borderRadius: 999,
-    minHeight: 32,
-    paddingHorizontal: space.sm,
-  },
-  collapsedBar: {
-    marginHorizontal: -space.md,
-    paddingVertical: space.sm,
-    paddingHorizontal: space.md,
-    borderTopWidth: 1,
+  fullWidthContainer: {
+    width: "100%",
+    backgroundColor: "#F8FAFC",
     borderBottomWidth: 1,
-    borderColor: "rgba(0,0,0,0.06)",
-    backgroundColor: "rgba(0,0,0,0.02)",
+    borderBottomColor: "#E2E8F0",
+    paddingVertical: space.md,
+    // Negative margin to bleed out of parent padding if necessary
+    marginHorizontal: -16, 
+    paddingHorizontal: 16,
   },
-  wrapRow: { flexWrap: "wrap" },
-  flex1: { flex: 1 },
-  scrollRow: { paddingVertical: 2 },
+  mainToggle: {
+    paddingVertical: 4,
+  },
+  bold: { fontWeight: "800" },
+  expandedContent: {
+    marginTop: space.sm,
+    paddingTop: space.md,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
+  },
+  filterRow: {
+    paddingVertical: 4,
+  },
+  label: {
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  chipScroll: {
+    gap: 8,
+    paddingRight: 16,
+  },
+  chip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  activeChip: {
+    backgroundColor: "#66B2A2",
+    borderColor: "#66B2A2",
+  },
+  chipText: {
+    color: "#64748B",
+    fontWeight: "700",
+  },
+  activeChipText: {
+    color: "#FFFFFF",
+  },
 });

@@ -1,18 +1,16 @@
 import React, { useMemo } from "react";
-import { View, ScrollView, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 
-import { Screen } from "@/components/ui/screen";
+import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
-
 import { Stack } from "@/components/ui/Stack";
 import { Section } from "@/components/ui/Section";
-import { AppText } from "@/components/ui/AppText";
 import { CardShell } from "@/components/ui/CardShell";
+import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 
 import { useSession } from "@/lib/providers/SessionProvider";
-
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
@@ -26,22 +24,18 @@ import { NearestUnclimbedCard } from "@/components/progress/NearestUnclimbedCard
 import { ProgressHeaderCard } from "@/components/progress/ProgressHeader";
 
 import { goBadges, goCone, goConesHome, goLogin, goProgressHome } from "@/lib/routes";
-import { space } from "@/lib/ui/tokens";
 
 export default function ProgressScreen() {
   const { session } = useSession();
 
   if (session.status === "loading") {
     return (
-      <Screen padded={false}>
-        <View style={styles.flex1}>
-          <LoadingState label="Loading…" />
-        </View>
+      <Screen>
+        <LoadingState label="Syncing progress…" />
       </Screen>
     );
   }
 
-  // Guests + logged-out both get the “marketing” screen
   if (session.status !== "authed") return <GuestProgress />;
 
   return <AuthedProgress />;
@@ -49,37 +43,24 @@ export default function ProgressScreen() {
 
 function GuestProgress() {
   return (
-    <Screen padded={false}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Stack gap="lg">
-          <Section>
-            <CardShell>
-              <Stack gap="sm">
-                <AppText variant="screenTitle">Progress</AppText>
-
-                <AppText variant="body">
-                  You can browse cones and read reviews without signing in. Sign in to
-                  track completions and earn badges.
-                </AppText>
-
-                {/* Replaced Stack with View to support 'style' prop */}
-                <View style={[styles.guestActions, { gap: space.sm }]}>
-                  <AppButton variant="primary" onPress={goLogin}>
-                    Sign in
-                  </AppButton>
-
-                  <AppButton variant="secondary" onPress={goConesHome}>
-                    Browse cones
-                  </AppButton>
-                </View>
-              </Stack>
-            </CardShell>
-          </Section>
-        </Stack>
-      </ScrollView>
+    <Screen scrollable padded>
+      <Section title="Progress">
+        <CardShell status="surf">
+          <Stack gap="md">
+            <AppText variant="body">
+              Join the community to track your climbs, earn badges for reaching summits, and share your experiences.
+            </AppText>
+            <Stack gap="sm">
+              <AppButton variant="primary" onPress={goLogin}>
+                Sign In
+              </AppButton>
+              <AppButton variant="secondary" onPress={goConesHome}>
+                Browse Cones
+              </AppButton>
+            </Stack>
+          </Stack>
+        </CardShell>
+      </Section>
     </Screen>
   );
 }
@@ -92,52 +73,34 @@ function AuthedProgress() {
   const myReviews = useMyReviews();
   const { badgeState } = useBadgesData();
 
-  const completedIds = my.completedConeIds;
-  const shareBonusCount = my.shareBonusCount;
-  const reviewedConeIds = myReviews.reviewedConeIds;
-
   const totals = useMemo(() => {
     const total = cones.length;
-    const completed = cones.reduce((acc, c) => acc + (completedIds.has(c.id) ? 1 : 0), 0);
+    const completed = cones.filter((c) => my.completedConeIds.has(c.id)).length;
     const percent = total === 0 ? 0 : completed / total;
     return { total, completed, percent };
-  }, [cones, completedIds]);
+  }, [cones, my.completedConeIds]);
 
-  const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
+  const nearestUnclimbed = useNearestUnclimbed(cones, my.completedConeIds, loc);
 
   const conesToReview = useMemo(() => {
-    return cones
-      .filter((c) => completedIds.has(c.id) && !reviewedConeIds.has(c.id))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [cones, completedIds, reviewedConeIds]);
-
-  const allDone = totals.total > 0 && totals.completed >= totals.total;
-
-  function openCone(coneId: string) {
-    goCone(coneId);
-  }
+    return cones.filter((c) => 
+      my.completedConeIds.has(c.id) && !myReviews.reviewedConeIds.has(c.id)
+    );
+  }, [cones, my.completedConeIds, myReviews.reviewedConeIds]);
 
   const loading = conesLoading || my.loading || myReviews.loading;
   const fatalErr = conesErr || my.err || myReviews.err;
 
-  if (loading) {
-    return (
-      <Screen padded={false}>
-        <View style={styles.flex1}>
-          <LoadingState label="Loading progress…" />
-        </View>
-      </Screen>
-    );
-  }
+  if (loading) return <Screen><LoadingState /></Screen>;
 
   if (fatalErr) {
     return (
-      <Screen padded={false}>
+      <Screen>
         <View style={styles.errorContainer}>
           <ErrorCard
-            title="Progress"
+            title="Progress Error"
             message={fatalErr}
-            action={{ label: "Retry", onPress: goProgressHome, appearance: "filled" }}
+            action={{ label: "Retry", onPress: goProgressHome }}
           />
         </View>
       </Screen>
@@ -145,80 +108,56 @@ function AuthedProgress() {
   }
 
   return (
-    <Screen padded={false}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Stack gap="lg">
-          <Section>
-            <ProgressHeaderCard
-              completed={totals.completed}
-              total={totals.total}
-              percent={totals.percent}
-              shareBonusCount={shareBonusCount}
-              allDone={allDone}
-              onOpenBadges={goBadges}
-              onBrowseVolcanoes={goConesHome}
-            />
-          </Section>
+    <Screen scrollable padded>
+      <Stack gap="xl">
+        {/* Statistics Dashboard */}
+        <ProgressHeaderCard
+          completed={totals.completed}
+          total={totals.total}
+          percent={totals.percent}
+          reviewCount={myReviews.reviewedConeIds.size}
+          shareCount={my.shareCount || 0}
+          allDone={totals.completed >= totals.total && totals.total > 0}
+          onOpenBadges={goBadges}
+          onBrowseVolcanoes={goConesHome}
+        />
 
-          <Section>
-            <NearestUnclimbedCard
-              cone={
-                nearestUnclimbed
-                  ? {
-                      id: nearestUnclimbed.cone.id,
-                      name: nearestUnclimbed.cone.name,
-                      description: nearestUnclimbed.cone.description,
-                    }
-                  : null
-              }
-              distanceMeters={nearestUnclimbed?.distanceMeters ?? null}
-              locErr={locErr}
-              onOpenCone={openCone}
-            />
-          </Section>
+        {/* Tactical Mission (Card handles its own title) */}
+        <Section>
+          <NearestUnclimbedCard
+            cone={nearestUnclimbed?.cone}
+            distanceMeters={nearestUnclimbed?.distanceMeters}
+            locErr={locErr}
+            onOpenCone={goCone}
+          />
+        </Section>
 
+        {/* Action Required */}
+        {conesToReview.length > 0 && (
           <Section>
-            <ConesToReviewCard
-              cones={conesToReview.map((c) => ({
-                id: c.id,
-                name: c.name,
-                description: c.description,
-              }))}
-              onOpenCone={openCone}
+            <ConesToReviewCard 
+              cones={conesToReview} 
+              onOpenCone={goCone} 
             />
           </Section>
+        )}
 
-          <Section>
-            <BadgesSummaryCard
-              nextUp={badgeState.nextUp}
-              recentlyUnlocked={badgeState.recentlyUnlocked}
-              onViewAll={goBadges}
-            />
-          </Section>
-        </Stack>
-      </ScrollView>
+        {/* Achievements */}
+        <Section>
+          <BadgesSummaryCard
+            nextUp={badgeState.nextUp}
+            recentlyUnlocked={badgeState.recentlyUnlocked}
+            onViewAll={goBadges}
+          />
+        </Section>
+      </Stack>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: space.md,
-    paddingTop: space.md,
-    paddingBottom: space.xl,
-  },
-  guestActions: {
-    marginTop: 6,
-  },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: space.md,
   },
 });

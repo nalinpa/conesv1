@@ -1,6 +1,7 @@
 import React from "react";
 import { View, StyleSheet, type ViewStyle } from "react-native";
-import { Spinner, Text } from "@ui-kitten/components";
+import { Spinner } from "@ui-kitten/components";
+import { AppText } from "@/components/ui/AppText";
 
 interface LoadingStateProps {
   label?: string;
@@ -17,20 +18,20 @@ export function LoadingState({
 }: LoadingStateProps) {
   const content = (
     <View style={[styles.contentContainer, style]}>
-      <Spinner size={size} />
-      {label ? (
-        <Text appearance="hint" category="s1" style={styles.labelText}>
+      <Spinner size={size} status="primary" />
+      {label && (
+        <AppText variant="hint" style={styles.labelText}>
           {label}
-        </Text>
-      ) : null}
+        </AppText>
+      )}
     </View>
   );
 
-  if (!fullScreen) {
-    return content;
-  }
-
-  return <View style={styles.fullScreenContainer}>{content}</View>;
+  return (
+    <View style={fullScreen ? styles.fullScreenContainer : style}>
+      {content}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

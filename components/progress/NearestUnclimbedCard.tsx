@@ -1,91 +1,99 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
+import { MapPin, ChevronRight, Navigation } from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
 import { formatDistanceMeters } from "@/lib/formatters";
-
 import { Stack } from "@/components/ui/Stack";
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
-import { space } from "@/lib/ui/tokens";
-import { AppButton } from "../ui/AppButton";
-
-type ConeLite = {
-  id: string;
-  name: string;
-  description?: string;
-};
+import { AppIcon } from "@/components/ui/AppIcon";
+import { AppButton } from "@/components/ui/AppButton";
 
 export function NearestUnclimbedCard({
   cone,
   distanceMeters,
   locErr,
   onOpenCone,
-}: {
-  cone: ConeLite | null;
-  distanceMeters: number | null;
-  locErr?: string;
-  onOpenCone: (_id: string) => void;
-}) {
-  const hasDistance = distanceMeters != null;
-
-  const distanceLabel = hasDistance
-    ? `About ${formatDistanceMeters(distanceMeters)} away`
-    : locErr
-      ? "Turn on location to see what’s closest"
-      : "Finding what’s closest…";
-
-  const pillLabel = distanceMeters != null ? formatDistanceMeters(distanceMeters) : "—";
+}: any) {
+  if (!cone) {
+    return (
+      <CardShell status="basic">
+        <Row gap="sm" align="center">
+          <AppIcon icon={Navigation} variant="hint" size={20} />
+          <AppText variant="body" status="hint">
+            {locErr ? "Enable location to find nearby cones" : "Finding your next summit..."}
+          </AppText>
+        </Row>
+      </CardShell>
+    );
+  }
 
   return (
-    <CardShell>
+    <CardShell 
+      status="surf" 
+      onPress={() => onOpenCone(cone.id)}
+      style={styles.card}
+    >
       <Stack gap="md">
         <Row justify="space-between" align="center">
-          <AppText variant="sectionTitle">Nearby volcano</AppText>
-          <Pill status={hasDistance ? "success" : "basic"}>{pillLabel}</Pill>
+          <Row gap="xs" align="center">
+            {/* Surf Green Icon for the "pop", but dark text for legibility */}
+            <AppIcon icon={MapPin} variant="surf" size={18} />
+            <AppText variant="label" style={styles.headerLabel}>
+              NEXT MISSION
+            </AppText>
+          </Row>
+          {distanceMeters != null && (
+            <Pill status="surf">
+              {formatDistanceMeters(distanceMeters)}
+            </Pill>
+          )}
         </Row>
 
-        {!cone ? (
-          <AppText variant="hint">
-            {locErr
-              ? "Turn on location to see a nearby volcano."
-              : "No volcanoes to show yet."}
+        <Stack gap="xs">
+          <AppText variant="h3" style={styles.coneName}>{cone.name}</AppText>
+          <AppText variant="body" numberOfLines={2} style={styles.description}>
+            {cone.description || "A volcanic peak waiting to be explored."}
           </AppText>
-        ) : (
-          <Stack gap="sm">
-            <View style={styles.infoContainer}>
-              <AppText variant="sectionTitle" style={styles.coneName}>
-                {cone.name}
-              </AppText>
+        </Stack>
 
-              {cone.description?.trim() ? (
-                <AppText variant="hint" numberOfLines={2}>
-                  {cone.description.trim()}
-                </AppText>
-              ) : null}
-
-              <AppText variant="hint">{distanceLabel}</AppText>
-            </View>
-
-            <View style={styles.buttonContainer}>
-              <AppButton onPress={() => onOpenCone(cone.id)}>View details</AppButton>
-            </View>
-          </Stack>
-        )}
+        <AppButton 
+          variant="primary" 
+          size="sm" 
+          onPress={() => onOpenCone(cone.id)}
+          style={styles.button}
+        >
+          <Row gap="xs" align="center">
+            <AppText variant="label" status="control">View Details</AppText>
+            <AppIcon icon={ChevronRight} variant="control" size={16} />
+          </Row>
+        </AppButton>
       </Stack>
     </CardShell>
   );
 }
 
 const styles = StyleSheet.create({
-  infoContainer: {
-    gap: space.xs,
+  card: {
+    backgroundColor: "#F0F9F7",
+  },
+  headerLabel: {
+    fontWeight: "900",
+    color: "#1E293B", 
+    letterSpacing: 0.5,
   },
   coneName: {
-    fontWeight: "800",
+    color: "#0F172A",
+    fontWeight: "900",
   },
-  buttonContainer: {
-    marginTop: space.xs,
+  description: {
+    color: "#475569", 
+  },
+  button: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    backgroundColor: "#66B2A2", 
   },
 });

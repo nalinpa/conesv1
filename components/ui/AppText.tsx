@@ -1,18 +1,33 @@
 import React from "react";
-import { Text } from "@ui-kitten/components";
-import type { TextProps } from "@ui-kitten/components";
-
+import { Text, StyleSheet } from "react-native";
+import { useTheme } from "@ui-kitten/components";
 import { text } from "@/lib/ui/type";
 
-type Variant = keyof typeof text;
+export function AppText({ variant = "body", status, style, children, ...rest }: any) {
+  const theme = useTheme();
 
-type Props = TextProps & {
-  variant?: Variant;
-};
+  // Handle standard UI Kitten status colors manually
+  const getStatusColor = () => {
+    if (status === "surf") return "#66B2A2";
+    if (status === "primary") return theme["color-primary-500"];
+    if (status === "success") return theme["color-success-500"];
+    if (status === "danger") return theme["color-danger-500"];
+    if (status === "hint") return theme["text-hint-color"];
+    return undefined; // Falls back to your token color or theme default
+  };
 
-export function AppText({ variant = "body", style, children, ...rest }: Props) {
+  const statusStyle = { color: getStatusColor() };
+
   return (
-    <Text {...rest} style={[text[variant], style]}>
+    <Text 
+      {...rest} 
+      style={[
+        { color: theme["text-basic-color"] }, 
+        text[variant], 
+        statusStyle,
+        style
+      ]}
+    >
       {children}
     </Text>
   );

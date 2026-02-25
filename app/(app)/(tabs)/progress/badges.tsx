@@ -1,179 +1,105 @@
 import React from "react";
 import { View, ScrollView, StyleSheet } from "react-native";
-import { Layout, Text } from "@ui-kitten/components";
+import { router } from "expo-router";
+import { ChevronLeft, Trophy, Lock } from "lucide-react-native";
 
-// Resolving aliases to relative paths to fix compilation errors
-import { useBadgesData } from "../../../../lib/hooks/useBadgesData";
-import { goProgressHome, goBadges } from "../../../../lib/routes";
-
-import { LoadingState } from "../../../../components/ui/LoadingState";
-import { CardShell } from "../../../../components/ui/CardShell";
-import { Screen } from "../../../../components/ui/screen";
-import { ErrorCard } from "../../../../components/ui/ErrorCard";
-import { BadgeTile } from "../../../../components/badges/BadgeTile";
-import { AppButton } from "../../../../components/ui/AppButton";
+import { useBadgesData } from "@/lib/hooks/useBadgesData";
+import { LoadingState } from "@/components/ui/LoadingState";
+import { CardShell } from "@/components/ui/CardShell";
+import { Screen } from "@/components/ui/Screen";
+import { ErrorCard } from "@/components/ui/ErrorCard";
+import { BadgeTile } from "@/components/badges/BadgeTile";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppText } from "@/components/ui/AppText";
+import { Row } from "@/components/ui/Row";
+import { Stack } from "@/components/ui/Stack";
+import { space } from "@/lib/ui/tokens";
 
 const SECTION_ORDER = ["Core", "Social", "Types", "Regions", "Reviews", "Completionist"];
-
-type BadgeGroup = {
-  section: string;
-  items: Array<{
-    id: string;
-    name: string;
-    icon: string; // The emoji icon
-    unlockText: string;
-    unlocked: boolean;
-    progressLabel: string | null;
-  }>;
-};
-
-function sectionRank(section: string) {
-  const idx = SECTION_ORDER.indexOf(section);
-  return idx === -1 ? 999 : idx;
-}
 
 export default function BadgesScreen() {
   const { loading, err, badgeState, badgeTotals, badgeItems } = useBadgesData();
 
-  if (loading) {
-    return (
-      <Screen padded={false}>
-        <Layout style={styles.container}>
-          <LoadingState label="Loading badges…" />
-        </Layout>
-      </Screen>
-    );
-  }
+  if (loading) return <Screen><LoadingState label="Polishing your trophies..." /></Screen>;
+  if (err) return <Screen><ErrorCard title="Badges" message={err} action={{ label: "Retry", onPress: () => router.replace("/badges") }} /></Screen>;
 
-  if (err) {
-    return (
-      <Screen padded={false}>
-        <Layout style={styles.errorContainer}>
-          <ErrorCard
-            title="Badges"
-            message={err}
-            action={{ label: "Retry", onPress: goBadges, appearance: "filled" }}
-          />
-        </Layout>
-      </Screen>
-    );
-  }
-
-  const groups: BadgeGroup[] = (() => {
-    const map = new Map<string, BadgeGroup>();
-
-    for (const b of badgeItems) {
-      const p = badgeState.progressById[b.id];
-      const section = p?.badge.section ?? "Other";
-
-      const g = map.get(section) ?? { section, items: [] };
-      g.items.push(b);
-      map.set(section, g);
-    }
-
-    const arr = Array.from(map.values());
-
-    for (const g of arr) {
-      g.items.sort((a, b) => {
-        if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
-
-        const pa = badgeState.progressById[a.id];
-        const pb = badgeState.progressById[b.id];
-
-        const da = pa?.distanceToEarn;
-        const db = pb?.distanceToEarn;
-
-        const aHas = typeof da === "number" && Number.isFinite(da);
-        const bHas = typeof db === "number" && Number.isFinite(db);
-
-        if (aHas && bHas && da !== db) return da - db;
-        if (aHas !== bHas) return aHas ? -1 : 1;
-
-        return a.name.localeCompare(b.name);
-      });
-    }
-
-    arr.sort((a, b) => {
-      const ra = sectionRank(a.section);
-      const rb = sectionRank(b.section);
-      if (ra !== rb) return ra - rb;
-      return a.section.localeCompare(b.section);
+  // Grouping Logic
+  const groups = (() => {
+    const map = new Map();
+    badgeItems.forEach(b => {
+      const section = badgeState.progressById[b.id]?.badge.section ?? "Other";
+      if (!map.has(section)) map.set(section, { section, items: [] });
+      map.get(section).items.push(b);
     });
 
-    return arr;
+    return Array.from(map.values()).sort((a, b) => {
+      const ra = SECTION_ORDER.indexOf(a.section);
+      const rb = SECTION_ORDER.indexOf(b.section);
+      return (ra === -1 ? 999 : ra) - (rb === -1 ? 999 : rb);
+    });
   })();
+
+  const nextUp = badgeState.nextUp;
 
   return (
     <Screen padded={false}>
-      <Layout style={styles.container}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header Section */}
-          <View style={styles.headerRow}>
-            <View>
-              <Text category="h1">Badges</Text>
-              <Text appearance="hint" style={styles.headerSubtitle}>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        
+        {/* Header */}
+        <Row justify="space-between" align="center" style={styles.header}>
+          <Stack>
+            <AppText variant="screenTitle">Badges</AppText>
+            <Row gap="xs" align="center">
+              <Trophy size={14} color="#66B2A2" />
+              <AppText variant="label" status="surf" style={styles.bold}>
                 {badgeTotals.unlocked} of {badgeTotals.total} earned
-              </Text>
-            </View>
+              </AppText>
+            </Row>
+          </Stack>
+          <AppButton variant="ghost" size="sm" onPress={() => router.back()}>
+            <ChevronLeft size={20} color="#64748B" />
+          </AppButton>
+        </Row>
 
-            <AppButton variant="secondary" size="sm" onPress={goProgressHome}>
-              Back
-            </AppButton>
-          </View>
-
-          {/* "Next Up" Badge Card with Emoji Icon */}
-          <View style={styles.nextUpSection}>
-            <CardShell>
-              <Text category="h6" style={styles.sectionLabel}>Next up</Text>
-
-              {!badgeState.nextUp ? (
-                <Text appearance="hint" style={styles.noNextUpText}>
-                  Nothing new right now.
-                </Text>
-              ) : (
-                <View style={styles.nextUpCard}>
-                  <View style={styles.nextUpIconRow}>
-                    <Text style={styles.nextUpIcon}>{badgeState.nextUp.badge.icon}</Text>
-                    <Text category="s1" style={styles.boldText} numberOfLines={1}>
-                      {badgeState.nextUp.badge.name}
-                    </Text>
+        {/* Next Up Focus Card */}
+        {nextUp && (
+          <View style={styles.section}>
+            <CardShell status="surf">
+              <Stack gap="sm">
+                <AppText variant="label" status="surf" style={styles.upper}>Next Milestone</AppText>
+                <Row gap="md" align="center">
+                  <View style={styles.nextUpIconBg}>
+                    <AppText style={styles.emojiIconLarge}>{nextUp.badge.icon}</AppText>
                   </View>
-
-                  <Text
-                    appearance="hint"
-                    style={styles.nextUpDescription}
-                    numberOfLines={2}
-                  >
-                    {badgeState.nextUp.badge.unlockText}
-                  </Text>
-
-                  {badgeState.nextUp.progressLabel ? (
-                    <Text
-                      appearance="hint"
-                      style={styles.nextUpProgress}
-                      numberOfLines={2}
-                    >
-                      {badgeState.nextUp.progressLabel}
-                    </Text>
-                  ) : null}
-                </View>
-              )}
+                  <Stack style={styles.flex1}>
+                    <AppText variant="sectionTitle" status="surf">{nextUp.badge.name}</AppText>
+                    <AppText variant="label" status="surf" opacity={0.8}>
+                      {nextUp.badge.unlockText}
+                    </AppText>
+                  </Stack>
+                </Row>
+                {nextUp.progressLabel && (
+                  <View style={styles.progressBarContainer}>
+                     <AppText variant="label" status="surf" style={styles.bold}>
+                        {nextUp.progressLabel}
+                     </AppText>
+                  </View>
+                )}
+              </Stack>
             </CardShell>
           </View>
+        )}
 
-          {/* Grouped Badge Lists - icons are passed to BadgeTile */}
-          <View style={styles.groupsContainer}>
-            {groups.map((g) => (
-              <CardShell key={g.section}>
-                <Text category="h6" style={styles.groupTitle}>
-                  {g.section}
-                </Text>
-
-                <View>
-                  {g.items.map((b) => (
+        {/* Badge Groups */}
+        <Stack gap="lg" style={styles.groupsContainer}>
+          {groups.map((g: any) => (
+            <Stack key={g.section} gap="sm">
+              <AppText variant="label" status="hint" style={styles.upper}>
+                {g.section}
+              </AppText>
+              <CardShell status="basic">
+                <Stack gap="xs">
+                  {g.items.map((b: any) => (
                     <BadgeTile
                       key={b.id}
                       name={b.name}
@@ -183,82 +109,37 @@ export default function BadgesScreen() {
                       progressLabel={b.progressLabel}
                     />
                   ))}
-                </View>
+                </Stack>
               </CardShell>
-            ))}
-          </View>
-        </ScrollView>
-      </Layout>
+            </Stack>
+          ))}
+        </Stack>
+      </ScrollView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: "center",
-    paddingHorizontal: 16,
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
-  },
-  headerRow: {
-    flexDirection: "row",
+  flex1: { flex: 1 },
+  scroll: { paddingBottom: 40 },
+  header: { padding: 16, paddingTop: 24 },
+  section: { paddingHorizontal: 16, marginBottom: 24 },
+  groupsContainer: { paddingHorizontal: 16 },
+  bold: { fontWeight: "800" },
+  upper: { textTransform: "uppercase", letterSpacing: 1.2, fontWeight: "900", fontSize: 11 },
+  nextUpIconBg: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
   },
-  headerSubtitle: {
+  emojiIconLarge: { fontSize: 32 },
+  progressBarContainer: {
     marginTop: 4,
-  },
-  nextUpSection: {
-    marginTop: 14,
-  },
-  sectionLabel: {
-    marginBottom: 4,
-  },
-  noNextUpText: {
-    marginTop: 8,
-  },
-  nextUpCard: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: 'rgba(0,0,0,0.02)',
-  },
-  nextUpIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 6,
-  },
-  nextUpIcon: {
-    fontSize: 24,
-  },
-  boldText: {
-    fontWeight: "800",
-  },
-  nextUpDescription: {
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  nextUpProgress: {
-    marginTop: 10,
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  groupsContainer: {
-    marginTop: 14,
-    gap: 12,
-  },
-  groupTitle: {
-    marginBottom: 10,
-  },
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+  }
 });

@@ -12,7 +12,7 @@ import { Stack, router, useLocalSearchParams } from "expo-router";
 import { captureRef } from "react-native-view-shot";
 import * as ImagePicker from "expo-image-picker";
 
-import { Screen } from "@/components/ui/screen";
+import { Screen } from "@/components/ui/Screen";
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack as VStack } from "@/components/ui/Stack";
 import { AppText } from "@/components/ui/AppText";

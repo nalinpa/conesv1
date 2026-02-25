@@ -1,9 +1,10 @@
 import React, { useMemo } from "react";
 import { View, FlatList, StyleSheet } from "react-native";
-import { Text } from "@ui-kitten/components";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { ConeListItem } from "@/components/cone/list/ConeListItem";
+import { AppText } from "@/components/ui/AppText";
+import { Stack } from "@/components/ui/Stack";
 
 import type { ConeRow } from "@/lib/hooks/useSortedConeRows";
 
@@ -16,7 +17,7 @@ export function ConesListView({
 }: {
   rows: ConeRow[];
   header?: React.ReactElement<any> | null;
-  onPressCone: (_id: string) => void;
+  onPressCone: (id: string) => void;
   completedIds?: Set<string>;
   hideCompleted?: boolean;
 }) {
@@ -31,9 +32,11 @@ export function ConesListView({
       data={visibleRows}
       keyExtractor={(item) => item.cone.id}
       showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled" 
       contentContainerStyle={styles.listContent}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListHeaderComponent={header ?? null}
+      ListHeaderComponentStyle={styles.headerStyle}
       renderItem={({ item }) => {
         const { cone, distanceMeters } = item;
 
@@ -49,12 +52,15 @@ export function ConesListView({
         );
       }}
       ListEmptyComponent={
-        <CardShell>
-          <Text appearance="hint">
-            {hideCompleted && completedIds?.size
-              ? "No uncompleted cones found."
-              : "No cones found — check admin “active” flags."}
-          </Text>
+        <CardShell status="basic" style={styles.emptyCard}>
+          <Stack gap="xs" align="center">
+            <AppText variant="sectionTitle" status="hint">No Peaks Found</AppText>
+            <AppText variant="body" status="hint" style={styles.centerText}>
+              {hideCompleted && completedIds?.size
+                ? "You've conquered everything in this list!"
+                : "Check your filters or active settings."}
+            </AppText>
+          </Stack>
         </CardShell>
       }
     />
@@ -64,8 +70,19 @@ export function ConesListView({
 const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 40, 
   },
-  separator: { height: 12 },
+  headerStyle: {
+    marginBottom: 16,
+  },
+  separator: { 
+    height: 12 
+  },
+  emptyCard: {
+    marginHorizontal: 16,
+    paddingVertical: 32,
+  },
+  centerText: {
+    textAlign: "center",
+  },
 });

@@ -2,16 +2,14 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 import Svg, { Circle } from "react-native-svg";
-
 import { AppText } from "@/components/ui/AppText";
-import { space } from "@/lib/ui/tokens";
 
 export function PieChart({
   percent,
-  size = 128,
-  strokeWidth = 16,
+  size = 110, // Adjusted for dashboard density
+  strokeWidth = 12,
 }: {
-  percent: number; // 0..1
+  percent: number;
   size?: number;
   strokeWidth?: number;
 }) {
@@ -22,9 +20,8 @@ export function PieChart({
   const c = 2 * Math.PI * r;
   const dash = c * clamped;
 
-  // Slightly bolder track so it reads on bright UI
-  const track = theme["color-basic-400"] ?? "rgba(0,0,0,0.18)";
-  const progress = theme["color-primary-500"] ?? "#3FAE8F";
+  const track = "#E2E8F0"; 
+  const progress = "#66B2A2"; 
 
   return (
     <View style={styles.container}>
@@ -57,11 +54,11 @@ export function PieChart({
       </Svg>
 
       <View style={styles.labelContainer}>
-        <AppText variant="sectionTitle" style={styles.percentText}>
+        <AppText variant="h3" style={styles.percentText}>
           {Math.round(clamped * 100)}%
         </AppText>
-        <AppText variant="hint" style={styles.completeText}>
-          complete
+        <AppText variant="label" status="hint" style={styles.completeLabel}>
+          done
         </AppText>
       </View>
     </View>
@@ -76,12 +73,16 @@ const styles = StyleSheet.create({
   labelContainer: {
     position: "absolute",
     alignItems: "center",
+    justifyContent: "center",
   },
   percentText: {
     fontWeight: "900",
+    lineHeight: 24,
   },
-  completeText: {
-    marginTop: space.xs,
-    fontWeight: "700",
+  completeLabel: {
+    textTransform: "uppercase",
+    fontSize: 10,
+    marginTop: -2,
+    fontWeight: "800",
   },
 });

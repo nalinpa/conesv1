@@ -1,21 +1,21 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Modal } from "react-native";
 import { router } from "expo-router";
+import { LogOut, User, Trash2, ShieldAlert, LogIn } from "lucide-react-native";
 
-import { Screen } from "@/components/ui/screen";
+import { Screen } from "@/components/ui/Screen";
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
+import { AppIcon } from "@/components/ui/AppIcon";
 
 import { useSession } from "@/lib/providers/SessionProvider";
 import { auth } from "@/lib/firebase";
 import { userService } from "@/lib/services/userService";
+import { space } from "@/lib/ui/tokens";
 
-/**
- * Account Screen
- * Handles session management, sign-out, and the mandatory account deletion flow.
- */
 export default function AccountScreen() {
   const { session, disableGuest } = useSession();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -33,32 +33,21 @@ export default function AccountScreen() {
     router.replace("/login");
   };
 
-  /**
-   * Triggers the account deletion process via the userService.
-   * This handles deleting Firestore completion/review records before deleting the Auth user.
-   */
   const handleDeleteAccount = async () => {
     const user = auth.currentUser;
     if (!user) return;
-
     setIsDeleting(true);
     setError(null);
 
     try {
-      // Delegate the transactional cleanup and deletion to the service
       await userService.deleteAccount(user);
-
-      // Reset local guest states and redirect
       await disableGuest();
       router.replace("/login");
     } catch (e: any) {
-      console.error("Deletion error:", e);
-      
-      // Firebase requires a fresh login for sensitive operations
       if (e.code === 'auth/requires-recent-login') {
-        setError("For security, please log out and sign back in before deleting your account.");
+        setError("Security: Please log out and back in before deleting.");
       } else {
-        setError("Something went wrong while deleting your data. Please try again later.");
+        setError("Error deleting data. Please try again.");
       }
       setShowConfirm(false);
     } finally {
@@ -69,8 +58,8 @@ export default function AccountScreen() {
   if (session.status === "loading") {
     return (
       <Screen padded>
-        <View style={styles.loadingWrapper}>
-          <AppText variant="body">Loading…</AppText>
+        <View style={styles.center}>
+          <AppText variant="body" status="hint">Loading session...</AppText>
         </View>
       </Screen>
     );
@@ -81,113 +70,104 @@ export default function AccountScreen() {
 
   return (
     <Screen padded>
-      <Stack gap="md">
-        <CardShell>
-          <Stack gap="sm">
-            <AppText variant="screenTitle">Account</AppText>
+      <Stack gap="lg">
+        <AppText variant="screenTitle">Account</AppText>
 
+        <CardShell status="basic">
+          <Stack gap="md">
             {isAuthed ? (
-              <>
-                <View style={styles.infoRow}>
-                  <AppText variant="hint">Signed in as</AppText>
-                  <AppText variant="body" style={styles.emailText}>
-                    {auth.currentUser?.email}
-                  </AppText>
-                </View>
+              <Stack gap="md">
+                <Row gap="md" align="center">
+                  <View style={styles.avatar}>
+                    <User color="#64748B" size={24} />
+                  </View>
+                  <Stack style={styles.flex1}>
+                    <AppText variant="label" status="hint">Signed in as</AppText>
+                    <AppText variant="body" style={styles.bold}>{auth.currentUser?.email}</AppText>
+                  </Stack>
+                </Row>
 
                 <AppButton variant="secondary" onPress={handleLogout}>
-                  Log out
+                  <Row gap="xs" align="center">
+                    <LogOut size={16} color="#64748B" />
+                    <AppText variant="label" status="hint">Log Out</AppText>
+                  </Row>
                 </AppButton>
-              </>
-            ) : isGuest ? (
-              <>
-                <AppText variant="body">
-                  You’re browsing as a guest. Sign in to track completions, 
-                  earn badges, and leave reviews.
-                </AppText>
-
-                <AppButton variant="primary" onPress={handleSignIn}>
-                  Sign in / Create account
-                </AppButton>
-              </>
+              </Stack>
             ) : (
-              <>
-                <AppText variant="body">You’re not signed in.</AppText>
-                <AppButton variant="primary" onPress={() => router.replace("/login")}>
-                  Sign in
+              <Stack gap="md">
+                <AppText variant="body" status="hint">
+                  {isGuest 
+                    ? "You’re browsing as a guest. Sign in to save your visits and reviews."
+                    : "Sign in to access your volcanic exploration history."}
+                </AppText>
+                <AppButton variant="primary" onPress={handleSignIn}>
+                  <Row gap="xs" align="center">
+                    <LogIn size={18} color="#fff" />
+                    <AppText variant="label" status="control">Sign In / Create Account</AppText>
+                  </Row>
                 </AppButton>
-              </>
+              </Stack>
             )}
           </Stack>
         </CardShell>
 
-        {/* Danger Zone: Visible only for authenticated users */}
         {isAuthed && (
-          <View style={styles.dangerZone}>
-            <CardShell status="danger">
-              <Stack gap="sm">
-                <AppText variant="sectionTitle" style={styles.dangerTitle}>
-                  Danger Zone
-                </AppText>
-                <AppText variant="hint">
-                  Deleting your account will permanently remove your visit history, 
-                  reviews, and earned badges. This action cannot be undone.
+          <Stack gap="sm" style={styles.dangerZone}>
+            <Row gap="xs" align="center">
+              <ShieldAlert size={16} color="#ef4444" />
+              <AppText variant="label" style={styles.dangerLabel}>Security & Privacy</AppText>
+            </Row>
+
+            <CardShell status="basic" style={styles.dangerCard}>
+              <Stack gap="md">
+                <AppText variant="label" status="hint">
+                  Permanently remove your visit history and reviews. This cannot be undone.
                 </AppText>
                 
                 {error && (
                   <View style={styles.errorBox}>
-                    <AppText variant="hint" style={styles.errorText}>{error}</AppText>
+                    <AppText variant="label" style={styles.errorText}>{error}</AppText>
                   </View>
                 )}
 
                 <AppButton 
-                  variant="danger" 
+                  variant="ghost" 
                   onPress={() => setShowConfirm(true)}
                   loading={isDeleting}
                 >
-                  Delete Account
+                  <Row gap="xs" align="center">
+                    <Trash2 size={16} color="#ef4444" />
+                    <AppText variant="label" style={styles.dangerText}>Delete Account</AppText>
+                  </Row>
                 </AppButton>
               </Stack>
             </CardShell>
-          </View>
+          </Stack>
         )}
       </Stack>
 
-      {/* Confirmation Modal to prevent accidental deletion */}
-      <Modal
-        visible={showConfirm}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowConfirm(false)}
-      >
+      <Modal visible={showConfirm} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <CardShell status="danger">
-              <Stack gap="md">
-                <AppText variant="sectionTitle">Are you sure?</AppText>
-                <AppText variant="body">
-                  This will permanently delete your account and all associated data. 
-                  All your progress will be lost.
+          <CardShell status="danger" style={styles.modalContent}>
+            <Stack gap="lg">
+              <Stack gap="xs">
+                <AppText variant="sectionTitle" status="control">Are you absolutely sure?</AppText>
+                <AppText variant="body" status="control">
+                  All progress, badges, and reviews will be permanently erased from the Auckland Volcanic Field records.
                 </AppText>
-                <Stack gap="sm">
-                  <AppButton 
-                    variant="danger" 
-                    onPress={handleDeleteAccount}
-                    loading={isDeleting}
-                  >
-                    Yes, Delete My Account
-                  </AppButton>
-                  <AppButton 
-                    variant="ghost" 
-                    onPress={() => setShowConfirm(false)}
-                    disabled={isDeleting}
-                  >
-                    Cancel
-                  </AppButton>
-                </Stack>
               </Stack>
-            </CardShell>
-          </View>
+              
+              <Stack gap="sm">
+                <AppButton variant="danger" onPress={handleDeleteAccount} loading={isDeleting}>
+                  Delete Everything
+                </AppButton>
+                <AppButton variant="ghost" onPress={() => setShowConfirm(false)} disabled={isDeleting}>
+                  <AppText variant="label" status="control">Wait, keep my account</AppText>
+                </AppButton>
+              </Stack>
+            </Stack>
+          </CardShell>
         </View>
       </Modal>
     </Screen>
@@ -195,42 +175,36 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingWrapper: {
-    flex: 1,
-    justifyContent: 'center',
+  flex1: { flex: 1 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  bold: { fontWeight: '800', color: '#0F172A' },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0'
   },
-  infoRow: {
-    marginBottom: 8,
-  },
-  emailText: {
-    fontWeight: '700',
-  },
-  dangerZone: {
-    marginTop: 24,
-  },
-  dangerTitle: {
-    color: '#b91c1c', // Tailwind red-700
-  },
+  dangerZone: { marginTop: space.lg },
+  dangerLabel: { color: '#ef4444', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  dangerCard: { borderColor: '#fee2e2' },
+  dangerText: { color: '#ef4444', fontWeight: '700' },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.8)',
     justifyContent: 'center',
-    padding: 24,
+    padding: space.lg,
   },
-  modalContent: {
-    width: '100%',
-  },
+  modalContent: { width: '100%' },
   errorBox: {
-    backgroundColor: '#fee2e2',
-    padding: 12,
+    backgroundColor: '#fef2f2',
+    padding: space.sm,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ef4444',
-    marginBottom: 8,
+    borderColor: '#fecaca',
   },
-  errorText: {
-    color: '#b91c1c',
-    fontWeight: '600',
-  }
+  errorText: { color: '#b91c1c', fontWeight: '700' }
 });
