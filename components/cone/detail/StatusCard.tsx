@@ -10,7 +10,13 @@ import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppIcon } from "@/components/ui/AppIcon";
 
-type GPSState = "denied" | "unknown_permission" | "requesting" | "low_accuracy" | "too_far" | "ready";
+type GPSState =
+  | "denied"
+  | "unknown_permission"
+  | "requesting"
+  | "low_accuracy"
+  | "too_far"
+  | "ready";
 
 function normalizeLocStatus(v: unknown): "unknown" | "granted" | "denied" {
   if (v === "granted" || v === "denied" || v === "unknown") return v;
@@ -33,7 +39,8 @@ export function StatusCard({
     if (status === "denied") return "denied";
     if (status === "unknown") return "unknown_permission";
     if (!loc) return "requesting";
-    if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters) return "low_accuracy";
+    if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters)
+      return "low_accuracy";
     if (!inRange) return "too_far";
     return "ready";
   }, [status, loc, accuracyMeters, maxAccuracyMeters, inRange]);
@@ -47,8 +54,12 @@ export function StatusCard({
         <Row gap="md" align="center">
           <AppIcon icon={ShieldCheck} variant="control" size={24} />
           <Stack style={styles.flex1}>
-            <AppText variant="sectionTitle" status="control">Location Verified</AppText>
-            <AppText variant="label" status="control">You've visited this site.</AppText>
+            <AppText variant="sectionTitle" status="control">
+              Location Verified
+            </AppText>
+            <AppText variant="label" status="control">
+              You've visited this site.
+            </AppText>
           </Stack>
         </Row>
       </CardShell>
@@ -62,16 +73,32 @@ export function StatusCard({
         <Stack gap="md">
           <Row gap="sm" align="center">
             <AppIcon icon={AlertCircle} variant="control" size={20} />
-            <AppText variant="sectionTitle" status="control">Location Disabled</AppText>
+            <AppText variant="sectionTitle" status="control">
+              Location Disabled
+            </AppText>
           </Row>
           <AppText variant="label" status="control">
-            We need GPS to verify your visit and let you tap <AppText variant="label" status="control" style={styles.bold}>I’m here</AppText>.
+            We need GPS to verify your visit and let you tap{" "}
+            <AppText variant="label" status="control" style={styles.bold}>
+              I’m here
+            </AppText>
+            .
           </AppText>
           <Row gap="sm">
-            <AppButton variant="danger" size="sm" onPress={() => Linking.openSettings()} style={styles.flex1}>
+            <AppButton
+              variant="danger"
+              size="sm"
+              onPress={() => Linking.openSettings()}
+              style={styles.flex1}
+            >
               Open Settings
             </AppButton>
-            <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} style={styles.flex1}>
+            <AppButton
+              variant="secondary"
+              size="sm"
+              onPress={onRefreshGPS}
+              style={styles.flex1}
+            >
               Try again
             </AppButton>
           </Row>
@@ -93,11 +120,16 @@ export function StatusCard({
             </AppText>
           </Row>
           <AppText variant="body" status="hint">
-            {isFar 
-              ? `Get a little closer to this site to tap I'm here.` 
+            {isFar
+              ? `Get a little closer to this site to tap I'm here.`
               : `Accuracy is currently ${Math.round(accuracyMeters || 0)}m. Try moving to a clearer spot.`}
           </AppText>
-          <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} loading={refreshingGPS}>
+          <AppButton
+            variant="secondary"
+            size="sm"
+            onPress={onRefreshGPS}
+            loading={refreshingGPS}
+          >
             {refreshLabel}
           </AppButton>
         </Stack>
@@ -112,9 +144,15 @@ export function StatusCard({
         <Row gap="md" align="center">
           <AppIcon icon={MapPin} variant="surf" size={24} />
           <Stack style={styles.flex1}>
-            <AppText variant="sectionTitle" status="surf">You’re here!</AppText>
+            <AppText variant="sectionTitle" status="surf">
+              You’re here!
+            </AppText>
             <AppText variant="label" status="surf">
-              GPS verified. Tap <AppText variant="label" status="surf" style={styles.bold}>I’m here</AppText> below.
+              GPS verified. Tap{" "}
+              <AppText variant="label" status="surf" style={styles.bold}>
+                I’m here
+              </AppText>{" "}
+              below.
             </AppText>
           </Stack>
         </Row>
@@ -130,7 +168,12 @@ export function StatusCard({
           <Radar size={20} color="#64748B" />
           <AppText variant="sectionTitle">Finding you...</AppText>
         </Row>
-        <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} loading={refreshingGPS}>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          onPress={onRefreshGPS}
+          loading={refreshingGPS}
+        >
           {refreshLabel}
         </AppButton>
       </Stack>
@@ -141,5 +184,5 @@ export function StatusCard({
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
   bold: { fontWeight: "900" },
-  warningTitle: { color: "#92400E" }
+  warningTitle: { color: "#92400E" },
 });

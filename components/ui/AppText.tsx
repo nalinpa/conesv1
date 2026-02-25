@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, StyleSheet } from "react-native";
+import { Text } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 import { text } from "@/lib/ui/type";
 
@@ -19,14 +19,9 @@ export function AppText({ variant = "body", status, style, children, ...rest }: 
   const statusStyle = { color: getStatusColor() };
 
   return (
-    <Text 
-      {...rest} 
-      style={[
-        { color: theme["text-basic-color"] }, 
-        text[variant], 
-        statusStyle,
-        style
-      ]}
+    <Text
+      {...rest}
+      style={[{ color: theme["text-basic-color"] }, text[variant], statusStyle, style]}
     >
       {children}
     </Text>

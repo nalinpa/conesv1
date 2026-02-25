@@ -30,35 +30,35 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Steps",
     unlockText: "Visit your first volcano.",
     section: "Core",
-    icon: "👟"
+    icon: "👟",
   },
-  { 
-    id: "explorer", 
-    name: "Explorer", 
-    unlockText: "Visit 5 volcanoes.", 
-    section: "Core", 
-    icon: "🧭" 
+  {
+    id: "explorer",
+    name: "Explorer",
+    unlockText: "Visit 5 volcanoes.",
+    section: "Core",
+    icon: "🧭",
   },
   {
     id: "wayfinder",
     name: "Wayfinder",
     unlockText: "Visit 10 volcanoes.",
     section: "Core",
-    icon: "🗺️"
+    icon: "🗺️",
   },
   {
     id: "halfway_there",
     name: "Halfway There",
     unlockText: "Visit 20 volcanoes.",
     section: "Core",
-    icon: "🧗"
+    icon: "🧗",
   },
   {
     id: "cone_collector",
     name: "Cone Collector",
     unlockText: "Visit every active volcano.",
     section: "Core",
-    icon: "👑"
+    icon: "👑",
   },
 
   {
@@ -66,14 +66,14 @@ export const BADGES: BadgeDefinition[] = [
     name: "Shared the View",
     unlockText: "Share a photo to social media.",
     section: "Social",
-    icon: "📸"
+    icon: "📸",
   },
   {
     id: "show_off",
     name: "Show-Off",
     unlockText: "Share 5 photos to social media.",
     section: "Social",
-    icon: "✨"
+    icon: "✨",
   },
 
   {
@@ -81,12 +81,12 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Cone",
     unlockText: "Visit your first cone-type volcano.",
     section: "Types",
-    icon: "🌋"
+    icon: "🌋",
   },
   {
     id: "cone-fan",
     name: "Cone Fan",
-    icon: "🍦", 
+    icon: "🍦",
     unlockText: "Visit 10 different types of volcanic formations.",
     section: "Types",
   },
@@ -95,42 +95,42 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Crater",
     unlockText: "Visit your first crater.",
     section: "Types",
-    icon: "🕳️"
+    icon: "🕳️",
   },
   {
     id: "five_craters",
     name: "Crater Fan",
     unlockText: "Visit 5 craters.",
     section: "Types",
-    icon: "🌒"
+    icon: "🌒",
   },
   {
     id: "all_cones_type",
     name: "All Cones",
     unlockText: "Visit every cone-type volcano.",
     section: "Types",
-    icon: "⛰️"
+    icon: "⛰️",
   },
   {
     id: "all_craters_type",
     name: "All Craters",
     unlockText: "Visit every crater.",
     section: "Types",
-    icon: "🌑"
+    icon: "🌑",
   },
   {
     id: "first_lake",
     name: "First Lake",
     unlockText: "Visit your first lake.",
     section: "Types",
-    icon: "💧"
+    icon: "💧",
   },
   {
     id: "all_lakes_type",
     name: "All Lakes",
     unlockText: "Visit every lake.",
     section: "Types",
-    icon: "🌊"
+    icon: "🌊",
   },
 
   {
@@ -138,35 +138,35 @@ export const BADGES: BadgeDefinition[] = [
     name: "North Master",
     unlockText: "Visit every volcano in the North region.",
     section: "Regions",
-    icon: "🌉" 
+    icon: "🌉",
   },
   {
     id: "central_master",
     name: "Central Master",
     unlockText: "Visit every volcano in the Central region.",
     section: "Regions",
-    icon: "🏙️" 
+    icon: "🏙️",
   },
   {
     id: "east_master",
     name: "East Master",
     unlockText: "Visit every volcano in the East region.",
     section: "Regions",
-    icon: "⛵" 
+    icon: "⛵",
   },
   {
     id: "south_master",
     name: "South Master",
     unlockText: "Visit every volcano in the South region.",
     section: "Regions",
-    icon: "🎡" 
+    icon: "🎡",
   },
   {
     id: "harbour_master",
     name: "Harbour Master",
     unlockText: "Visit every volcano in the Harbour region.",
     section: "Regions",
-    icon: "⛴️" 
+    icon: "⛴️",
   },
 
   {
@@ -174,28 +174,28 @@ export const BADGES: BadgeDefinition[] = [
     name: "First Review",
     unlockText: "Write your first review.",
     section: "Reviews",
-    icon: "📝"
+    icon: "📝",
   },
-  { 
-    id: "critic", 
-    name: "Critic", 
-    unlockText: "Write 5 reviews.", 
-    section: "Reviews", 
-    icon: "⭐" 
+  {
+    id: "critic",
+    name: "Critic",
+    unlockText: "Write 5 reviews.",
+    section: "Reviews",
+    icon: "⭐",
   },
   {
     id: "trusted_reviewer",
     name: "Trusted Reviewer",
     unlockText: "Write 10 reviews.",
     section: "Reviews",
-    icon: "🏆"
+    icon: "🏆",
   },
   {
     id: "review_every_cone",
     name: "Reviewed Everything",
     unlockText: "Review every active volcano you’ve visited.",
     section: "Reviews",
-    icon: "💯"
+    icon: "💯",
   },
 
   {
@@ -203,7 +203,7 @@ export const BADGES: BadgeDefinition[] = [
     name: "Completionist",
     unlockText: "Visit, share, and review every active volcano.",
     section: "Completionist",
-    icon: "💎"
+    icon: "💎",
   },
 ];
 
@@ -622,9 +622,9 @@ export function getBadgeState(
           ? "central_master"
           : r === "east"
             ? "east_master"
-              : r === "south"
-                ? "south_master"
-                : "harbour_master";
+            : r === "south"
+              ? "south_master"
+              : "harbour_master";
     unlockAtByBadgeId[id] = maxTimeForAllRequired(
       activeCones.filter((c) => c.region === r),
       completedConeIds,

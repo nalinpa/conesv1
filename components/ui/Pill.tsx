@@ -43,8 +43,8 @@ export function Pill({
         {
           borderColor: colors.border,
           backgroundColor: colors.bg,
-          opacity: muted ? 0.7 : 1,
         },
+        muted && styles.muted,
         style,
       ]}
       {...props}
@@ -69,6 +69,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: borderTok.thick,
     alignSelf: "flex-start",
+  },
+  muted: {
+    opacity: 0.7,
   },
   text: {
     fontWeight: "900",

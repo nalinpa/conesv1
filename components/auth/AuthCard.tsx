@@ -17,7 +17,6 @@ export function AuthCard({
   busy,
   err,
   notice,
-  canSubmit,
   onChangeMode,
   onChangeEmail,
   onChangePassword,
@@ -29,26 +28,31 @@ export function AuthCard({
     <View style={styles.container}>
       <CardShell status="basic">
         <Stack gap="lg">
-          
           {/* New Clean Tab Design */}
           <View style={styles.tabContainer}>
-            <Pressable 
+            <Pressable
               onPress={() => onChangeMode("login")}
               style={[styles.tab, mode === "login" && styles.activeTab]}
             >
-              <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>Sign In</Text>
+              <Text style={[styles.tabText, mode === "login" && styles.activeTabText]}>
+                Sign In
+              </Text>
             </Pressable>
-            <Pressable 
+            <Pressable
               onPress={() => onChangeMode("signup")}
               style={[styles.tab, mode === "signup" && styles.activeTab]}
             >
-              <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>Sign Up</Text>
+              <Text style={[styles.tabText, mode === "signup" && styles.activeTabText]}>
+                Sign Up
+              </Text>
             </Pressable>
           </View>
 
           <Stack gap="xs">
             <AppText variant="sectionTitle">{title}</AppText>
-            <AppText variant="label" status="hint">{subtitle}</AppText>
+            <AppText variant="label" status="hint">
+              {subtitle}
+            </AppText>
           </Stack>
 
           {notice && <Pill status="success">{notice}</Pill>}
@@ -56,7 +60,9 @@ export function AuthCard({
 
           <Stack gap="md">
             <View style={styles.inputGroup}>
-              <AppText variant="label" style={styles.label}>Email Address</AppText>
+              <AppText variant="label" style={styles.label}>
+                Email Address
+              </AppText>
               <TextInput
                 style={styles.input}
                 placeholder="you@example.com"
@@ -71,7 +77,9 @@ export function AuthCard({
 
             {mode !== "reset" && (
               <View style={styles.inputGroup}>
-                <AppText variant="label" style={styles.label}>Password</AppText>
+                <AppText variant="label" style={styles.label}>
+                  Password
+                </AppText>
                 <TextInput
                   style={styles.input}
                   placeholder="••••••••"
@@ -87,7 +95,9 @@ export function AuthCard({
 
             {mode === "signup" && (
               <View style={styles.inputGroup}>
-                <AppText variant="label" style={styles.label}>Confirm Password</AppText>
+                <AppText variant="label" style={styles.label}>
+                  Confirm Password
+                </AppText>
                 <TextInput
                   style={styles.input}
                   placeholder="••••••••"
@@ -110,13 +120,21 @@ export function AuthCard({
               onPress={onSubmit}
             >
               <AppText variant="label" style={styles.whiteText}>
-                {mode === "signup" ? "Create Account" : mode === "reset" ? "Send Reset Link" : "Sign In"}
+                {mode === "signup"
+                  ? "Create Account"
+                  : mode === "reset"
+                    ? "Send Reset Link"
+                    : "Sign In"}
               </AppText>
             </AppButton>
 
             {mode === "login" && (
               <Stack gap="xs" align="center">
-                <AppButton variant="ghost" size="sm" onPress={() => onChangeMode("reset")}>
+                <AppButton
+                  variant="ghost"
+                  size="sm"
+                  onPress={() => onChangeMode("reset")}
+                >
                   Forgot Password?
                 </AppButton>
                 <AppButton variant="ghost" size="sm" onPress={onGuest}>
@@ -134,35 +152,35 @@ export function AuthCard({
 const styles = StyleSheet.create({
   container: { width: "100%" },
   tabContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#F1F5F9',
+    flexDirection: "row",
+    backgroundColor: "#F1F5F9",
     borderRadius: 12,
     padding: 4,
   },
   tab: {
     flex: 1,
     paddingVertical: 10,
-    alignItems: 'center',
+    alignItems: "center",
     borderRadius: 8,
   },
   activeTab: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
   },
   tabText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#64748B',
+    fontWeight: "700",
+    color: "#64748B",
   },
   activeTabText: {
-    color: '#0F172A',
+    color: "#0F172A",
   },
   inputGroup: { gap: 4 },
-  label: { fontWeight: '800', color: '#475569', marginLeft: 4 },
+  label: { fontWeight: "800", color: "#475569", marginLeft: 4 },
   input: {
     backgroundColor: "#F8FAFC",
     borderWidth: 1,
@@ -173,8 +191,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#0F172A",
   },
-  whiteText: { 
-    color: "#FFFFFF", 
+  whiteText: {
+    color: "#FFFFFF",
     fontWeight: "800",
     fontSize: 16,
   },

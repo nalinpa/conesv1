@@ -1,450 +1,186 @@
-import React, { useMemo, useRef, useState } from "react";
-import {
-  Image,
-  NativeModules,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
+import { ScrollView, StyleSheet, View, Pressable, Image } from "react-native";
+import { Stack, useLocalSearchParams } from "expo-router";
 import { captureRef } from "react-native-view-shot";
 import * as ImagePicker from "expo-image-picker";
+import { Camera, Image as ImageIcon, Trash2, Share2 } from "lucide-react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { CardShell } from "@/components/ui/CardShell";
-import { Stack as VStack } from "@/components/ui/Stack";
+import { VStack } from "@/components/ui/Stack";
+import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
-import { ErrorCard } from "@/components/ui/ErrorCard";
 import { LoadingState } from "@/components/ui/LoadingState";
+import { CaptureCanvas } from "@/components/share/CaptureCanvas";
+import { ShareSuccess } from "@/components/share/ShareSuccess";
 
 import { useSession } from "@/lib/providers/SessionProvider";
-import type { ShareConePayload } from "@/lib/services/share/types";
 import { shareService } from "@/lib/services/share/shareService";
 import { completionService } from "@/lib/services/completionService";
-
-/* ───────────────── constants ───────────────── */
-
-const SURF = "#2FC4A7";
-const SURF_DARK = "#0B5D55";
-
-/* ───────────────── helpers ───────────────── */
-
-function parseRegion(v: string | undefined): ShareConePayload["region"] | undefined {
-  if (
-    v === "north" ||
-    v === "central" ||
-    v === "east" ||
-    v === "south" ||
-    v === "harbour"
-  )
-    return v;
-  return undefined;
-}
-
-function getSupportedAbis(): string[] {
-  const pc = (NativeModules as any)?.PlatformConstants;
-  const abis: unknown =
-    pc?.supportedAbis ?? pc?.supported32BitAbis ?? pc?.supported64BitAbis;
-  return Array.isArray(abis) ? abis.map(String) : [];
-}
-
-function canImageShare(): boolean {
-  if (Platform.OS !== "android") return true;
-  const abis = getSupportedAbis();
-  if (abis.length === 0) return true;
-  return !abis.every((a) => a === "armeabi-v7a");
-}
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-/* ───────────────── component ───────────────── */
+import { space, radius } from "@/lib/ui/tokens";
 
 export default function ShareFrameRoute() {
   const { session } = useSession();
-
-  const authLoading = session.status === "loading";
   const uid = session.status === "authed" ? session.uid : null;
-  const canClaimBonus = session.status === "authed";
-
-  const params = useLocalSearchParams<{
-    coneId?: string;
-    coneName?: string;
-    region?: string;
-    visitedLabel?: string;
-    completedAtMs?: string;
-  }>();
-
-  const payload: ShareConePayload | null = useMemo(() => {
-    const coneId = params.coneId?.trim() || "";
-    const coneName = params.coneName?.trim() || "";
-    if (!coneId || !coneName) return null;
-
-    return {
-      coneId,
-      coneName,
-      region: parseRegion(params.region),
-      visitedLabel: params.visitedLabel?.trim() || "Visited",
-      completedAtMs: params.completedAtMs ? Number(params.completedAtMs) : undefined,
-    };
-  }, [params]);
-
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [sharing, setSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
-  const [picking, setPicking] = useState(false);
-  const [hint, setHint] = useState<string | null>(null);
-  const [err, setErr] = useState<string | null>(null);
 
-  const imageCapable = useMemo(() => canImageShare(), []);
   const shareCardRef = useRef<View>(null);
+  const params = useLocalSearchParams<{
+    coneId: string;
+    coneName: string;
+    visitedLabel?: string;
+  }>();
 
-  /* ───────── capture framed image ───────── */
+  const payload = useMemo(
+    () => ({
+      coneId: params.coneId || "",
+      coneName: params.coneName || "",
+      visitedLabel: params.visitedLabel || "Visited",
+    }),
+    [params],
+  );
 
-  async function captureShareCard(): Promise<string | null> {
-    if (!imageCapable || !shareCardRef.current) return null;
-
-    const uri = await captureRef(shareCardRef, {
-      format: "png",
-      quality: 1,
-      result: "tmpfile",
-      width: 1080,
-      height: 1350,
-    });
-
-    return typeof uri === "string" && uri.length ? uri : null;
-  }
-
-  async function refreshPreview() {
-    if (!payload || picking) return;
-
-    if (!imageCapable) {
-      setPreviewUri(null);
-      setHint("Image share not supported on this device — sharing text instead.");
-      return;
-    }
-
+  const refreshPreview = useCallback(async () => {
+    if (!photoUri || !shareCardRef.current) return;
     setRendering(true);
     try {
-      await sleep(250);
-      const uri = await captureShareCard();
+      const uri = await captureRef(shareCardRef, {
+        format: "png",
+        quality: 1,
+        width: 1080,
+        height: 1350,
+      });
       setPreviewUri(uri);
-      setHint(uri ? "Framed image ready to share." : "Preview unavailable.");
-    } catch {
+    } catch (_e) {
       setPreviewUri(null);
-      setHint("Preview unavailable — sharing text instead.");
     } finally {
       setRendering(false);
     }
-  }
+  }, [photoUri]);
 
-  /* ───────── image picker ───────── */
+  useEffect(() => {
+    if (photoUri) refreshPreview();
+  }, [photoUri, refreshPreview]);
 
-  async function pickFromLibrary() {
-    setPicking(true);
-    setErr(null);
-    setHint("Adjust the crop, then tap ✓ or Done.");
+  const pickImage = async (useCamera: boolean) => {
+    const permission = useCamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        setErr("Photo library permission is required.");
-        return;
-      }
+    if (!permission.granted) return;
 
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 5],
-        quality: 1,
-      });
-
-      if (!res.canceled && res.assets?.[0]?.uri) {
-        setPhotoUri(res.assets[0].uri);
-        await sleep(60);
-        await refreshPreview();
-      }
-    } finally {
-      setPicking(false);
-    }
-  }
-
-  async function takePhoto() {
-    setPicking(true);
-    setErr(null);
-    setHint("Adjust the crop, then tap ✓ or Done.");
-
-    try {
-      const perm = await ImagePicker.requestCameraPermissionsAsync();
-      if (!perm.granted) {
-        setErr("Camera permission is required.");
-        return;
-      }
-
-      const res = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 5],
-        quality: 1,
-      });
-
-      if (!res.canceled && res.assets?.[0]?.uri) {
-        setPhotoUri(res.assets[0].uri);
-        await sleep(60);
-        await refreshPreview();
-      }
-    } finally {
-      setPicking(false);
-    }
-  }
-
-  async function removePhoto() {
-    setPhotoUri(null);
-    setHint("Photo removed. Add another.");
-    await refreshPreview();
-  }
-
-  /* ───────── share ───────── */
-
-  async function doShare() {
-    if (!payload || authLoading) return;
-
-    setSharing(true);
-    setErr(null);
-
-    try {
-      // Capture a fresh image to guarantee we have the latest crop
-      let shareUri = previewUri;
-      if (imageCapable && shareCardRef.current) {
-        const freshUri = await captureShareCard();
-        if (freshUri) shareUri = freshUri;
-      }
-
-      const res =
-        shareUri && imageCapable
-          ? await shareService.shareImageUriAsync(shareUri)
-          : await shareService.shareConeAsync(payload);
-
-      if (!res.ok) {
-        setErr(res.error ?? "Share cancelled or failed.");
-        return;
-      }
-
-      // ✅ Immediately trigger success state to prevent UI hanging!
-      setShareSuccess(true);
-
-      // ✅ Fire-and-forget the bonus update. Awaiting Firestore writes
-      // will hang indefinitely if the user is offline/backgrounded.
-      if (canClaimBonus && uid) {
-        completionService.confirmShareBonus({
-          uid,
-          coneId: payload.coneId,
-          platform: "share-frame",
-        }).catch(() => {
-          // Ignore background sync errors, Firestore handles retries locally
+    const result = useCamera
+      ? await ImagePicker.launchCameraAsync({
+          aspect: [4, 5],
+          allowsEditing: true,
+          quality: 1,
+        })
+      : await ImagePicker.launchImageLibraryAsync({
+          aspect: [4, 5],
+          allowsEditing: true,
+          quality: 1,
         });
-      }
-    } catch (e) {
-      setErr("Something went wrong while sharing.");
-    } finally {
-      setSharing(false);
+
+    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+  };
+
+  const onShare = async () => {
+    if (!previewUri) return;
+    setSharing(true);
+    const res = await shareService.shareImageUriAsync(previewUri);
+    if (res.ok) {
+      setShareSuccess(true);
+      if (uid)
+        completionService
+          .confirmShareBonus({ uid, coneId: payload.coneId, platform: "share-frame" })
+          .catch(() => {});
     }
-  }
+    setSharing(false);
+  };
 
-  React.useEffect(() => {
-    void refreshPreview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageCapable]);
-
-  if (!payload) {
-    return (
-      <Screen>
-        <Stack.Screen options={{ title: "Share" }} />
-        <ErrorCard
-          title="Can’t share"
-          message="Missing cone details."
-          action={{ label: "Back", onPress: () => router.back() }}
-        />
-      </Screen>
-    );
-  }
-
-  if (shareSuccess) {
-    return (
-      <Screen padded={true}>
-        <Stack.Screen options={{ title: "Shared!" }} />
-        <View style={styles.successContainer}>
-          <CardShell status="success">
-            <View style={styles.successContent}>
-              <VStack gap="lg">
-                <AppText variant="screenTitle" style={styles.centerText}>🎉</AppText>
-                
-                <View style={styles.centerText}>
-                  <VStack gap="sm">
-                    <AppText variant="sectionTitle" style={styles.centerText}>High Five!</AppText>
-                    <AppText variant="body" style={styles.centerText}>
-                      You successfully shared your visit to {payload.coneName}.
-                    </AppText>
-                  </VStack>
-                </View>
-
-                {canClaimBonus && uid ? (
-                  <AppText variant="hint" style={styles.centerText}>
-                    Keep going!
-                  </AppText>
-                ) : (
-                  <AppText variant="hint" style={styles.centerText}>
-                    Sign in next time to earn bonuses.
-                  </AppText>
-                )}
-
-                <View style={styles.doneButtonWrapper}>
-                  <AppButton onPress={() => router.back()} size="md">
-                    Done
-                  </AppButton>
-                </View>
-              </VStack>
-            </View>
-          </CardShell>
-        </View>
-      </Screen>
-    );
-  }
+  if (shareSuccess) return <ShareSuccess coneName={payload.coneName} />;
 
   return (
     <Screen padded={false}>
-      <Stack.Screen options={{ title: "Share" }} />
+      <Stack.Screen options={{ title: "Share Frame" }} />
+      <CaptureCanvas ref={shareCardRef} payload={payload as any} photoUri={photoUri} />
 
-      {/* Hidden capture target (REAL 1080×1350, invisible but rendered) */}
-      <View pointerEvents="none" style={styles.hiddenCaptureContainer}>
-        <View ref={shareCardRef} collapsable={false} style={styles.captureCanvas}>
-          <View style={styles.captureCanvasInner}>
-            {/* Header */}
-            <View style={styles.headerRow}>
-              <View style={styles.headerTextContainer}>
-                <AppText style={styles.hiddenHeaderTitle}>
-                  {payload.coneName}
-                </AppText>
-              </View>
-
-              <View style={styles.stampContainer}>
-                <AppText style={styles.hiddenStampText}>
-                  {payload.visitedLabel}
-                </AppText>
-              </View>
-            </View>
-
-            {/* Photo window */}
-            <View style={styles.photoWindow}>
-              {photoUri ? (
-                <Image
-                  source={{ uri: photoUri }}
-                  style={styles.fullSize}
-                  resizeMode="cover"
-                />
-              ) : null}
-            </View>
-
-            {/* Footer */}
-            <View style={styles.footer}>
-              <AppText style={styles.footerText}>
-                kompletion.app/cones  •  @kompletionapp
-              </AppText>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Visible UI */}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Card 1 — photo only */}
+      <ScrollView contentContainerStyle={styles.scroll}>
         <CardShell>
           <VStack gap="md">
-            <AppText variant="sectionTitle">Create your share frame</AppText>
-
-            {!photoUri ? (
-              <>
-                <AppButton
-                  variant="ghost"
-                  disabled={picking || sharing}
-                  onPress={pickFromLibrary}
-                >
-                  Choose photo
-                </AppButton>
-                <AppButton
-                  variant="ghost"
-                  disabled={picking || sharing}
-                  onPress={takePhoto}
-                >
-                  Take photo
-                </AppButton>
-              </>
-            ) : (
+            <AppText variant="sectionTitle">1. Pick a Photo</AppText>
+            <Row gap="sm">
               <AppButton
-                variant="ghost"
-                disabled={picking || sharing}
-                onPress={removePhoto}
+                variant="secondary"
+                style={styles.flex1}
+                onPress={() => pickImage(false)}
               >
-                Remove photo
+                <Row gap="xs" align="center">
+                  <ImageIcon size={16} color="#475569" />
+                  <AppText variant="label">Gallery</AppText>
+                </Row>
               </AppButton>
-            )}
+              <AppButton
+                variant="secondary"
+                style={styles.flex1}
+                onPress={() => pickImage(true)}
+              >
+                <Row gap="xs" align="center">
+                  <Camera size={16} color="#475569" />
+                  <AppText variant="label">Camera</AppText>
+                </Row>
+              </AppButton>
+            </Row>
 
-            <Pressable onPress={pickFromLibrary} disabled={picking || sharing}>
+            <Pressable onPress={() => pickImage(false)} style={styles.previewBox}>
               {photoUri ? (
-                <Image
-                  source={{ uri: photoUri }}
-                  style={styles.previewImage}
-                  resizeMode="cover"
-                />
+                <>
+                  <Image source={{ uri: photoUri }} style={styles.full} />
+                  <Pressable style={styles.removeBtn} onPress={() => setPhotoUri(null)}>
+                    <Trash2 size={16} color="#ef4444" />
+                  </Pressable>
+                </>
               ) : (
-                <View style={styles.placeholderImage}>
-                  <AppText variant="sectionTitle">Tap to add a photo</AppText>
-                </View>
+                <VStack align="center" justify="center" style={styles.flex1}>
+                  <ImageIcon size={32} color="#CBD5E1" />
+                  <AppText variant="label" status="hint">
+                    Tap to add photo
+                  </AppText>
+                </VStack>
               )}
             </Pressable>
           </VStack>
         </CardShell>
 
-        {/* Card 2 — preview + share */}
         <CardShell>
           <VStack gap="md">
-            <AppText variant="sectionTitle">Preview & share</AppText>
-
-            {rendering ? (
-              <LoadingState
-                fullScreen={false}
-                label={picking ? "Crop your photo…" : "Preparing preview…"}
-              />
-            ) : previewUri ? (
-              <Image
-                source={{ uri: previewUri }}
-                style={styles.previewImage}
-                resizeMode="cover"
-              />
-            ) : (
-              <AppText variant="hint">No preview available.</AppText>
-            )}
-
-            {hint ? <AppText variant="hint">{hint}</AppText> : null}
-            {err ? <AppText variant="hint">{err}</AppText> : null}
-
+            <AppText variant="sectionTitle">2. Share</AppText>
+            <View style={styles.previewBox}>
+              {rendering ? (
+                <LoadingState fullScreen={false} />
+              ) : previewUri ? (
+                <Image source={{ uri: previewUri }} style={styles.full} />
+              ) : (
+                <AppText variant="hint">Add photo first</AppText>
+              )}
+            </View>
             <AppButton
+              variant="primary"
               loading={sharing}
-              disabled={sharing || authLoading}
-              onPress={doShare}
+              disabled={!previewUri}
+              onPress={onShare}
             >
-              Share
-            </AppButton>
-
-            <AppButton variant="ghost" onPress={() => router.back()}>
-              Cancel
+              <Row gap="xs" align="center">
+                <Share2 size={18} color="#FFF" />
+                <AppText variant="label" style={styles.white}>
+                  Post to Social
+                </AppText>
+              </Row>
             </AppButton>
           </VStack>
         </CardShell>
@@ -454,110 +190,26 @@ export default function ShareFrameRoute() {
 }
 
 const styles = StyleSheet.create({
-  hiddenCaptureContainer: {
-    position: "absolute",
-    top: -10000,
-    left: -10000,
-  },
-  captureCanvas: {
-    width: 1080,
-    height: 1350,
-  },
-  captureCanvasInner: {
-    width: 1080,
-    height: 1350,
-    backgroundColor: SURF,
-    padding: 32,
-    justifyContent: "space-between",
-  },
-  headerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  headerTextContainer: {
-    flex: 1,
-    paddingRight: 10,
-  },
-  hiddenHeaderTitle: {
-    color: "white",
-    fontSize: 72,
-    fontWeight: "bold",
-  },
-  stampContainer: {
-    transform: [{ rotate: "-10deg" }],
-    borderWidth: 4,
-    borderColor: "rgba(255,255,255,0.9)",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 18,
-    backgroundColor: "rgba(0,0,0,0.15)",
-  },
-  hiddenStampText: {
-    color: "white",
-    fontSize: 48,
-    fontWeight: "bold",
-  },
-  photoWindow: {
-    flex: 1,
-    marginVertical: 24,
-    borderRadius: 32,
+  flex1: { flex: 1 },
+  full: { width: "100%", height: "100%" },
+  white: { color: "white", fontWeight: "800" },
+  scroll: { padding: space.md, gap: space.md, paddingBottom: 60 },
+  previewBox: {
+    width: "100%",
+    aspectRatio: 4 / 5,
+    borderRadius: radius.lg,
+    backgroundColor: "#F8FAFC",
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
     overflow: "hidden",
-    borderWidth: 6,
-    borderColor: "rgba(255,255,255,0.65)",
-    backgroundColor: "rgba(255,255,255,0.05)",
-    position: "relative",
   },
-  fullSize: {
-    width: "100%",
-    height: "100%",
-  },
-  footer: {
-    height: 80,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: SURF_DARK,
-  },
-  footerText: {
-    color: "white",
-    fontSize: 32,
-    fontWeight: "600",
-    opacity: 0.95,
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
-    gap: 14,
-  },
-  previewImage: {
-    width: "100%",
-    aspectRatio: 4 / 5,
-  },
-  placeholderImage: {
-    width: "100%",
-    aspectRatio: 4 / 5,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  successContainer: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  successContent: {
-    alignItems: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 12,
-  },
-  centerText: {
-    textAlign: "center",
-    alignItems: "center",
-  },
-  doneButtonWrapper: {
-    marginTop: 24,
-    alignItems: "center",
-    width: "100%",
+  removeBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    backgroundColor: "white",
+    padding: 8,
+    borderRadius: 20,
+    elevation: 4,
   },
 });

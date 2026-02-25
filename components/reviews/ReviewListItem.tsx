@@ -6,14 +6,18 @@ import { CardShell } from "@/components/ui/CardShell";
 import { AppText } from "@/components/ui/AppText";
 import { Row } from "@/components/ui/Row";
 import { Stack } from "@/components/ui/Stack";
-import { AppIcon } from "@/components/ui/AppIcon";
+import { AppButton } from "@/components/ui/AppButton";
 
 import { space } from "@/lib/ui/tokens";
 
 function formatDate(ts: any): string {
   try {
     const d = ts?.toDate?.() || new Date(ts);
-    return d.toLocaleDateString('en-NZ', { day: 'numeric', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString("en-NZ", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
   } catch {
     return "Recently";
   }
@@ -56,10 +60,7 @@ export function ReviewListItem({
 
         {/* The Review Content */}
         <View style={styles.content}>
-          <AppText 
-            variant="body" 
-            style={[styles.text, !comment && styles.italic]}
-          >
+          <AppText variant="body" style={[styles.text, !comment && styles.italic]}>
             {comment || "Checked in without a note."}
           </AppText>
         </View>
@@ -70,7 +71,9 @@ export function ReviewListItem({
             <AppButton variant="ghost" size="sm" onPress={onReport}>
               <Row gap="xs" align="center">
                 <Flag size={12} color="#94A3B8" />
-                <AppText variant="label" status="hint">Report</AppText>
+                <AppText variant="label" status="hint">
+                  Report
+                </AppText>
               </Row>
             </AppButton>
           </Row>
@@ -101,5 +104,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
     paddingTop: 4,
-  }
+  },
 });

@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useEffect } from "react";
-import { StyleSheet, Platform } from "react-native";
+import { StyleSheet } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Region } from "react-native-maps";
 
 import { TrackedMarker } from "@/components/map/TrackedMarker";
@@ -12,10 +12,14 @@ const AUCKLAND_BOUNDS = {
 
 // Subtle, clean map style to make your markers pop
 const MAP_STYLE = [
-  { "featureType": "poi", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
-  { "featureType": "transit", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
-  { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
-  { "featureType": "administrative", "elementType": "labels", "stylers": [{ "visibility": "off" }] }
+  { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", elementType: "labels", stylers: [{ visibility: "off" }] },
+  { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  {
+    featureType: "administrative",
+    elementType: "labels",
+    stylers: [{ visibility: "off" }],
+  },
 ];
 
 export const ConesMapView = React.memo(function ConesMapView({
@@ -36,14 +40,17 @@ export const ConesMapView = React.memo(function ConesMapView({
   // Animate to cone when selected
   useEffect(() => {
     if (selectedConeId && mapRef.current) {
-      const cone = cones.find(c => c.id === selectedConeId);
+      const cone = cones.find((c) => c.id === selectedConeId);
       if (cone) {
-        mapRef.current.animateToRegion({
-          latitude: cone.lat - 0.005, // Slightly offset so the bottom card doesn't hide it
-          longitude: cone.lng,
-          latitudeDelta: 0.02,
-          longitudeDelta: 0.02,
-        }, 500);
+        mapRef.current.animateToRegion(
+          {
+            latitude: cone.lat - 0.005, // Slightly offset so the bottom card doesn't hide it
+            longitude: cone.lng,
+            latitudeDelta: 0.02,
+            longitudeDelta: 0.02,
+          },
+          500,
+        );
       }
     }
   }, [selectedConeId, cones]);
@@ -71,7 +78,7 @@ export const ConesMapView = React.memo(function ConesMapView({
       minZoomLevel={10}
       maxZoomLevel={18}
       // Helps with performance during markers rendering
-      moveOnMarkerPress={false} 
+      moveOnMarkerPress={false}
     >
       {cones.map((c) => (
         <TrackedMarker

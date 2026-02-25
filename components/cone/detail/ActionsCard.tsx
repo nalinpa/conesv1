@@ -25,7 +25,6 @@ export function ActionsCard({
   shareLoading = false,
   shareError = null,
 }: any) {
-  
   // ---- NOT COMPLETED: The "I'm here" Check-in ----
   if (!completed) {
     return (
@@ -40,7 +39,9 @@ export function ActionsCard({
         >
           <Row gap="sm" align="center">
             <AppIcon icon={CheckCircle2} variant="control" size={20} />
-            <AppText variant="sectionTitle" status="control">I’m here</AppText>
+            <AppText variant="sectionTitle" status="control">
+              I’m here
+            </AppText>
           </Row>
         </AppButton>
         {!hasLoc && (
@@ -69,24 +70,31 @@ export function ActionsCard({
           <Row justify="space-between" align="center">
             <Row gap="xs" align="center">
               <AppIcon icon={MessageSquarePlus} variant="surf" size={16} />
-              <AppText variant="label" style={styles.bold}>Your Experience</AppText>
+              <AppText variant="label" style={styles.bold}>
+                Your Experience
+              </AppText>
             </Row>
             {hasReview && (
-               <Row gap="xs">
-               {[1, 2, 3, 4, 5].map((s) => (
-                 <AppIcon 
-                   key={s} 
-                   icon={Star} 
-                   size={14} 
-                   variant={s <= (myReviewRating || 0) ? "surf" : "hint"} 
-                 />
-               ))}
-             </Row>
+              <Row gap="xs">
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <AppIcon
+                    key={s}
+                    icon={Star}
+                    size={14}
+                    variant={s <= (myReviewRating || 0) ? "surf" : "hint"}
+                  />
+                ))}
+              </Row>
             )}
           </Row>
 
           {!hasReview ? (
-            <AppButton variant="ghost" size="sm" onPress={onOpenReview} style={styles.ghostBtn}>
+            <AppButton
+              variant="ghost"
+              size="sm"
+              onPress={onOpenReview}
+              style={styles.ghostBtn}
+            >
               + Add a review or rating
             </AppButton>
           ) : (
@@ -100,9 +108,11 @@ export function ActionsCard({
         <Stack gap="sm">
           <Row gap="xs" align="center">
             <AppIcon icon={Share2} variant="surf" size={16} />
-            <AppText variant="label" style={styles.bold}>Share the view</AppText>
+            <AppText variant="label" style={styles.bold}>
+              Share the view
+            </AppText>
           </Row>
-          
+
           <AppButton
             variant={shareBonus ? "secondary" : "primary"}
             disabled={shareBonus || shareLoading}
@@ -111,9 +121,11 @@ export function ActionsCard({
           >
             {shareBonus ? "Already Shared" : "Share a Photo"}
           </AppButton>
-          
+
           {shareError && (
-            <AppText variant="label" status="danger">{shareError}</AppText>
+            <AppText variant="label" status="danger">
+              {shareError}
+            </AppText>
           )}
         </Stack>
       </Stack>
@@ -141,5 +153,5 @@ const styles = StyleSheet.create({
   center: { textAlign: "center" },
   bold: { fontWeight: "900", color: "#0F172A" },
   italic: { fontStyle: "italic", marginTop: 4 },
-  ghostBtn: { alignSelf: 'flex-start', paddingHorizontal: 0 }
+  ghostBtn: { alignSelf: "flex-start", paddingHorizontal: 0 },
 });

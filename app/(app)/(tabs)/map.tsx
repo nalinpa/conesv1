@@ -24,7 +24,7 @@ export default function MapScreen() {
   const { session } = useSession();
   const { cones, loading, err } = useCones();
   const { completedConeIds: completedIds } = useMyCompletions();
-  
+
   const {
     loc,
     err: locErr,
@@ -38,7 +38,7 @@ export default function MapScreen() {
 
   // Auto-select nearest unclimbed cone on first load
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
-  
+
   useEffect(() => {
     if (!selectedConeId && nearestUnclimbed?.cone?.id) {
       setSelectedConeId(nearestUnclimbed.cone.id);
@@ -63,8 +63,12 @@ export default function MapScreen() {
 
   const initialRegion = useMemo(() => {
     if (loading) return null;
-    return initialRegionFrom(loc?.coords.latitude ?? null, loc?.coords.longitude ?? null, mapCones);
-  }, [loading, mapCones]);
+    return initialRegionFrom(
+      loc?.coords.latitude ?? null,
+      loc?.coords.longitude ?? null,
+      mapCones,
+    );
+  }, [loading, mapCones, loc?.coords.latitude, loc?.coords.longitude]);
 
   const refreshGPS = useCallback(async () => {
     if (locStatus === "unknown") await requestLocation();
@@ -72,20 +76,29 @@ export default function MapScreen() {
   }, [locStatus, requestLocation, refreshLocation]);
 
   if (session.status === "loading" || loading) {
-    return <Screen><LoadingState label="Locating volcanic field..." /></Screen>;
+    return (
+      <Screen>
+        <LoadingState label="Locating volcanic field..." />
+      </Screen>
+    );
   }
 
   if (err) {
-    return <Screen><ErrorCard title="Map Error" message={err} /></Screen>;
+    return (
+      <Screen>
+        <ErrorCard title="Map Error" message={err} />
+      </Screen>
+    );
   }
 
   const activeCone = selectedCone ?? nearestUnclimbed?.cone ?? null;
-  const overlayDistance = selectedCone && gate ? gate.distanceMeters : nearestUnclimbed?.distanceMeters;
+  const overlayDistance =
+    selectedCone && gate ? gate.distanceMeters : nearestUnclimbed?.distanceMeters;
 
   return (
     <Screen padded={false}>
       <Stack.Screen options={{ title: "Explore", headerTransparent: true }} />
-      
+
       <View style={styles.flex1}>
         <ConesMapView
           cones={mapCones}
@@ -99,7 +112,9 @@ export default function MapScreen() {
         {locErr && (
           <View style={styles.overlayTop}>
             <CardShell status="warning" style={styles.alertCard}>
-              <AppText variant="label" style={styles.boldText}>{locErr}</AppText>
+              <AppText variant="label" style={styles.boldText}>
+                {locErr}
+              </AppText>
             </CardShell>
           </View>
         )}

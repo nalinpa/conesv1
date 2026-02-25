@@ -3,13 +3,13 @@ import { View, StyleSheet } from "react-native";
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
 
-export function StatRow({ 
-  label, 
-  value, 
-  icon 
-}: { 
-  label: string; 
-  value: React.ReactNode; 
+export function StatRow({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: React.ReactNode;
   icon?: React.ReactNode;
 }) {
   const isPrimitive = typeof value === "string" || typeof value === "number";

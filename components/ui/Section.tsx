@@ -11,12 +11,7 @@ interface SectionProps {
   gap?: "sm" | "md" | "lg";
 }
 
-export function Section({ 
-  title, 
-  children, 
-  style, 
-  gap = "sm" 
-}: SectionProps) {
+export function Section({ title, children, style, gap = "sm" }: SectionProps) {
   return (
     <View style={[styles.container, style]}>
       <Stack gap={gap}>

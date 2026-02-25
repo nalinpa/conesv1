@@ -15,10 +15,12 @@ import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useSession } from "@/lib/providers/SessionProvider";
 
-import type { ConeCategory, ConeRegion } from "@/lib/models";
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
-import { ConeFiltersCard, type ConeFiltersValue } from "@/components/cone/list/ConeFiltersCard";
+import {
+  ConeFiltersCard,
+  type ConeFiltersValue,
+} from "@/components/cone/list/ConeFiltersCard";
 
 const DEFAULT_FILTERS: ConeFiltersValue = {
   hideCompleted: false,
@@ -30,7 +32,13 @@ export default function ConeListPage() {
   const { session } = useSession();
   const isGuest = session.status === "guest";
   const { cones, loading: conesLoading, err: conesErr } = useCones();
-  const { loc, status: locStatus, err: locErr, request, refresh: refreshGPS } = useUserLocation();
+  const {
+    loc,
+    status: locStatus,
+    err: locErr,
+    request,
+    refresh: refreshGPS,
+  } = useUserLocation();
   const { completedConeIds, loading: compLoading } = useMyCompletions();
 
   const [lockedLoc, setLockedLoc] = useState<typeof loc>(null);
@@ -52,16 +60,22 @@ export default function ConeListPage() {
 
     if (!isGuest) {
       if (filters.hideCompleted) list = list.filter((c) => !completedConeIds.has(c.id));
-      if (filters.region !== "all") list = list.filter((c) => c.region === filters.region);
-      if (filters.category !== "all") list = list.filter((c) => c.category === filters.category);
+      if (filters.region !== "all")
+        list = list.filter((c) => c.region === filters.region);
+      if (filters.category !== "all")
+        list = list.filter((c) => c.category === filters.category);
     }
     return list;
   }, [cones, filters, completedConeIds, isGuest]);
 
   const rows = useSortedConeRows(filteredRows, lockedLoc);
 
-  if (conesLoading || (session.status === "loading")) {
-    return <Screen><LoadingState label="Finding volcanoes..." /></Screen>;
+  if (conesLoading || session.status === "loading") {
+    return (
+      <Screen>
+        <LoadingState label="Finding volcanoes..." />
+      </Screen>
+    );
   }
 
   if (conesErr) {
@@ -74,11 +88,11 @@ export default function ConeListPage() {
 
   const header = (
     <Stack gap="md" style={styles.headerStack}>
-      <ConesListHeader 
-        status={locStatus} 
-        hasLoc={!!loc} 
-        locErr={locErr} 
-        onPressGPS={handleRefreshGPS} 
+      <ConesListHeader
+        status={locStatus}
+        hasLoc={!!loc}
+        locErr={locErr}
+        onPressGPS={handleRefreshGPS}
       />
 
       {isGuest ? (

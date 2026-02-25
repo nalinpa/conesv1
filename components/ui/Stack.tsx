@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, type ViewStyle } from "react-native";
+import { View, type ViewStyle } from "react-native";
 import { space } from "@/lib/ui/tokens";
 
 export function Stack({
@@ -11,9 +11,5 @@ export function Stack({
   children: React.ReactNode;
   style?: ViewStyle;
 }) {
-  return (
-    <View style={[{ gap: space[gap] }, style]}>
-      {children}
-    </View>
-  );
+  return <View style={[{ gap: space[gap] }, style]}>{children}</View>;
 }

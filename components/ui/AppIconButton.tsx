@@ -3,10 +3,10 @@ import { Pressable, ViewStyle, StyleSheet } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 import type { LucideIcon } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
 } from "react-native-reanimated";
 
 type Props = {
@@ -32,11 +32,12 @@ export function AppIconButton({
   const scale = useSharedValue(1);
 
   // Determine color based on variant
-  const iconColor = variant === "surf" 
-    ? "#66B2A2" 
-    : variant === "control" 
-      ? "#FFFFFF" 
-      : (theme["text-basic-color"] ?? "#111");
+  const iconColor =
+    variant === "surf"
+      ? "#66B2A2"
+      : variant === "control"
+        ? "#FFFFFF"
+        : (theme["text-basic-color"] ?? "#111");
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -61,7 +62,7 @@ export function AppIconButton({
         onPressOut={handlePressOut}
         disabled={disabled}
         accessibilityLabel={accessibilityLabel}
-        hitSlop={12} 
+        hitSlop={12}
         style={({ pressed }) => [
           styles.base,
           pressed && { backgroundColor: variant === "surf" ? "#66B2A220" : "#00000008" },
@@ -76,7 +77,7 @@ export function AppIconButton({
 
 const styles = StyleSheet.create({
   base: {
-    padding: 10, 
+    padding: 10,
     borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",

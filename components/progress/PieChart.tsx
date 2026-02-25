@@ -1,6 +1,5 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { useTheme } from "@ui-kitten/components";
 import Svg, { Circle } from "react-native-svg";
 import { AppText } from "@/components/ui/AppText";
 
@@ -13,15 +12,13 @@ export function PieChart({
   size?: number;
   strokeWidth?: number;
 }) {
-  const theme = useTheme();
-
   const clamped = Math.max(0, Math.min(1, percent));
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * clamped;
 
-  const track = "#E2E8F0"; 
-  const progress = "#66B2A2"; 
+  const track = "#E2E8F0";
+  const progress = "#66B2A2";
 
   return (
     <View style={styles.container}>

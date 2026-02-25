@@ -1,12 +1,11 @@
 import React, { useEffect } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { Stack, router } from "expo-router";
-import { Mountain } from "lucide-react-native"; // New Logo Icon
+import { Mountain } from "lucide-react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { AuthCard } from "@/components/auth/AuthCard";
 import { AppText } from "@/components/ui/AppText";
-import { AppIcon } from "@/components/ui/AppIcon";
 import { useAuthForm } from "@/lib/hooks/useAuthForm";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { space } from "@/lib/ui/tokens";
@@ -48,13 +47,15 @@ export default function LoginScreen() {
             {/* Brand Header with Mountain Logo */}
             <View style={styles.brandContainer}>
               <View style={styles.logoWrapper}>
-                 <Mountain 
-                   size={40} 
-                   color="#5FB3A2" // Your Surf Green
-                   strokeWidth={2.5}
-                 />
+                <Mountain
+                  size={40}
+                  color="#5FB3A2" // Your Surf Green
+                  strokeWidth={2.5}
+                />
               </View>
-              <AppText variant="screenTitle" style={styles.appName}>Cones</AppText>
+              <AppText variant="screenTitle" style={styles.appName}>
+                Cones
+              </AppText>
               <AppText variant="label" status="hint" style={styles.tagline}>
                 Auckland Volcanic Field
               </AppText>
@@ -88,25 +89,25 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
   },
   content: {
     flex: 1,
     paddingHorizontal: space.lg,
-    justifyContent: 'center',
+    justifyContent: "center",
     paddingBottom: space.xl,
   },
   brandContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: space.xl,
   },
   logoWrapper: {
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: '#F0FDFB', 
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#F0FDFB",
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: space.md,
     // Subtle shadow to make the logo feel "lifted"
     shadowColor: "#5FB3A2",
@@ -117,16 +118,16 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 36,
-    fontWeight: '900',
-    color: '#0F172A',
+    fontWeight: "900",
+    color: "#0F172A",
     letterSpacing: -1.5,
   },
   tagline: {
     marginTop: 2,
-    fontWeight: '800',
-    textTransform: 'uppercase',
+    fontWeight: "800",
+    textTransform: "uppercase",
     letterSpacing: 2,
     fontSize: 10,
-    color: '#94A3B8',
-  }
+    color: "#94A3B8",
+  },
 });

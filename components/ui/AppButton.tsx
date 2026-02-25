@@ -2,10 +2,10 @@ import React from "react";
 import { StyleSheet } from "react-native";
 import { Button, ButtonProps } from "@ui-kitten/components";
 import * as Haptics from "expo-haptics";
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring 
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
 } from "react-native-reanimated";
 import { space, radius, tap } from "@/lib/ui/tokens";
 
@@ -34,12 +34,11 @@ export function AppButton({
   const scale = useSharedValue(1);
 
   const appearance: ButtonProps["appearance"] = variant === "ghost" ? "ghost" : "filled";
-  const status: ButtonProps["status"] = 
+  const status: ButtonProps["status"] =
     variant === "danger" ? "danger" : variant === "secondary" ? "basic" : "primary";
 
   const minHeight = size === "sm" ? tap.min : tap.primary;
 
-  // Animated style for the "Physical" press feel
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
@@ -53,6 +52,14 @@ export function AppButton({
     scale.value = withSpring(1);
   };
 
+  // Combine dynamic height with variant-specific styles
+  const buttonStyles = [
+    styles.buttonBase,
+    { minHeight }, // Dynamic but non-variant dependent
+    variant === "primary" && styles.primaryVariant,
+    style,
+  ];
+
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <Button
@@ -63,18 +70,9 @@ export function AppButton({
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
-        style={[
-          {
-            minHeight,
-            paddingHorizontal: space.lg,
-            borderRadius: radius.md,
-            backgroundColor: variant === "primary" ? "#66B2A2" : undefined, // Injecting Surf Green
-            borderColor: variant === "primary" ? "#66B2A2" : undefined,
-          },
-          style,
-        ]}
+        style={buttonStyles}
       >
-        {loading ? loadingLabel : children}
+        {loading ? loadingLabel : (children as any)}
       </Button>
     </Animated.View>
   );
@@ -83,5 +81,13 @@ export function AppButton({
 const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
+  },
+  buttonBase: {
+    paddingHorizontal: space.lg,
+    borderRadius: radius.md,
+  },
+  primaryVariant: {
+    backgroundColor: "#66B2A2",
+    borderColor: "#66B2A2",
   },
 });

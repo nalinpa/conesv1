@@ -8,14 +8,17 @@ import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppIcon } from "@/components/ui/AppIcon";
 
-type Action = {
-  label: string;
-  onPress: () => void;
-  appearance?: "filled" | "outline" | "ghost";
-  status?: "basic" | "primary" | "success" | "warning" | "danger";
-  size?: "tiny" | "small" | "medium";
-  disabled?: boolean;
-} | null | undefined;
+type Action =
+  | {
+      label: string;
+      onPress: () => void;
+      appearance?: "filled" | "outline" | "ghost";
+      status?: "basic" | "primary" | "success" | "warning" | "danger";
+      size?: "tiny" | "small" | "medium";
+      disabled?: boolean;
+    }
+  | null
+  | undefined;
 
 const mapVariant = (app?: string, stat?: string): any => {
   if (app === "ghost") return "ghost";
@@ -37,14 +40,19 @@ export function ErrorCard({
   action?: Action;
   secondaryAction?: Action;
 }) {
-  const Icon = status === "danger" ? AlertCircle : status === "warning" ? AlertTriangle : Info;
-  const iconColor = status === "danger" ? "#E11D48" : status === "warning" ? "#F59E0B" : "#64748B";
+  const Icon =
+    status === "danger" ? AlertCircle : status === "warning" ? AlertTriangle : Info;
+  const iconColor =
+    status === "danger" ? "#E11D48" : status === "warning" ? "#F59E0B" : "#64748B";
 
   const renderButton = (act: Action, isPrimary: boolean) => {
     if (!act) return null;
     return (
       <AppButton
-        variant={mapVariant(act.appearance ?? (isPrimary ? "filled" : "outline"), act.status)}
+        variant={mapVariant(
+          act.appearance ?? (isPrimary ? "filled" : "outline"),
+          act.status,
+        )}
         size={act.size === "medium" ? "md" : "sm"}
         onPress={act.onPress}
         disabled={act.disabled}
@@ -60,7 +68,9 @@ export function ErrorCard({
       <Stack gap="md">
         <Row gap="sm" align="center">
           <AppIcon icon={Icon} color={iconColor} size={20} strokeWidth={2.5} />
-          <AppText variant="sectionTitle" style={styles.flex1}>{title}</AppText>
+          <AppText variant="sectionTitle" style={styles.flex1}>
+            {title}
+          </AppText>
         </Row>
 
         <AppText variant="hint">
@@ -80,5 +90,5 @@ export function ErrorCard({
 
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
-  mt: { marginTop: 4 }
+  mt: { marginTop: 4 },
 });

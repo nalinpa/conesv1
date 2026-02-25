@@ -11,19 +11,16 @@ import { AppText } from "@/components/ui/AppText";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { AppButton } from "@/components/ui/AppButton";
 
-export function NearestUnclimbedCard({
-  cone,
-  distanceMeters,
-  locErr,
-  onOpenCone,
-}: any) {
+export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone }: any) {
   if (!cone) {
     return (
       <CardShell status="basic">
         <Row gap="sm" align="center">
           <AppIcon icon={Navigation} variant="hint" size={20} />
           <AppText variant="body" status="hint">
-            {locErr ? "Enable location to find nearby cones" : "Finding your next summit..."}
+            {locErr
+              ? "Enable location to find nearby cones"
+              : "Finding your next summit..."}
           </AppText>
         </Row>
       </CardShell>
@@ -31,11 +28,7 @@ export function NearestUnclimbedCard({
   }
 
   return (
-    <CardShell 
-      status="surf" 
-      onPress={() => onOpenCone(cone.id)}
-      style={styles.card}
-    >
+    <CardShell status="surf" onPress={() => onOpenCone(cone.id)} style={styles.card}>
       <Stack gap="md">
         <Row justify="space-between" align="center">
           <Row gap="xs" align="center">
@@ -46,27 +39,29 @@ export function NearestUnclimbedCard({
             </AppText>
           </Row>
           {distanceMeters != null && (
-            <Pill status="surf">
-              {formatDistanceMeters(distanceMeters)}
-            </Pill>
+            <Pill status="surf">{formatDistanceMeters(distanceMeters)}</Pill>
           )}
         </Row>
 
         <Stack gap="xs">
-          <AppText variant="h3" style={styles.coneName}>{cone.name}</AppText>
+          <AppText variant="h3" style={styles.coneName}>
+            {cone.name}
+          </AppText>
           <AppText variant="body" numberOfLines={2} style={styles.description}>
             {cone.description || "A volcanic peak waiting to be explored."}
           </AppText>
         </Stack>
 
-        <AppButton 
-          variant="primary" 
-          size="sm" 
+        <AppButton
+          variant="primary"
+          size="sm"
           onPress={() => onOpenCone(cone.id)}
           style={styles.button}
         >
           <Row gap="xs" align="center">
-            <AppText variant="label" status="control">View Details</AppText>
+            <AppText variant="label" status="control">
+              View Details
+            </AppText>
             <AppIcon icon={ChevronRight} variant="control" size={16} />
           </Row>
         </AppButton>
@@ -81,7 +76,7 @@ const styles = StyleSheet.create({
   },
   headerLabel: {
     fontWeight: "900",
-    color: "#1E293B", 
+    color: "#1E293B",
     letterSpacing: 0.5,
   },
   coneName: {
@@ -89,11 +84,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
   },
   description: {
-    color: "#475569", 
+    color: "#475569",
   },
   button: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: 4,
-    backgroundColor: "#66B2A2", 
+    backgroundColor: "#66B2A2",
   },
 });

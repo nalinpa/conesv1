@@ -27,7 +27,9 @@ export function BadgeTile({
     <View style={[styles.container, !unlocked && styles.lockedOpacity]}>
       <Row gap="md" align="flex-start">
         {/* Badge Icon */}
-        <View style={[styles.iconWrapper, unlocked ? styles.iconUnlocked : styles.iconLocked]}>
+        <View
+          style={[styles.iconWrapper, unlocked ? styles.iconUnlocked : styles.iconLocked]}
+        >
           <AppText style={[styles.iconText, !unlocked && styles.grayscale]}>
             {icon}
           </AppText>
@@ -41,17 +43,21 @@ export function BadgeTile({
         {/* Info */}
         <Stack style={styles.flex1} gap="xxs">
           <Row justify="space-between" align="center">
-            <AppText variant="body" style={styles.bold}>{name}</AppText>
+            <AppText variant="body" style={styles.bold}>
+              {name}
+            </AppText>
             {unlocked && <CheckCircle2 size={16} color="#66B2A2" />}
           </Row>
-          
+
           <AppText variant="label" status="hint" numberOfLines={2}>
             {unlockText}
           </AppText>
 
           <View style={styles.footer}>
             {unlocked ? (
-              <Pill status="surf" size="sm">Earned</Pill>
+              <Pill status="surf" size="sm">
+                Earned
+              </Pill>
             ) : (
               <AppText variant="label" status="hint" style={styles.progressText}>
                 {progressLabel ?? "Locked"}
@@ -111,7 +117,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#F1F5F9",
     marginTop: space.md,
-    marginHorizontal: -space.md, 
+    marginHorizontal: -space.md,
     opacity: 0.5,
-  }
+  },
 });

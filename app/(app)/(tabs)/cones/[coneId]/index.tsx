@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import { AppState, View, ScrollView, StyleSheet } from "react-native";
-import { Stack, router, useLocalSearchParams, useFocusEffect } from "expo-router";
+import { AppState, ScrollView, StyleSheet } from "react-native";
+import { Stack, router, useLocalSearchParams } from "expo-router";
 
 import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -30,12 +30,29 @@ export default function ConeDetailRoute() {
   const uid = session.status === "authed" ? session.uid : null;
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
-  const { loc, status: locStatus, refresh: refreshLocation, request: requestLocation, isRefreshing } = useUserLocation();
-  const { completedId, shareBonus } = useConeCompletion(coneId);
-  
-  const { completeCone: triggerComplete, loading: completing, err: mutationErr, reset: resetMutationErr } = useConeCompletionMutation();
+  const {
+    loc,
+    status: locStatus,
+    refresh: refreshLocation,
+    request: requestLocation,
+    isRefreshing,
+  } = useUserLocation();
+  const { completedId } = useConeCompletion(coneId);
+
+  const {
+    completeCone: triggerComplete,
+    loading: completing,
+    err: mutationErr,
+    reset: resetMutationErr,
+  } = useConeCompletionMutation();
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
-  const { avgRating, ratingCount, myRating, myText, saving: reviewsSaving, saveReview: saveReviewToDb } = useConeReviewsSummary(coneId);
+  const {
+    avgRating,
+    ratingCount,
+    myRating,
+    saving: reviewsSaving,
+    saveReview: saveReviewToDb,
+  } = useConeReviewsSummary(coneId);
 
   const [err, setErr] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -50,7 +67,10 @@ export default function ConeDetailRoute() {
   // Sync GPS on App State Change
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active" && (!loc || (gate.accuracyMeters || 0) > MAX_ACCURACY_METERS)) {
+      if (
+        state === "active" &&
+        (!loc || (gate.accuracyMeters || 0) > MAX_ACCURACY_METERS)
+      ) {
         refreshGPS();
       }
     });
@@ -62,9 +82,16 @@ export default function ConeDetailRoute() {
     setErr("");
     resetMutationErr();
 
-    if (!uid) { setErr("Sign in to save your visit."); return; }
+    if (!uid) {
+      setErr("Sign in to save your visit.");
+      return;
+    }
     if (!gate.inRange) {
-      setErr(gate.distanceMeters ? `You're ${Math.round(gate.distanceMeters)}m away.` : "Not in range.");
+      setErr(
+        gate.distanceMeters
+          ? `You're ${Math.round(gate.distanceMeters)}m away.`
+          : "Not in range.",
+      );
       return;
     }
 
@@ -72,27 +99,44 @@ export default function ConeDetailRoute() {
   };
 
   if (coneLoading || session.status === "loading") {
-    return <Screen><LoadingState label="Preparing summit..." /></Screen>;
+    return (
+      <Screen>
+        <LoadingState label="Preparing summit..." />
+      </Screen>
+    );
   }
 
   if (coneErr || !cone) {
     return (
       <Screen>
-        <ErrorCard title="Peak Not Found" message={coneErr || "Could not find volcano."} action={{ label: "Go Back", onPress: goConesHome }} />
+        <ErrorCard
+          title="Peak Not Found"
+          message={coneErr || "Could not find volcano."}
+          action={{ label: "Go Back", onPress: goConesHome }}
+        />
       </Screen>
     );
   }
 
   return (
     <Screen padded={false}>
-      <Stack.Screen options={{ title: cone.name, headerTransparent: true, headerTintColor: '#fff' }} />
-      
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <Stack.Screen
+        options={{ title: cone.name, headerTransparent: true, headerTintColor: "#fff" }}
+      />
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
         <ConeHero cone={cone} completed={!!completedId} />
 
         <UIStack gap="md" style={styles.content}>
           {(err || mutationErr) && (
-            <ErrorCard status="warning" title="Check-in Issue" message={err || mutationErr} />
+            <ErrorCard
+              status="warning"
+              title="Check-in Issue"
+              message={err || mutationErr}
+            />
           )}
 
           <StatusCard
@@ -117,7 +161,12 @@ export default function ConeDetailRoute() {
             onComplete={handleComplete}
             hasReview={!!myRating}
             onOpenReview={() => setReviewOpen(true)}
-            onShareBonus={() => router.push({ pathname: "/share-frame", params: { coneId: cone.id, coneName: cone.name } })}
+            onShareBonus={() =>
+              router.push({
+                pathname: "/share-frame",
+                params: { coneId: cone.id, coneName: cone.name },
+              })
+            }
           />
         </UIStack>
       </ScrollView>
@@ -131,14 +180,14 @@ export default function ConeDetailRoute() {
         onChangeText={setDraftText}
         onClose={() => setReviewOpen(false)}
         onSave={async () => {
-            const res = await saveReviewToDb({ 
-                coneId: cone.id, 
-                coneSlug: cone.slug, 
-                coneName: cone.name, 
-                reviewRating: draftRating!, 
-                reviewText: draftText 
-            });
-            if (res.ok) setReviewOpen(false);
+          const res = await saveReviewToDb({
+            coneId: cone.id,
+            coneSlug: cone.slug,
+            coneName: cone.name,
+            reviewRating: draftRating!,
+            reviewText: draftText,
+          });
+          if (res.ok) setReviewOpen(false);
         }}
       />
     </Screen>
