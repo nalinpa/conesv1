@@ -64,14 +64,14 @@ export const BADGES: BadgeDefinition[] = [
   {
     id: "shared_the_view",
     name: "Shared the View",
-    unlockText: "Get a share bonus once.",
+    unlockText: "Share a photo to social media.",
     section: "Social",
     icon: "📸"
   },
   {
     id: "show_off",
     name: "Show-Off",
-    unlockText: "Get 5 share bonuses.",
+    unlockText: "Share 5 photos to social media.",
     section: "Social",
     icon: "✨"
   },
@@ -82,6 +82,13 @@ export const BADGES: BadgeDefinition[] = [
     unlockText: "Visit your first cone-type volcano.",
     section: "Types",
     icon: "🌋"
+  },
+  {
+    id: "cone-fan",
+    name: "Cone Fan",
+    icon: "🍦", 
+    unlockText: "Visit 10 different types of volcanic formations.",
+    section: "Types",
   },
   {
     id: "first_crater",
@@ -131,35 +138,35 @@ export const BADGES: BadgeDefinition[] = [
     name: "North Master",
     unlockText: "Visit every volcano in the North region.",
     section: "Regions",
-    icon: "🌉" // Harbour Bridge
+    icon: "🌉" 
   },
   {
     id: "central_master",
     name: "Central Master",
     unlockText: "Visit every volcano in the Central region.",
     section: "Regions",
-    icon: "🏙️" // Cityscape
+    icon: "🏙️" 
   },
   {
     id: "east_master",
     name: "East Master",
     unlockText: "Visit every volcano in the East region.",
     section: "Regions",
-    icon: "⛵" // Sailing/Bays
+    icon: "⛵" 
   },
   {
     id: "south_master",
     name: "South Master",
     unlockText: "Visit every volcano in the South region.",
     section: "Regions",
-    icon: "🎡" // Updated: Ferris wheel for Rainbow's End landmark in Manukau
+    icon: "🎡" 
   },
   {
     id: "harbour_master",
     name: "Harbour Master",
     unlockText: "Visit every volcano in the Harbour region.",
     section: "Regions",
-    icon: "⛴️" // Ferry
+    icon: "⛴️" 
   },
 
   {

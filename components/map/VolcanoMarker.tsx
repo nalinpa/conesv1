@@ -1,8 +1,10 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Mountain, Check } from "lucide-react-native";
+import { Check, MountainIcon } from "lucide-react-native";
 
-const WRAPPER_SIZE = 36;
+// Total canvas size needs to be larger than the circle to account for shadows and badges
+const CANVAS_SIZE = 37; 
+const CIRCLE_SIZE = 32; 
 const BG_COLOR = "white";
 
 export function VolcanoMarker({
@@ -12,70 +14,80 @@ export function VolcanoMarker({
   selected: boolean;
   completed: boolean;
 }) {
-  const coneColor = completed ? "rgba(95,179,162,1)" : "rgba(71,85,105,1)";
+  const coneColor = completed ? "rgba(95,179,162,1)" : "rgba(30, 41, 59, 1)";
 
   return (
-    <View
-      pointerEvents="none"
-      style={[
-        styles.wrapper,
-        selected ? styles.wrapperSelected : styles.wrapperUnselected,
-      ]}
-    >
-      <Mountain size={20} color={coneColor} strokeWidth={2.5} />
+    <View style={styles.container}>
+      <View
+        style={[
+          styles.circle,
+          selected ? styles.selected : styles.unselected,
+        ]}
+      >
+        <MountainIcon 
+          size={20} 
+          color={coneColor} 
+          fill={selected ? coneColor : "transparent"} 
+          strokeWidth={2.5} 
+        />
+      </View>
 
-      {/* Completed badge */}
-      {completed ? (
-        <View style={[styles.badge, styles.badgeBorder]}>
-          <Check size={12} color="#fff" strokeWidth={3.5} />
+      {completed && (
+        <View style={styles.badge}>
+          <Check size={10} color="#fff" strokeWidth={4} />
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
+  container: {
+    width: CANVAS_SIZE,
+    height: CANVAS_SIZE,
     alignItems: "center",
     justifyContent: "center",
-    width: WRAPPER_SIZE,
-    height: WRAPPER_SIZE,
-    borderRadius: WRAPPER_SIZE / 2,
-    backgroundColor: BG_COLOR,
+    backgroundColor: "transparent", 
   },
-  wrapperSelected: {
+  circle: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    backgroundColor: BG_COLOR,
+    borderWidth: 2,
+  },
+  unselected: {
+    borderColor: "rgba(30, 41, 59, 0.8)",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  selected: {
+    borderColor: "rgba(95,179,162,1)",
     borderWidth: 3,
-    borderColor: "rgba(95,179,162,1)", // Solid surf green
+    transform: [{ scale: 1.1 }], 
     elevation: 6,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4.5,
-  },
-  wrapperUnselected: {
-    borderWidth: 2,
-    // Darker, much more opaque slate border so it doesn't blend into the map
-    borderColor: "rgba(71,85,105,0.85)", 
-    // Higher elevation/shadow so it pops off the map layer
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
-    shadowRadius: 2.5,
+    shadowRadius: 4,
   },
   badge: {
     position: "absolute",
-    right: 2,
-    top: 2,
+    top: 6,
+    right: 6,
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: "rgba(34,197,94,1)", // Solid green
+    backgroundColor: "rgba(34,197,94,1)",
     borderWidth: 2,
+    borderColor: BG_COLOR,
     alignItems: "center",
     justifyContent: "center",
-  },
-  badgeBorder: {
-    borderColor: BG_COLOR,
+    zIndex: 2,
   },
 });

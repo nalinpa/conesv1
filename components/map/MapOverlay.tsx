@@ -1,13 +1,15 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import * as Linking from "expo-linking";
+import { MapPin, Navigation, Info, AlertCircle, Loader2 } from "lucide-react-native";
 
-// Relative imports to ensure resolution
 import { CardShell } from "../ui/CardShell";
 import { Stack } from "../ui/Stack";
 import { Row } from "../ui/Row";
 import { AppText } from "../ui/AppText";
 import { AppButton } from "../ui/AppButton";
+import { AppIcon } from "../ui/AppIcon";
+import { Pill } from "../ui/Pill";
 
 import { formatDistanceMeters } from "../../lib/formatters";
 
@@ -18,10 +20,6 @@ function normalizeLocStatus(v: unknown): LocStatus {
   return "unknown";
 }
 
-function titleCase(s: string): string {
-  return s.length ? s[0].toUpperCase() + s.slice(1) : s;
-}
-
 export function MapOverlayCard({
   title,
   distanceMeters,
@@ -30,134 +28,87 @@ export function MapOverlayCard({
   hasLoc,
   onRefreshGPS,
   refreshingGPS = false,
-  checkpointLabel,
-  checkpointRadiusMeters,
-}: {
-  title: string;
-  distanceMeters: number | null;
-  onOpen: () => void;
-  locStatus: unknown;
-  hasLoc: boolean;
-  onRefreshGPS?: () => void;
-  refreshingGPS?: boolean;
-  checkpointLabel?: string | null;
-  checkpointRadiusMeters?: number | null;
-}) {
+}: any) {
   const status = normalizeLocStatus(locStatus);
-  const denied = status === "denied";
-  const requesting = !denied && !hasLoc;
+  const isDenied = status === "denied";
+  const isRequesting = !isDenied && !hasLoc;
 
-  if (denied) {
+  /* --- GPS DENIED --- */
+  if (isDenied) {
     return (
       <CardShell status="danger">
         <Stack gap="md">
-          <AppText variant="sectionTitle">Location access denied</AppText>
-
-          <AppText variant="hint" numberOfLines={3}>
-            Enable location access in Settings to see your distance and complete cones.
-          </AppText>
-
-          <Row gap="sm">
-            <AppButton
-              variant="danger"
-              size="sm"
-              onPress={() => Linking.openSettings()}
-              disabled={refreshingGPS}
-              loading={refreshingGPS}
-              loadingLabel="Opening…"
-              style={styles.flex1}
-            >
-              Open Settings
-            </AppButton>
-
-            {onRefreshGPS ? (
-              <AppButton
-                variant="ghost"
-                size="sm"
-                onPress={onRefreshGPS}
-                disabled={refreshingGPS}
-                loading={refreshingGPS}
-                loadingLabel="Please wait…"
-                style={styles.flex1}
-              >
-                Try again
-              </AppButton>
-            ) : null}
+          <Row gap="sm" align="center">
+            <AppIcon icon={AlertCircle} variant="control" size={20} />
+            <AppText variant="sectionTitle" status="control">GPS Disabled</AppText>
           </Row>
-
-          {refreshingGPS ? <AppText variant="hint">Re-checking…</AppText> : null}
+          <AppText variant="label" status="control">
+            Enable location to track your proximity to the volcanic sites.
+          </AppText>
+          <Row gap="sm">
+            <AppButton variant="danger" size="sm" style={styles.flex1} onPress={() => Linking.openSettings()}>
+              Settings
+            </AppButton>
+            <AppButton variant="ghost" size="sm" style={styles.flex1} onPress={onRefreshGPS}>
+              Try Again
+            </AppButton>
+          </Row>
         </Stack>
       </CardShell>
     );
   }
 
-  if (requesting) {
+  /* --- GPS SEARCHING --- */
+  if (isRequesting) {
     return (
       <CardShell status="basic">
-        <Stack gap="md">
-          <AppText variant="sectionTitle">Waiting for GPS</AppText>
-
-          <AppText variant="hint" numberOfLines={2}>
-            Getting your current location…
-          </AppText>
-
-          {onRefreshGPS ? (
-            <AppButton
-              variant="secondary"
-              size="sm"
-              onPress={onRefreshGPS}
-              disabled={refreshingGPS}
-              loading={refreshingGPS}
-              loadingLabel="Refreshing…"
-            >
-              Try again
-            </AppButton>
-          ) : null}
-
-          {refreshingGPS ? <AppText variant="hint">Getting a better fix…</AppText> : null}
-        </Stack>
+        <Row gap="md" align="center">
+          <AppIcon icon={Loader2} variant="hint" size={24} />
+          <Stack style={styles.flex1}>
+            <AppText variant="sectionTitle">Finding You...</AppText>
+            <AppText variant="label" status="hint">Getting a GPS lock on your position.</AppText>
+          </Stack>
+        </Row>
       </CardShell>
     );
   }
 
-  const distanceLabel = formatDistanceMeters(distanceMeters, "label");
-  const cpLabelRaw = typeof checkpointLabel === "string" ? checkpointLabel.trim() : "";
-  const cpLabel = cpLabelRaw ? titleCase(cpLabelRaw) : "Main point";
-
-  const cpRadius =
-    typeof checkpointRadiusMeters === "number" && Number.isFinite(checkpointRadiusMeters)
-      ? Math.round(checkpointRadiusMeters)
-      : null;
+  /* --- READY / SELECTED SITE --- */
+  const distanceLabel = formatDistanceMeters(distanceMeters);
 
   return (
-    <CardShell>
-      <Stack gap="sm">
-        <AppText variant="sectionTitle">{title}</AppText>
+    <CardShell status="basic" onPress={onOpen}>
+      <Stack gap="md">
+        <Row justify="space-between" align="flex-start">
+          <Stack style={styles.flex1} gap="xxs">
+            <AppText variant="sectionTitle" numberOfLines={1}>{title}</AppText>
+          </Stack>
+          
+          <Pill status="surf" icon={Navigation}>
+            {distanceLabel}
+          </Pill>
+        </Row>
 
-        <AppText variant="hint" numberOfLines={1}>
-          {cpRadius != null ? `${cpLabel} • Radius ${cpRadius} m` : cpLabel}
-        </AppText>
-
-        <AppText variant="hint">{distanceLabel}</AppText>
-
-        <AppButton
-          variant="secondary"
+        <AppButton 
+          variant="primary" 
+          size="md" 
           onPress={onOpen}
-          disabled={refreshingGPS}
-          loading={refreshingGPS}
-          loadingLabel="Refreshing GPS…"
+          style={styles.actionButton}
         >
-          View cone
+          <Row gap="xs" align="center">
+            <AppText variant="label" status="control" style={styles.bold}>View Details</AppText>
+            <AppIcon icon={Info} variant="control" size={14} />
+          </Row>
         </AppButton>
-
-        {refreshingGPS ? <AppText variant="hint">Refreshing GPS…</AppText> : null}
       </Stack>
     </CardShell>
   );
 }
 
 const styles = StyleSheet.create({
-  flex1: {
-    flex: 1,
-  },
+  flex1: { flex: 1 },
+  bold: { fontWeight: "800" },
+  actionButton: {
+    borderRadius: 12,
+  }
 });

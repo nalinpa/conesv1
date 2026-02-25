@@ -23,25 +23,16 @@ export function Row({
   children: React.ReactNode;
   gap?: Gap;
   align?: FlexAlignType;
-  justify?:
-    | "center"
-    | "flex-start"
-    | "flex-end"
-    | "space-between"
-    | "space-around"
-    | "space-evenly";
+  justify?: ViewStyle["justifyContent"];
   wrap?: boolean;
   style?: ViewStyle;
 }) {
-  const dynamicStyle = useMemo(
-    () => ({
-      alignItems: align,
-      justifyContent: justify,
-      gap: GAP_PX[gap],
-      flexWrap: wrap ? ("wrap" as const) : ("nowrap" as const),
-    }),
-    [align, justify, gap, wrap],
-  );
+  const dynamicStyle = useMemo(() => ({
+    alignItems: align,
+    justifyContent: justify,
+    gap: GAP_PX[gap],
+    flexWrap: wrap ? ("wrap" as const) : ("nowrap" as const),
+  }), [align, justify, gap, wrap]);
 
   return <View style={[styles.row, dynamicStyle, style]}>{children}</View>;
 }

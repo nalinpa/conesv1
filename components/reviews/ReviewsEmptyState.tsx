@@ -1,9 +1,8 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { MessageCircle } from "lucide-react-native";
+import { MessageSquarePlus } from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
-// Stack and Row removed to fix type errors; using View with gap instead
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppIcon } from "@/components/ui/AppIcon";
@@ -17,28 +16,34 @@ export function ReviewsEmptyStateCard({
   onRetry: () => void;
 }) {
   return (
-    <CardShell style={styles.card}>
-      {/* Replaced Stack with View to support 'style' prop */}
-      <View style={[styles.container, { gap: space.md }]}>
-        <AppIcon icon={MessageCircle} size={28} />
+    <CardShell status="basic" style={styles.card}>
+      <View style={styles.container}>
+        <View style={styles.iconCircle}>
+          <AppIcon icon={MessageSquarePlus} size={32} variant="surf" />
+        </View>
 
-        <AppText variant="sectionTitle" style={styles.centerText}>
-          No reviews yet
-        </AppText>
+        <View style={styles.textStack}>
+          <AppText variant="sectionTitle" style={styles.centerText}>
+            No reviews yet
+          </AppText>
 
-        <AppText variant="hint" style={styles.hintText}>
-          Be the first to leave a rating after you’ve visited this volcano.
-        </AppText>
+          <AppText variant="label" status="hint" style={styles.hintText}>
+            Be the first to share your experience after you’ve checked in at this site.
+          </AppText>
+        </View>
 
-        {/* Replaced Row with View (flexDirection: row) to support 'style' prop */}
-        <View style={[styles.buttonRow, { flexDirection: "row", gap: space.sm }]}>
-          <AppButton variant="secondary" onPress={onBack} style={styles.button}>
-            Back
-          </AppButton>
-
-          <AppButton variant="ghost" onPress={onRetry} style={styles.button}>
-            Try again
-          </AppButton>
+        <View style={styles.buttonRow}>
+          <View style={styles.flex1}>
+            <AppButton variant="secondary" size="md" onPress={onBack}>
+              Go Back
+            </AppButton>
+          </View>
+          
+          <View style={styles.flex1}>
+            <AppButton variant="ghost" size="md" onPress={onRetry}>
+              Refresh
+            </AppButton>
+          </View>
         </View>
       </View>
     </CardShell>
@@ -48,24 +53,41 @@ export function ReviewsEmptyStateCard({
 const styles = StyleSheet.create({
   card: {
     marginTop: space.lg,
+    paddingVertical: space.xl,
   },
   container: {
     alignItems: "center",
-    // default flexDirection is 'column', which matches Stack behavior
+    justifyContent: "center",
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F0FDFB",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: space.md,
+  },
+  textStack: {
+    alignItems: "center",
+    gap: space.xs,
+    marginBottom: space.lg,
   },
   centerText: {
     textAlign: "center",
+    color: "#0F172A",
   },
   hintText: {
     textAlign: "center",
-    maxWidth: 260,
+    maxWidth: 240,
+    lineHeight: 18,
   },
   buttonRow: {
-    marginTop: space.sm,
-    // alignItems 'center' is usually good for button rows to align varying heights
-    alignItems: "center",
+    flexDirection: "row",
+    gap: space.sm,
+    width: "100%",
   },
-  button: {
-    minWidth: 120,
+  flex1: {
+    flex: 1,
   },
 });

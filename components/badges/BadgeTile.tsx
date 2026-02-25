@@ -1,134 +1,117 @@
 import React from "react";
-import { View, StyleSheet, Text } from "react-native";
-import { useTheme } from "@ui-kitten/components";
+import { View, StyleSheet } from "react-native";
+import { CheckCircle2, Lock } from "lucide-react-native";
 
-// Fixed alias to relative path to resolve build errors
-import { Pill } from "../ui/Pill";
+import { AppText } from "@/components/ui/AppText";
+import { Row } from "@/components/ui/Row";
+import { Stack } from "@/components/ui/Stack";
+import { Pill } from "@/components/ui/Pill";
+import { space, radius } from "@/lib/ui/tokens";
 
-/**
- * Component to display an individual badge card with its icon, 
- * description, and current unlock status.
- */
+interface BadgeTileProps {
+  name: string;
+  icon: string;
+  unlockText: string;
+  unlocked: boolean;
+  progressLabel?: string | null;
+}
+
 export function BadgeTile({
   name,
   icon,
   unlockText,
   unlocked,
   progressLabel,
-}: {
-  name: string;
-  icon: string;
-  unlockText: string;
-  unlocked: boolean;
-  progressLabel?: string | null;
-}) {
-  const theme = useTheme();
-  
+}: BadgeTileProps) {
   return (
-    <View style={styles.container}>
-      <View style={[
-        styles.card, 
-        unlocked ? styles.cardUnlocked : styles.cardLocked,
-        { 
-          borderColor: theme?.['border-basic-color-3'] ?? '#CBD5E1',
-          backgroundColor: theme?.['background-basic-color-1'] ?? '#FFFFFF'
-        }
-      ]}>
-        <View style={styles.contentRow}>
-          {/* Badge Icon Wrapper - shows the emoji in a styled box */}
-          <View style={[
-            styles.iconWrapper, 
-            { 
-              backgroundColor: unlocked 
-                ? (theme?.['color-primary-100'] ?? '#E6F5F2') 
-                : (theme?.['background-basic-color-3'] ?? '#F1F5F9') 
-            }
-          ]}>
-            <Text style={styles.iconText}>{icon}</Text>
-          </View>
-
-          <View style={styles.textContainer}>
-            <Text style={[
-              styles.name, 
-              { color: theme?.['text-basic-color'] ?? '#0F172A' }
-            ]}>
-              {name}
-            </Text>
-
-            <Text style={[
-              styles.description,
-              { color: theme?.['text-hint-color'] ?? '#475569' }
-            ]}>
-              {unlockText}
-            </Text>
-
-            <View style={styles.footer}>
-              {unlocked ? (
-                <Pill status="success">Earned</Pill>
-              ) : (
-                <Text style={[
-                  styles.progressLabel,
-                  { color: theme?.['text-hint-color'] ?? '#64748B' }
-                ]}>
-                  {progressLabel ?? "In progress"}
-                </Text>
-              )}
+    <View style={[styles.container, !unlocked && styles.lockedOpacity]}>
+      <Row gap="md" align="flex-start">
+        {/* Badge Icon */}
+        <View style={[styles.iconWrapper, unlocked ? styles.iconUnlocked : styles.iconLocked]}>
+          <AppText style={[styles.iconText, !unlocked && styles.grayscale]}>
+            {icon}
+          </AppText>
+          {!unlocked && (
+            <View style={styles.lockOverlay}>
+              <Lock size={12} color="#94A3B8" />
             </View>
-          </View>
+          )}
         </View>
-      </View>
+
+        {/* Info */}
+        <Stack style={styles.flex1} gap="xxs">
+          <Row justify="space-between" align="center">
+            <AppText variant="body" style={styles.bold}>{name}</AppText>
+            {unlocked && <CheckCircle2 size={16} color="#66B2A2" />}
+          </Row>
+          
+          <AppText variant="label" status="hint" numberOfLines={2}>
+            {unlockText}
+          </AppText>
+
+          <View style={styles.footer}>
+            {unlocked ? (
+              <Pill status="surf" size="sm">Earned</Pill>
+            ) : (
+              <AppText variant="label" status="hint" style={styles.progressText}>
+                {progressLabel ?? "Locked"}
+              </AppText>
+            )}
+          </View>
+        </Stack>
+      </Row>
+      <View style={styles.divider} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    paddingVertical: space.md,
     width: "100%",
-    paddingVertical: 6,
   },
-  card: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 16,
-  },
-  cardUnlocked: {
-    opacity: 1,
-  },
-  cardLocked: {
-    opacity: 0.6,
-  },
-  contentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
+  flex1: { flex: 1 },
+  bold: { fontWeight: "800", color: "#0F172A" },
+  lockedOpacity: { opacity: 0.8 },
   iconWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 16,
+    width: 56,
+    height: 56,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
   },
-  iconText: {
-    fontSize: 26,
+  iconUnlocked: {
+    backgroundColor: "#F0FDFB",
+    borderColor: "#CCECE5",
   },
-  textContainer: {
-    flex: 1,
+  iconLocked: {
+    backgroundColor: "#F1F5F9",
+    borderColor: "#E2E8F0",
   },
-  name: {
-    fontWeight: "800",
-    fontSize: 16,
+  iconText: { fontSize: 28 },
+  grayscale: { opacity: 0.4 },
+  lockOverlay: {
+    position: "absolute",
+    bottom: -4,
+    right: -4,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 2,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
   },
-  description: {
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
+  footer: { marginTop: 6 },
+  progressText: {
+    fontSize: 11,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
-  footer: {
-    marginTop: 12,
-  },
-  progressLabel: {
-    fontSize: 12,
-    fontWeight: "600",
+  divider: {
+    height: 1,
+    backgroundColor: "#F1F5F9",
+    marginTop: space.md,
+    marginHorizontal: -space.md, 
+    opacity: 0.5,
   }
 });

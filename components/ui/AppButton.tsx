@@ -1,7 +1,12 @@
 import React from "react";
-import { Button } from "@ui-kitten/components";
-import type { ButtonProps } from "@ui-kitten/components";
-
+import { StyleSheet } from "react-native";
+import { Button, ButtonProps } from "@ui-kitten/components";
+import * as Haptics from "expo-haptics";
+import Animated, { 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring 
+} from "react-native-reanimated";
 import { space, radius, tap } from "@/lib/ui/tokens";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
@@ -23,31 +28,60 @@ export function AppButton({
   disabled,
   style,
   children,
+  onPress,
   ...rest
 }: Props) {
-  const appearance: ButtonProps["appearance"] = variant === "ghost" ? "ghost" : "filled";
+  const scale = useSharedValue(1);
 
-  const status: ButtonProps["status"] =
+  const appearance: ButtonProps["appearance"] = variant === "ghost" ? "ghost" : "filled";
+  const status: ButtonProps["status"] = 
     variant === "danger" ? "danger" : variant === "secondary" ? "basic" : "primary";
 
   const minHeight = size === "sm" ? tap.min : tap.primary;
 
+  // Animated style for the "Physical" press feel
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const handlePressIn = () => {
+    scale.value = withSpring(0.97);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1);
+  };
+
   return (
-    <Button
-      {...rest}
-      appearance={appearance}
-      status={status}
-      disabled={disabled || loading}
-      style={[
-        {
-          minHeight,
-          paddingHorizontal: space.lg,
-          borderRadius: radius.md,
-        },
-        style,
-      ]}
-    >
-      {loading ? loadingLabel : children}
-    </Button>
+    <Animated.View style={[styles.container, animatedStyle]}>
+      <Button
+        {...rest}
+        appearance={appearance}
+        status={status}
+        disabled={disabled || loading}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={onPress}
+        style={[
+          {
+            minHeight,
+            paddingHorizontal: space.lg,
+            borderRadius: radius.md,
+            backgroundColor: variant === "primary" ? "#66B2A2" : undefined, // Injecting Surf Green
+            borderColor: variant === "primary" ? "#66B2A2" : undefined,
+          },
+          style,
+        ]}
+      >
+        {loading ? loadingLabel : children}
+      </Button>
+    </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: 4,
+  },
+});

@@ -1,14 +1,14 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
+import { MessageSquarePlus, Star, ChevronRight } from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
-
 import { Stack } from "@/components/ui/Stack";
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
+import { AppIcon } from "@/components/ui/AppIcon";
 import { space } from "@/lib/ui/tokens";
-import { AppButton } from "../ui/AppButton";
 
 type ConeLite = {
   id: string;
@@ -21,7 +21,7 @@ export function ConesToReviewCard({
   onOpenCone,
 }: {
   cones: ConeLite[];
-  onOpenCone: (_id: string) => void;
+  onOpenCone: (id: string) => void;
 }) {
   if (!cones || cones.length === 0) return null;
 
@@ -29,57 +29,76 @@ export function ConesToReviewCard({
   const remaining = cones.length - visible.length;
 
   return (
-    <CardShell>
+    <CardShell status="basic">
       <Stack gap="md">
         {/* Header */}
         <Row justify="space-between" align="center">
-          <AppText variant="sectionTitle">Reviews to write</AppText>
-          <Pill status="info">{cones.length}</Pill>
+          <Row gap="xs" align="center">
+            <AppIcon icon={MessageSquarePlus} variant="surf" size={18} />
+            <AppText variant="sectionTitle">Pending Reviews</AppText>
+          </Row>
+          <Pill status="surf">{cones.length}</Pill>
         </Row>
 
-        <AppText variant="hint">
-          You’ve been to these volcanoes — add a quick public review.
+        <AppText variant="body" status="hint">
+          Help the community by sharing your experience at these recent summits.
         </AppText>
 
-        {/* List */}
-        <Stack gap="lg">
+        {/* List of Cones */}
+        <Stack gap="sm">
           {visible.map((cone) => (
-            <CardShell key={cone.id} status="basic">
-              <Stack gap="sm">
-                <View style={styles.textContainer}>
-                  <AppText variant="sectionTitle" style={styles.coneName}>
-                    {cone.name}
-                  </AppText>
-
-                  {cone.description?.trim() ? (
-                    <AppText variant="hint" numberOfLines={2}>
-                      {cone.description.trim()}
+            <CardShell 
+              key={cone.id} 
+              onPress={() => onOpenCone(cone.id)}
+              style={styles.innerCard}
+            >
+              <Row justify="space-between" align="center">
+                <Row gap="sm" align="center" style={styles.flex1}>
+                  <AppIcon icon={Star} variant="surf" size={16} />
+                  <View style={styles.flex1}>
+                    <AppText variant="body" style={styles.bold}>
+                      {cone.name}
                     </AppText>
-                  ) : null}
-                </View>
-
-                <AppButton onPress={() => onOpenCone(cone.id)}>Add a review</AppButton>
-              </Stack>
+                    {cone.description?.trim() && (
+                      <AppText variant="label" status="hint" numberOfLines={1}>
+                        {cone.description.trim()}
+                      </AppText>
+                    )}
+                  </View>
+                </Row>
+                <AppIcon icon={ChevronRight} variant="hint" size={16} />
+              </Row>
             </CardShell>
           ))}
         </Stack>
 
-        {/* Overflow hint */}
-        {remaining > 0 ? (
-          <AppText variant="hint">
-            + {remaining} more visited volcano{remaining === 1 ? "" : "es"}
+        {/* Overflow Hint */}
+        {remaining > 0 && (
+          <AppText variant="label" status="surf" style={styles.moreText}>
+            + {remaining} more to review
           </AppText>
-        ) : null}
+        )}
       </Stack>
     </CardShell>
   );
 }
 
 const styles = StyleSheet.create({
-  textContainer: {
-    gap: space.xs,
+  flex1: {
+    flex: 1,
   },
-  coneName: {
+  innerCard: {
+    padding: space.sm,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+  },
+  bold: {
+    fontWeight: "700",
+  },
+  moreText: {
+    textAlign: "center",
     fontWeight: "800",
+    marginTop: 2,
   },
 });

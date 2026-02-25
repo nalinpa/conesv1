@@ -7,33 +7,18 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  type ViewStyle,
   StyleSheet,
 } from "react-native";
-import { useTheme } from "@ui-kitten/components";
+import { Star } from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
+import { AppIcon } from "@/components/ui/AppIcon";
 
-import { space, radius, border as borderTok } from "@/lib/ui/tokens";
-
-function isValidRating(n: number | null): n is number {
-  return n != null && Number.isFinite(n) && n >= 1 && n <= 5;
-}
-
-interface ReviewModalProps {
-  visible: boolean;
-  saving: boolean;
-  draftRating: number | null;
-  draftText: string;
-  onChangeRating: (_rating: number | null) => void;
-  onChangeText: (_text: string) => void;
-  onClose: () => void;
-  onSave: () => void;
-}
+import { space, radius } from "@/lib/ui/tokens";
 
 export function ReviewModal({
   visible,
@@ -44,188 +29,95 @@ export function ReviewModal({
   onChangeText,
   onClose,
   onSave,
-}: ReviewModalProps) {
-  const theme = useTheme();
+}: any) {
   const [touchedSave, setTouchedSave] = useState(false);
+  const canSave = !saving && draftRating != null;
 
-  const canSave = !saving && isValidRating(draftRating);
-
-  const ratingLabel = useMemo(() => {
-    if (!isValidRating(draftRating)) return "Tap a rating";
-    return `${draftRating}/5`;
-  }, [draftRating]);
-
-  const saveLabel = useMemo(() => {
-    if (saving) return "Saving…";
-    if (!isValidRating(draftRating)) return "Pick a rating";
-    return "Save";
-  }, [saving, draftRating]);
-
-  // Memoize dynamic styles to avoid inline-style warnings
-  const inputContainerDynamicStyle = useMemo<ViewStyle>(
-    () => ({
-      borderColor: theme["color-basic-500"] ?? "rgba(100,116,139,0.35)",
-      opacity: saving ? 0.75 : 1,
-      backgroundColor: theme["color-basic-100"] ?? "#FFFFFF",
-    }),
-    [theme, saving],
-  );
-
-  function handleClose() {
+  const handleClose = () => {
     if (saving) return;
     setTouchedSave(false);
     onClose();
-  }
-
-  function handleSave() {
-    setTouchedSave(true);
-    if (!canSave) return;
-    onSave();
-  }
-
-  function setText(t: string) {
-    onChangeText(t.replace(/^\s+/, ""));
-  }
-
-  function ratingPillStyle(selected: boolean): ViewStyle {
-    const selectedBorder = theme["color-primary-600"] ?? "rgba(95,179,162,0.95)";
-    const idleBorder = theme["color-basic-500"] ?? "rgba(100,116,139,0.35)";
-    const selectedBg = theme["color-primary-200"] ?? "rgba(95,179,162,0.22)";
-
-    return {
-      paddingHorizontal: space.md,
-      paddingVertical: space.sm,
-      borderRadius: 999,
-      borderWidth: borderTok.thick,
-      borderColor: selected ? selectedBorder : idleBorder,
-      backgroundColor: selected ? selectedBg : "transparent",
-      opacity: saving ? 0.6 : 1,
-    };
-  }
+  };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboardView}
       >
-        {/* Backdrop (tap to dismiss) */}
-        <Pressable
-          onPress={() => {
-            if (saving) return;
-            Keyboard.dismiss();
-            handleClose();
-          }}
-          style={styles.backdrop}
-        >
-          {/* Content wrapper: prevent backdrop dismiss */}
-          <Pressable
-            onPress={(e) => {
-              // RN Pressable doesn't expose stopPropagation consistently across platforms,
-              // but nesting this Pressable prevents the parent onPress from firing.
-              e?.preventDefault?.();
-            }}
-            style={styles.contentWrapper}
-          >
-            <CardShell>
+        <Pressable onPress={handleClose} style={styles.backdrop}>
+          <Pressable onPress={(e) => e.stopPropagation()} style={styles.contentWrapper}>
+            <CardShell status="basic">
               <Stack gap="lg">
-                <View style={styles.headerGap}>
-                  <AppText variant="sectionTitle">Add a review</AppText>
-                  <AppText variant="hint">
-                    Your review is public. You can leave one review per volcano.
+                <Stack gap="xs">
+                  <AppText variant="sectionTitle">Share your Experience</AppText>
+                  <AppText variant="label" status="hint">
+                    How was your visit to this volcanic site?
                   </AppText>
-                </View>
+                </Stack>
 
-                {/* Rating header */}
-                <Row justify="space-between" align="center">
-                  <AppText variant="label">
-                    Your rating{" "}
-                    <AppText variant="hint" style={styles.boldText}>
-                      • {ratingLabel}
-                    </AppText>
-                  </AppText>
-
-                  {saving ? <AppText variant="hint">Saving…</AppText> : null}
-                </Row>
-
-                {/* Rating buttons */}
-                <Row wrap gap="sm" style={styles.ratingRow}>
-                  {[1, 2, 3, 4, 5].map((n) => {
-                    const selected = draftRating === n;
-                    return (
+                {/* Rating Selection */}
+                <Stack gap="sm">
+                  <AppText variant="label" style={styles.bold}>Your Rating</AppText>
+                  <Row justify="space-between" align="center">
+                    {[1, 2, 3, 4, 5].map((n) => (
                       <Pressable
                         key={n}
-                        disabled={saving}
-                        onPress={() => {
-                          onChangeRating(n);
-                          if (touchedSave) setTouchedSave(false);
-                        }}
-                        hitSlop={8}
-                        style={ratingPillStyle(selected)}
+                        onPress={() => onChangeRating(n)}
+                        style={[
+                          styles.ratingCircle,
+                          draftRating === n && styles.activeCircle
+                        ]}
                       >
-                        <AppText style={selected ? styles.textHeavy : styles.textBold}>
-                          {"⭐".repeat(n)}
+                        <AppIcon 
+                          icon={Star} 
+                          size={20} 
+                          variant={draftRating === n ? "control" : "hint"} 
+                        />
+                        <AppText 
+                          variant="label" 
+                          style={[styles.ratingNum, draftRating === n && styles.activeNum]}
+                        >
+                          {n}
                         </AppText>
                       </Pressable>
-                    );
-                  })}
-                </Row>
-
-                {touchedSave && !isValidRating(draftRating) ? (
-                  <AppText variant="hint" style={styles.boldText}>
-                    Pick a rating to save your review.
-                  </AppText>
-                ) : null}
+                    ))}
+                  </Row>
+                </Stack>
 
                 {/* Text input */}
-                <View style={[styles.inputContainer, inputContainerDynamicStyle]}>
+                <View style={styles.inputWrapper}>
                   <TextInput
                     value={draftText}
-                    onChangeText={setText}
-                    placeholder="Optional note — what was it like? (views, track, vibes)…"
-                    placeholderTextColor={
-                      theme["color-basic-700"] ?? "rgba(100,116,139,0.9)"
-                    }
+                    onChangeText={onChangeText}
+                    placeholder="Optional: Mention the views, track conditions, or local vibes..."
+                    placeholderTextColor="#94A3B8"
                     multiline
                     editable={!saving}
-                    style={[
-                      styles.textInput,
-                      { color: theme["text-basic-color"] ?? "#0f172a" },
-                    ]}
+                    style={styles.textInput}
                     maxLength={280}
                     textAlignVertical="top"
                   />
-
-                  <View style={styles.charCountWrapper}>
-                    <AppText variant="hint">{draftText.length} / 280</AppText>
-                  </View>
+                  <Row justify="flex-end" style={styles.charCount}>
+                    <AppText variant="label" status="hint">{draftText.length}/280</AppText>
+                  </Row>
                 </View>
 
                 {/* Actions */}
                 <Row gap="sm">
                   <View style={styles.flex1}>
-                    <AppButton
-                      variant="secondary"
-                      disabled={saving}
-                      onPress={handleClose}
-                    >
+                    <AppButton variant="ghost" disabled={saving} onPress={handleClose}>
                       Cancel
                     </AppButton>
                   </View>
-
                   <View style={styles.flex1}>
                     <AppButton
+                      variant="primary"
                       disabled={!canSave}
                       loading={saving}
-                      loadingLabel="Saving…"
-                      onPress={handleSave}
+                      onPress={onSave}
                     >
-                      {saveLabel}
+                      Save Review
                     </AppButton>
                   </View>
                 </Row>
@@ -239,48 +131,43 @@ export function ReviewModal({
 }
 
 const styles = StyleSheet.create({
-  keyboardView: {
-    flex: 1,
-  },
+  keyboardView: { flex: 1 },
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
+    backgroundColor: "rgba(15, 23, 42, 0.6)",
     justifyContent: "center",
     padding: space.lg,
   },
-  contentWrapper: {
-    width: "100%",
-  },
-  headerGap: {
-    gap: space.xs,
-  },
-  boldText: {
-    fontWeight: "800",
-  },
-  ratingRow: {
+  contentWrapper: { width: "100%" },
+  bold: { fontWeight: "900" },
+  ratingCircle: {
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    backgroundColor: "#F1F5F9",
     alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  textBold: {
-    fontWeight: "800",
+  activeCircle: {
+    backgroundColor: "#66B2A2",
+    borderColor: "#569B8C",
   },
-  textHeavy: {
-    fontWeight: "900",
-  },
-  inputContainer: {
-    borderWidth: borderTok.thick,
+  ratingNum: { color: "#64748B", fontWeight: "800", marginTop: -2 },
+  activeNum: { color: "#FFFFFF" },
+  inputWrapper: {
+    backgroundColor: "#F8FAFC",
     borderRadius: radius.md,
-    paddingHorizontal: space.md,
-    paddingVertical: space.sm,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+    padding: space.md,
   },
   textInput: {
-    minHeight: 96,
+    minHeight: 100,
     fontSize: 16,
-    fontWeight: "500",
+    color: "#0F172A",
   },
-  charCountWrapper: {
-    marginTop: space.xs,
-  },
-  flex1: {
-    flex: 1,
-  },
+  charCount: { marginTop: 4 },
+  flex1: { flex: 1 },
 });

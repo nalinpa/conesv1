@@ -1,41 +1,43 @@
-import React, { useMemo } from "react";
-import { View, type ViewProps, StyleSheet } from "react-native";
+import React from "react";
+import { View, StyleSheet, StatusBar, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useTheme } from "@ui-kitten/components";
+import { LinearGradient } from "expo-linear-gradient";
 
-type ScreenProps = ViewProps & {
-  padded?: boolean; // default true
-};
-
-export function Screen({ padded = true, style, ...props }: ScreenProps) {
+export function Screen({ 
+  padded = true, 
+  scrollable = false, 
+  style, 
+  children, 
+  ...props 
+}: any) {
   const insets = useSafeAreaInsets();
-  const theme = useTheme();
+  const Container = scrollable ? ScrollView : View;
 
-  const basePadding = padded ? 16 : 0;
-  const extraPaddingTop = padded ? 10 : 8;
-
-  const dynamicStyle = useMemo(() => {
-    return {
-      // Use Kitten background token if available, fallback to white
-      backgroundColor: (theme as any)["background-basic-color-1"] ?? "#ffffff",
-      ...(padded
-        ? {
-            paddingTop: insets.top + basePadding + extraPaddingTop,
-            paddingLeft: basePadding,
-            paddingRight: basePadding,
-            paddingBottom: basePadding,
-          }
-        : {
-            paddingTop: insets.top + extraPaddingTop,
-          }),
-    };
-  }, [theme, padded, insets.top, basePadding, extraPaddingTop]);
-
-  return <View style={[styles.container, dynamicStyle, style]} {...props} />;
+  return (
+    <LinearGradient colors={["#FFFFFF", "#F0F9F7"]} style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <Container 
+        style={[
+          {
+            flex: 1,
+            paddingTop: insets.top + (padded ? 18 : 8),
+            paddingLeft: insets.left + (padded ? 16 : 0),
+            paddingRight: insets.right + (padded ? 16 : 0),
+          },
+          style
+        ]} 
+        // ScrollView specific prop
+        contentContainerStyle={scrollable ? { 
+          paddingBottom: insets.bottom + (padded ? 32 : 16),
+          flexGrow: 1 
+        } : undefined}
+        showsVerticalScrollIndicator={false}
+        {...props}
+      >
+        {children}
+      </Container>
+    </LinearGradient>
+  );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
+const styles = StyleSheet.create({ container: { flex: 1 } });

@@ -1,18 +1,30 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-
 import { Row } from "@/components/ui/Row";
 import { AppText } from "@/components/ui/AppText";
 
-export function StatRow({ label, value }: { label: string; value: React.ReactNode }) {
+export function StatRow({ 
+  label, 
+  value, 
+  icon 
+}: { 
+  label: string; 
+  value: React.ReactNode; 
+  icon?: React.ReactNode;
+}) {
   const isPrimitive = typeof value === "string" || typeof value === "number";
 
   return (
-    <Row align="baseline" gap="sm">
-      <AppText variant="hint">{label}</AppText>
+    <Row align="center" justify="space-between" style={styles.container}>
+      <Row align="center" gap="xs">
+        {icon}
+        <AppText variant="label" status="hint">
+          {label}
+        </AppText>
+      </Row>
 
       {isPrimitive ? (
-        <AppText variant="sectionTitle" style={styles.valueText}>
+        <AppText variant="body" style={styles.valueText}>
           {value}
         </AppText>
       ) : (
@@ -23,6 +35,10 @@ export function StatRow({ label, value }: { label: string; value: React.ReactNod
 }
 
 const styles = StyleSheet.create({
+  container: {
+    width: "100%",
+    paddingVertical: 2,
+  },
   valueText: {
     fontWeight: "900",
   },

@@ -1,28 +1,39 @@
 import React from "react";
-import { View } from "react-native";
-import { space } from "@/lib/ui/tokens";
+import { View, StyleSheet, type ViewStyle } from "react-native";
+import { Stack } from "./Stack";
 import { AppText } from "./AppText";
-import { Row } from "./Row";
+import { space } from "@/lib/ui/tokens";
 
-export function Section({
-  title,
-  rightSlot,
-  children,
-}: {
+interface SectionProps {
   title?: string;
-  rightSlot?: React.ReactNode;
   children: React.ReactNode;
-}) {
-  return (
-    <View style={{ gap: space.md }}>
-      {title ? (
-        <Row justify="space-between">
-          <AppText variant="sectionTitle">{title}</AppText>
-          {rightSlot}
-        </Row>
-      ) : null}
+  style?: ViewStyle;
+  gap?: "sm" | "md" | "lg";
+}
 
-      {children}
+export function Section({ 
+  title, 
+  children, 
+  style, 
+  gap = "sm" 
+}: SectionProps) {
+  return (
+    <View style={[styles.container, style]}>
+      <Stack gap={gap}>
+        {title && (
+          <AppText variant="sectionTitle" status="basic">
+            {title}
+          </AppText>
+        )}
+        <View>{children}</View>
+      </Stack>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: space.md,
+    width: "100%",
+  },
+});

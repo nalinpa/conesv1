@@ -1,5 +1,5 @@
-import React, { useRef, useCallback } from "react";
-import { StyleSheet } from "react-native";
+import React, { useRef, useCallback, useEffect } from "react";
+import { StyleSheet, Platform } from "react-native";
 import MapView, { PROVIDER_GOOGLE, Region } from "react-native-maps";
 
 import { TrackedMarker } from "@/components/map/TrackedMarker";
@@ -10,13 +10,13 @@ const AUCKLAND_BOUNDS = {
   southWest: { latitude: -37.15, longitude: 174.4 },
 };
 
-export type ConeMapPoint = {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  radiusMeters?: number;
-};
+// Subtle, clean map style to make your markers pop
+const MAP_STYLE = [
+  { "featureType": "poi", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "transit", "elementType": "labels", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "road", "elementType": "labels.icon", "stylers": [{ "visibility": "off" }] },
+  { "featureType": "administrative", "elementType": "labels", "stylers": [{ "visibility": "off" }] }
+];
 
 export const ConesMapView = React.memo(function ConesMapView({
   cones,
@@ -25,23 +25,30 @@ export const ConesMapView = React.memo(function ConesMapView({
   selectedConeId,
   onPressCone,
 }: {
-  cones: ConeMapPoint[];
+  cones: any[];
   completedIds: Set<string>;
   initialRegion: Region;
   selectedConeId: string | null;
-  onPressCone: (_coneId: string) => void;
+  onPressCone: (coneId: string) => void;
 }) {
   const mapRef = useRef<MapView>(null);
 
-  const handlePress = useCallback(
-    (id: string) => {
-      onPressCone(id);
-    },
-    [onPressCone],
-  );
+  // Animate to cone when selected
+  useEffect(() => {
+    if (selectedConeId && mapRef.current) {
+      const cone = cones.find(c => c.id === selectedConeId);
+      if (cone) {
+        mapRef.current.animateToRegion({
+          latitude: cone.lat - 0.005, // Slightly offset so the bottom card doesn't hide it
+          longitude: cone.lng,
+          latitudeDelta: 0.02,
+          longitudeDelta: 0.02,
+        }, 500);
+      }
+    }
+  }, [selectedConeId, cones]);
 
   const handleMapReady = useCallback(() => {
-    // Apply the boundary lock strictly to the Auckland region via instance method
     if (mapRef.current) {
       mapRef.current.setMapBoundaries(
         AUCKLAND_BOUNDS.northEast,
@@ -56,20 +63,23 @@ export const ConesMapView = React.memo(function ConesMapView({
       provider={PROVIDER_GOOGLE}
       style={styles.flex1}
       initialRegion={initialRegion}
+      customMapStyle={MAP_STYLE}
       showsUserLocation
       showsMyLocationButton={false}
       toolbarEnabled={false}
       onMapReady={handleMapReady}
       minZoomLevel={10}
-      maxZoomLevel={20}
+      maxZoomLevel={18}
+      // Helps with performance during markers rendering
+      moveOnMarkerPress={false} 
     >
       {cones.map((c) => (
         <TrackedMarker
-          key={c.id} // Stable key prevents unmounting flicker
+          key={c.id}
           cone={c}
           selected={selectedConeId === c.id}
           completed={completedIds.has(c.id)}
-          onPress={handlePress}
+          onPress={onPressCone}
         />
       ))}
     </MapView>
