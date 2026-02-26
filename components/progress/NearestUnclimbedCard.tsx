@@ -44,7 +44,7 @@ export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone 
         </Row>
 
         <Stack gap="xs">
-          <AppText variant="h3" style={styles.coneName}>
+          <AppText variant="sectionTitle" style={styles.coneName}>
             {cone.name}
           </AppText>
           <AppText variant="body" numberOfLines={2} style={styles.description}>

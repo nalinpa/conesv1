@@ -70,7 +70,7 @@ export function ConeListItem({
         ) : null}
 
         {/* Footer Action */}
-        <Row justify="flex" style={styles.footer}>
+        <Row justify="space-evenly" style={styles.footer}>
           <Row gap="xs" align="center">
             <AppText
               variant="label"

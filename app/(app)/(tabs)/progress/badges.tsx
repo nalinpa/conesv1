@@ -92,7 +92,7 @@ export default function BadgesScreen() {
                     <AppText variant="sectionTitle" status="surf">
                       {nextUp.badge.name}
                     </AppText>
-                    <AppText variant="label" status="surf" opacity={0.8}>
+                    <AppText variant="label" status="surf" style={{ opacity: 0.8 }}>
                       {nextUp.badge.unlockText}
                     </AppText>
                   </Stack>

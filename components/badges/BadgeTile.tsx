@@ -55,7 +55,7 @@ export function BadgeTile({
 
           <View style={styles.footer}>
             {unlocked ? (
-              <Pill status="surf" size="sm">
+              <Pill status="surf">
                 Earned
               </Pill>
             ) : (

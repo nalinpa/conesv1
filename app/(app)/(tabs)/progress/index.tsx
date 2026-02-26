@@ -122,7 +122,7 @@ function AuthedProgress() {
           total={totals.total}
           percent={totals.percent}
           reviewCount={myReviews.reviewedConeIds.size}
-          shareCount={my.shareCount || 0}
+          shareCount={my.shareBonusCount || 0}
           allDone={totals.completed >= totals.total && totals.total > 0}
           onOpenBadges={goBadges}
           onBrowseVolcanoes={goConesHome}

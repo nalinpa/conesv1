@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { StyleSheet } from "react-native";
-import MapView, { PROVIDER_GOOGLE, Region } from "react-native-maps";
+import MapView, { LatLng, PROVIDER_GOOGLE, Region } from "react-native-maps";
 
 import { TrackedMarker } from "@/components/map/TrackedMarker";
 export { initialRegionFrom } from "./MapRegion";
@@ -10,7 +10,6 @@ const AUCKLAND_BOUNDS = {
   southWest: { latitude: -37.15, longitude: 174.4 },
 };
 
-// Subtle, clean map style to make your markers pop
 const MAP_STYLE = [
   { featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] },
   { featureType: "transit", elementType: "labels", stylers: [{ visibility: "off" }] },
@@ -21,6 +20,15 @@ const MAP_STYLE = [
     stylers: [{ visibility: "off" }],
   },
 ];
+
+export interface ConeMapPoint {
+  id: string;
+  title: string;
+  lat: number;
+  lng: number;
+  region?: string;
+  type?: string;
+}
 
 export const ConesMapView = React.memo(function ConesMapView({
   cones,
@@ -44,7 +52,7 @@ export const ConesMapView = React.memo(function ConesMapView({
       if (cone) {
         mapRef.current.animateToRegion(
           {
-            latitude: cone.lat - 0.005, // Slightly offset so the bottom card doesn't hide it
+            latitude: cone.lat - 0.005,
             longitude: cone.lng,
             latitudeDelta: 0.02,
             longitudeDelta: 0.02,

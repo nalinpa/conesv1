@@ -2,9 +2,10 @@ import React, { useMemo } from "react";
 import { View, type ViewStyle, type FlexAlignType, StyleSheet } from "react-native";
 import { space } from "@/lib/ui/tokens";
 
-type Gap = "xs" | "sm" | "md" | "lg" | "xl";
+type Gap = keyof typeof space;
 
 const GAP_PX: Record<Gap, number> = {
+  xxs: space.xxs,
   xs: space.xs,
   sm: space.sm,
   md: space.md,

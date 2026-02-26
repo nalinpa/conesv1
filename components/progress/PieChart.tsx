@@ -51,7 +51,7 @@ export function PieChart({
       </Svg>
 
       <View style={styles.labelContainer}>
-        <AppText variant="h3" style={styles.percentText}>
+        <AppText variant="sectionTitle" style={styles.percentText}>
           {Math.round(clamped * 100)}%
         </AppText>
         <AppText variant="label" status="hint" style={styles.completeLabel}>

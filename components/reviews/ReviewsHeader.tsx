@@ -50,7 +50,7 @@ export function ReviewsHeader({
         <Row gap="md" align="center" style={styles.statsRow}>
           <View style={styles.ratingBadge}>
             <Row gap="xs" align="center">
-              <AppText variant="h2" style={styles.bigRating}>
+              <AppText variant="sectionTitle" style={styles.bigRating}>
                 {avg?.toFixed(1)}
               </AppText>
               <AppIcon icon={Star} variant="surf" size={20} />
