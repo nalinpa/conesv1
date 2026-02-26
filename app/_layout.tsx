@@ -1,14 +1,40 @@
 import "@/lib/polyfills/buffer";
-import React from "react";
-import { Stack } from "expo-router";
+import React, { useEffect } from "react";
+import { Stack, useNavigationContainerRef } from "expo-router";
+import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 
 import { AppProviders } from "@/lib/providers/AppProviders";
+import * as Sentry from '@sentry/react-native';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: !isRunningInExpoGo(),
+});
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  debug: false,
+  tracesSampleRate: 1.0, 
+  integrations: [navigationIntegration],
+  enableNativeFramesTracking: false,
+});
+
+// Prevent splash screen auto-hide
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
+  const ref = useNavigationContainerRef();
+
+  useEffect(() => {
+    if (ref) {
+      navigationIntegration.registerNavigationContainer(ref);
+    }
+  }, [ref]);
+
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
   return (
     <AppProviders>
       <Stack screenOptions={{ headerShown: false }}>
@@ -24,3 +50,5 @@ export default function RootLayout() {
     </AppProviders>
   );
 }
+
+export default Sentry.wrap(RootLayout);

@@ -26,7 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     config: {
       googleMaps: {
-        apiKey: process.env.GMAPS_API_KEY,
+        apiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
       },
     },
     edgeToEdgeEnabled: true,
@@ -36,7 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: "app.kompletion.cones",
     config: {
-      googleMapsApiKey: process.env.GMAPS_API_KEY,
+      googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
     },
     infoPlist: {
       NSCameraUsageDescription:
@@ -50,6 +50,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   plugins: [
     "expo-router",
+    [
+      "@sentry/react-native/expo",
+      {
+        url: "https://sentry.io/",
+        project: "react-native",
+        organization: "patel-td",
+      },
+    ],
     [
       "expo-image-picker",
       {
