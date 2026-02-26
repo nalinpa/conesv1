@@ -51,7 +51,7 @@ export function Pill({
     >
       {Icon && <Icon size={14} color={colors.text} strokeWidth={2.5} />}
 
-      <AppText variant="p1" style={[styles.text, { color: colors.text }]}>
+      <AppText variant="body" style={[styles.text, { color: colors.text }]}>
         {children}
       </AppText>
     </View>

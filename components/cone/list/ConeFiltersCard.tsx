@@ -14,6 +14,12 @@ import { AppText } from "@/components/ui/AppText";
 import { AppIcon } from "@/components/ui/AppIcon";
 import { space } from "@/lib/ui/tokens";
 
+export type ConeFiltersValue = {
+  category: string | null;
+  region: string | null;
+  hideCompleted: boolean;
+};
+
 const REGIONS = [
   { label: "All Regions", value: "all" },
   { label: "North", value: "north" },
@@ -145,7 +151,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
     paddingVertical: space.md,
-    // Negative margin to bleed out of parent padding if necessary
     marginHorizontal: -16,
     paddingHorizontal: 16,
   },

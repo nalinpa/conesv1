@@ -124,14 +124,12 @@ export default function MapScreen() {
           <View style={styles.overlayBottom}>
             <MapOverlayCard
               title={activeCone.name}
-              distanceMeters={overlayDistance}
+              distanceMeters={overlayDistance ?? 0}
               onOpen={() => goCone(activeCone.id)}
               locStatus={locStatus}
               hasLoc={!!loc}
               onRefreshGPS={() => void refreshGPS()}
               refreshingGPS={isRefreshing}
-              checkpointLabel={selectedCone && gate ? gate.checkpointLabel : null}
-              checkpointRadiusMeters={selectedCone && gate ? gate.checkpointRadius : null}
             />
           </View>
         )}

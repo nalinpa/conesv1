@@ -86,6 +86,7 @@ export default function ConeDetailRoute() {
       setErr("Sign in to save your visit.");
       return;
     }
+    
     if (!gate.inRange) {
       setErr(
         gate.distanceMeters
@@ -94,8 +95,9 @@ export default function ConeDetailRoute() {
       );
       return;
     }
-
-    await triggerComplete({ uid, cone, loc, gate });
+    if (loc) {
+      await triggerComplete({ uid, cone, loc, gate });
+    }
   };
 
   if (coneLoading || session.status === "loading") {
@@ -135,7 +137,7 @@ export default function ConeDetailRoute() {
             <ErrorCard
               status="warning"
               title="Check-in Issue"
-              message={err || mutationErr}
+              message={err || mutationErr || "An unknown error occurred"}
             />
           )}
 

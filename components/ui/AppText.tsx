@@ -1,29 +1,45 @@
 import React from "react";
-import { Text } from "react-native";
+import { Text, TextProps, StyleSheet } from "react-native";
 import { useTheme } from "@ui-kitten/components";
-import { text } from "@/lib/ui/type";
 
-export function AppText({ variant = "body", status, style, children, ...rest }: any) {
+const textStyles = {
+  screenTitle: { fontSize: 28, fontWeight: "800" },
+  sectionTitle: { fontSize: 20, fontWeight: "700" },
+  h3: { fontSize: 18, fontWeight: "700" },
+  body: { fontSize: 16, fontWeight: "500" },
+  hint: { fontSize: 14, fontWeight: "500" },
+  label: { fontSize: 12, fontWeight: "600" },
+} as const;
+
+type TextVariant = keyof typeof textStyles;
+
+interface AppTextProps extends TextProps {
+  variant?: TextVariant;
+  status?: "basic" | "hint" | "control" | "surf" | "danger";
+}
+
+export function AppText({ variant = "body", status = "basic", style, ...props }: AppTextProps) {
   const theme = useTheme();
-
-  // Handle standard UI Kitten status colors manually
+  
   const getStatusColor = () => {
-    if (status === "surf") return "#66B2A2";
-    if (status === "primary") return theme["color-primary-500"];
-    if (status === "success") return theme["color-success-500"];
-    if (status === "danger") return theme["color-danger-500"];
-    if (status === "hint") return theme["text-hint-color"];
-    return undefined; // Falls back to your token color or theme default
+    switch (status) {
+      case "surf": return "#66B2A2";
+      case "danger": return theme["color-danger-500"]; // Standard red
+      case "hint": return theme["text-hint-color"];
+      case "control": return theme["text-control-color"]; // Usually white
+      case "basic":
+      default: return theme["text-basic-color"];
+    }
   };
-
-  const statusStyle = { color: getStatusColor() };
 
   return (
     <Text
-      {...rest}
-      style={[{ color: theme["text-basic-color"] }, text[variant], statusStyle, style]}
-    >
-      {children}
-    </Text>
+      style={[
+        { color: getStatusColor() },
+        textStyles[variant],
+        style
+      ]}
+      {...props}
+    />
   );
 }

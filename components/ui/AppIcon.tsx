@@ -1,43 +1,71 @@
+import React from "react";
 import { useTheme } from "@ui-kitten/components";
 import type { LucideIcon } from "lucide-react-native";
 
-type IconVariant = "primary" | "hint" | "basic" | "control" | "surf";
+/**
+ * Valid variants for the AppIcon. 
+ * Added 'success', 'warning', and 'danger' to match project-wide usage.
+ */
+export type IconVariant = 
+  | "primary" 
+  | "control" 
+  | "hint" 
+  | "surf" 
+  | "success" 
+  | "warning" 
+  | "danger";
 
-export function AppIcon({
-  icon: Icon,
-  size = 18,
-  color,
-  variant = "hint",
-  strokeWidth = 2,
-}: {
-  icon: LucideIcon | undefined | null;
+interface AppIconProps {
+  icon: LucideIcon | null | undefined;
   size?: number;
   color?: string;
   variant?: IconVariant;
   strokeWidth?: number;
-}) {
+}
+
+export function AppIcon({
+  icon: Icon,
+  size = 24,
+  color: customColor,
+  variant = "hint",
+  strokeWidth = 2,
+}: AppIconProps) {
   const theme = useTheme();
 
+  // If no icon is provided, render nothing
   if (!Icon) return null;
 
-  // Logic to determine the final color
-  const getIconColor = () => {
-    if (color) return color; // Manual override always wins
+  /**
+   * Resolve the color based on the variant.
+   * "surf" uses our brand Surf Green (#66B2A2).
+   */
+  const getVariantColor = (): string => {
+    if (customColor) return customColor;
 
     switch (variant) {
       case "primary":
         return theme["color-primary-500"];
-      case "surf":
-        return "#66B2A2"; // Your brand color
-      case "basic":
-        return theme["text-basic-color"];
       case "control":
-        return theme["text-control-color"]; // Usually white for buttons
+        return "#FFFFFF";
+      case "surf":
+        return "#66B2A2";
+      case "success":
+        return "#22C55E";
+      case "warning":
+        return "#F59E0B";
+      case "danger":
+        return "#EF4444";
       case "hint":
       default:
-        return theme["text-hint-color"];
+        return theme["color-basic-600"];
     }
   };
 
-  return <Icon size={size} strokeWidth={strokeWidth} color={getIconColor()} />;
+  return (
+    <Icon 
+      size={size} 
+      color={getVariantColor()} 
+      strokeWidth={strokeWidth} 
+    />
+  );
 }

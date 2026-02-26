@@ -51,7 +51,7 @@ export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) 
                     <AppText variant="body" style={styles.boldDark}>
                       {badge.name || "New Achievement"}
                     </AppText>
-                    <AppText variant="label" status="success" style={styles.bold}>
+                    <AppText variant="label" status="control" style={styles.bold}>
                       Unlocked!
                     </AppText>
                   </View>
@@ -81,7 +81,7 @@ export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) 
                   </AppText>
                 </View>
                 {nextUp.percent != null && (
-                  <Pill status="basic" style={styles.pillText}>
+                  <Pill status="basic">
                     {nextUp.percent}%
                   </Pill>
                 )}

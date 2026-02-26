@@ -31,7 +31,7 @@ export function ActionsCard({
       <Stack gap="sm">
         <AppButton
           variant="primary"
-          size="lg"
+          size="md"
           onPress={onComplete}
           disabled={saving || !hasLoc}
           loading={saving}
