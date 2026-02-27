@@ -4,6 +4,7 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
+  sendEmailVerification,
 } from "firebase/auth";
 import { collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -11,15 +12,19 @@ import { COL } from "../constants/firestore";
 
 export const userService = {
   /**
-   * Signs in an existing user with email and password.
+   * Signs in a user and reloads their profile to ensure 
+   * the 'emailVerified' status is up to date.
    */
   async login(email: string, password: string): Promise<User> {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    return credential.user;
+    // Reload is necessary because Firebase caches the verification 
+    // status from the last time the user was seen.
+    await credential.user.reload();
+    return auth.currentUser!;
   },
 
   /**
-   * Creates a new user account.
+   * Creates a new account and immediately sends a verification email.
    */
   async signup(email: string, password: string): Promise<User> {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
@@ -27,7 +32,7 @@ export const userService = {
   },
 
   /**
-   * Sends a password reset email to the specified address.
+   * Sends a password reset email.
    */
   async sendResetEmail(email: string): Promise<void> {
     await sendPasswordResetEmail(auth, email);
@@ -36,7 +41,6 @@ export const userService = {
   /**
    * Performs a full cleanup of user data across Firestore
    * and deletes the Firebase Authentication record.
-   * * @throws Error with code 'auth/requires-recent-login' if the session is stale.
    */
   async deleteAccount(user: User): Promise<void> {
     const uid = user.uid;
@@ -51,7 +55,10 @@ export const userService = {
     completionsSnap.forEach((d) => batch.delete(d.ref));
 
     // 2. Identify all review records for this user
-    const reviewsQ = query(collection(db, COL.coneReviews), where("userId", "==", uid));
+    const reviewsQ = query(
+      collection(db, COL.coneReviews), 
+      where("userId", "==", uid)
+    );
     const reviewsSnap = await getDocs(reviewsQ);
     reviewsSnap.forEach((d) => batch.delete(d.ref));
 
@@ -59,6 +66,7 @@ export const userService = {
     await batch.commit();
 
     // 4. Delete the authentication record
+    // NOTE: This may throw 'auth/requires-recent-login' if the session is old.
     await deleteUser(user);
   },
 };

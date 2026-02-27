@@ -3,6 +3,7 @@ import { Redirect, Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 
 import { useSession } from "@/lib/providers/SessionProvider";
+
 export default function AppLayout() {
   const { session } = useSession();
 
@@ -13,7 +14,6 @@ export default function AppLayout() {
   }, [session.status]);
 
   if (session.status === "loading") {
-    // Return null to keep the native splash screen visible
     return null;
   }
 

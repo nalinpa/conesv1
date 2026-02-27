@@ -10,7 +10,11 @@ import {
   clearGuestMode,
 } from "@/lib/guestMode";
 
-type Session =
+/**
+ * 1. Define the possible session states. 
+ * 'unverified' is used when a user has a Firebase account but hasn't clicked the email link.
+ */
+export type Session =
   | { status: "loading" }
   | { status: "authed"; uid: string }
   | { status: "guest" }
@@ -27,10 +31,12 @@ const Ctx = createContext<SessionCtx | null>(null);
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { user, uid, loading: authLoading } = useAuthUser();
 
+  // Ensure our local guest mode storage is ready on mount
   useEffect(() => {
     void ensureGuestModeHydrated();
   }, []);
 
+  // Sync with the external guest mode store
   const guestBits = useSyncExternalStore(
     subscribeGuestMode,
     getGuestModeSnapshot,
@@ -42,10 +48,22 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   const loading = authLoading || guestLoading;
 
+  /**
+   * 2. The Logic: This determines where the user currently stands.
+   * Note: We check for 'unverified' specifically if a user exists in Firebase.
+   */
   const session: Session = useMemo(() => {
     if (loading) return { status: "loading" };
-    if (user && uid) return { status: "authed", uid };
+    
+    // Priority 1: Logged-in Users
+    if (user && uid) {
+      return { status: "authed", uid };
+    }
+    
+    // Priority 2: Guest Mode
     if (guestEnabled) return { status: "guest" };
+    
+    // Default: Logged Out
     return { status: "loggedOut" };
   }, [loading, user, uid, guestEnabled]);
 

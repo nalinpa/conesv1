@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type * as Location from "expo-location";
 
 import type { Cone } from "@/lib/models";
@@ -10,15 +10,25 @@ export type ConeRow = {
 };
 
 export function useSortedConeRows(cones: Cone[], loc: Location.LocationObject | null) {
+  // Store the last valid location in a Ref so it survives 'null' flickers
+  const lastValidLoc = useRef<Location.LocationObject | null>(null);
+
+  if (loc) {
+    lastValidLoc.current = loc;
+  }
+
   return useMemo<ConeRow[]>(() => {
-    // Stable name sort when GPS missing
-    if (!loc) {
+    // Use the current location, or fall back to the last known one
+    const activeLoc = loc || lastValidLoc.current;
+
+    // Only if we have NO location whatsoever do we do Name Sort
+    if (!activeLoc) {
       return [...cones]
         .sort((a, b) => a.name.localeCompare(b.name))
         .map((cone) => ({ cone, distanceMeters: null }));
     }
 
-    const { latitude, longitude } = loc.coords;
+    const { latitude, longitude } = activeLoc.coords;
 
     const rows = cones.map((cone) => ({
       cone,
