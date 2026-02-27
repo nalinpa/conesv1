@@ -168,10 +168,10 @@ export default function AccountScreen() {
           <CardShell status="danger" style={styles.modalContent}>
             <Stack gap="lg">
               <Stack gap="xs">
-                <AppText variant="sectionTitle" status="control">
+                <AppText variant="sectionTitle">
                   Are you absolutely sure?
                 </AppText>
-                <AppText variant="body" status="control">
+                <AppText variant="body">
                   All progress, badges, and reviews will be permanently erased from the
                   Auckland Volcanic Field records.
                 </AppText>

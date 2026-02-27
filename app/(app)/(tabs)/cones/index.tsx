@@ -10,10 +10,11 @@ import { AppText } from "@/components/ui/AppText";
 
 import { goCone, goLogin } from "@/lib/routes";
 import { useCones } from "@/lib/hooks/useCones";
-import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useSession } from "@/lib/providers/SessionProvider";
+import { useLocation } from "@/lib/providers/LocationProvider"; // New Provider Hook
+import { locationStore } from "@/lib/locationStore"; // Global Store for initialization
 
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
@@ -31,27 +32,28 @@ const DEFAULT_FILTERS: ConeFiltersValue = {
 export default function ConeListPage() {
   const { session } = useSession();
   const isGuest = session.status === "guest";
+  
+  // 1. Get live location and status from the central Provider
+  const { location: liveLoc, errorMsg: locErr } = useLocation();
+  const locStatus = locErr ? "denied" : liveLoc ? "granted" : "undetermined";
+
   const { cones, loading: conesLoading, err: conesErr } = useCones();
-  const {
-    loc,
-    status: locStatus,
-    err: locErr,
-    request,
-    refresh: refreshGPS,
-  } = useUserLocation();
   const { completedConeIds, loading: compLoading } = useMyCompletions();
 
-  const [lockedLoc, setLockedLoc] = useState<typeof loc>(null);
+  // 2. Initialize lockedLoc from the Global Store to prevent the "Double Tap" alphabetical flicker
+  const [lockedLoc, setLockedLoc] = useState(() => locationStore.get());
   const [filters, setFilters] = useState<ConeFiltersValue>(DEFAULT_FILTERS);
 
-  // Set location once to prevent list jumping while browsing
+  // 3. Keep the "Locked" behavior: only update the list sort order if we don't have one yet
   useEffect(() => {
-    if (!lockedLoc && loc) setLockedLoc(loc);
-  }, [loc, lockedLoc]);
+    if (!lockedLoc && liveLoc) {
+      setLockedLoc(liveLoc);
+    }
+  }, [liveLoc, lockedLoc]);
 
   const handleRefreshGPS = () => {
+    // Clearing lockedLoc allows the useEffect above to grab the next fresh liveLoc
     setLockedLoc(null);
-    loc ? refreshGPS() : request();
   };
 
   const filteredRows = useMemo(() => {
@@ -68,6 +70,7 @@ export default function ConeListPage() {
     return list;
   }, [cones, filters, completedConeIds, isGuest]);
 
+  // 4. useSortedConeRows now uses the stable lockedLoc
   const rows = useSortedConeRows(filteredRows, lockedLoc);
 
   if (conesLoading || session.status === "loading") {
@@ -90,7 +93,7 @@ export default function ConeListPage() {
     <Stack gap="md" style={styles.headerStack}>
       <ConesListHeader
         status={locStatus}
-        hasLoc={!!loc}
+        hasLoc={!!lockedLoc}
         locErr={locErr}
         onPressGPS={handleRefreshGPS}
       />
