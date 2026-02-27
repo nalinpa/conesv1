@@ -2,11 +2,8 @@ import { useMemo } from "react";
 
 import type { ConeMeta, BadgeProgress } from "@/lib/badges";
 import { BADGES, getBadgeState } from "@/lib/badges";
-
 import type { Cone } from "@/lib/models";
-import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
-import { useMyReviews } from "@/lib/hooks/useMyReviews";
-import { useCones } from "@/lib/hooks/useCones";
+import { useAppData } from "@/lib/providers/DataProvider";
 
 export type BadgeTileItem = {
   id: string;
@@ -46,10 +43,10 @@ type BadgesData = {
 };
 
 export function useBadgesData(): BadgesData {
-  const { cones, loading: conesLoading, err: conesErr } = useCones();
-
-  const my = useMyCompletions();
-  const reviews = useMyReviews();
+  // Destructure all the cached data from the global provider
+  const { conesData, completionsData: my, reviewsData: reviews } = useAppData();
+  
+  const { cones, loading: conesLoading, err: conesErr } = conesData;
 
   const completedConeIds = my.completedConeIds;
   const shareBonusCount = my.shareBonusCount;

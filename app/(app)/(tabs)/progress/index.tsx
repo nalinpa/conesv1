@@ -13,10 +13,8 @@ import { AppButton } from "@/components/ui/AppButton";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
-import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
-import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
-import { useMyReviews } from "@/lib/hooks/useMyReviews";
+import { useAppData } from "@/lib/providers/DataProvider";
 
 import { ConesToReviewCard } from "@/components/progress/ConesToReviewCard";
 import { BadgesSummaryCard } from "@/components/badges/BadgesSummaryCard";
@@ -67,13 +65,10 @@ function GuestProgress() {
 }
 
 function AuthedProgress() {
-  const { cones, loading: conesLoading, err: conesErr } = useCones();
-  
-  // Use the global location provider for instant hot-caching
-  const { location: loc, errorMsg: locErr } = useLocation();
+  const { conesData, completionsData: my, reviewsData: myReviews } = useAppData();
+  const { cones, loading: conesLoading, err: conesErr } = conesData;
 
-  const my = useMyCompletions();
-  const myReviews = useMyReviews();
+  const { location: loc, errorMsg: locErr } = useLocation();
   const { badgeState } = useBadgesData();
 
   const totals = useMemo(() => {
@@ -118,7 +113,6 @@ function AuthedProgress() {
   return (
     <Screen scrollable padded>
       <Stack gap="xl">
-        {/* Statistics Dashboard */}
         <ProgressHeaderCard
           completed={totals.completed}
           total={totals.total}
@@ -130,7 +124,6 @@ function AuthedProgress() {
           onBrowseVolcanoes={goConesHome}
         />
 
-        {/* Tactical Mission (Card handles its own title) */}
         <Section>
           <NearestUnclimbedCard
             cone={nearestUnclimbed?.cone}
@@ -140,14 +133,12 @@ function AuthedProgress() {
           />
         </Section>
 
-        {/* Action Required */}
         {conesToReview.length > 0 && (
           <Section>
             <ConesToReviewCard cones={conesToReview} onOpenCone={goCone} />
           </Section>
         )}
 
-        {/* Achievements */}
         <Section>
           <BadgesSummaryCard
             nextUp={badgeState.nextUp}

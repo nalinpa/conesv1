@@ -11,11 +11,10 @@ import { AppText } from "@/components/ui/AppText";
 
 import { useLocation } from "@/lib/providers/LocationProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
-import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
-import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useSession } from "@/lib/providers/SessionProvider";
+import { useAppData } from "@/lib/providers/DataProvider"; 
 
 import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
@@ -23,27 +22,23 @@ import { space } from "@/lib/ui/tokens";
 
 export default function MapScreen() {
   const { session } = useSession();
-  const { cones, loading, err } = useCones();
-  const { completedConeIds: completedIds } = useMyCompletions();
+  const { conesData, completionsData } = useAppData();
+  const { cones, loading, err } = conesData;
+  const completedIds = completionsData.completedConeIds;
 
-  // 1. Get live location stream from global provider
   const { location: loc, errorMsg: providerErr } = useLocation();
 
-  // 2. Keep the hook strictly for the manual, high-accuracy refresh action
-  const { 
-    refresh: refreshLocation, 
-    isRefreshing, 
-    err: manualErr 
+  const {
+    refresh: refreshLocation,
+    isRefreshing,
+    err: manualErr,
   } = useUserLocation();
 
-  // Derive status from the combined providers
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
 
   const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
 
-  // Auto-select nearest unclimbed cone on first load
-  // Because 'loc' is now hot-loaded, this calculates instantly
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
   useEffect(() => {
@@ -78,9 +73,8 @@ export default function MapScreen() {
   }, [loading, mapCones, loc?.coords.latitude, loc?.coords.longitude]);
 
   const refreshGPS = useCallback(async () => {
-    // Rely exclusively on the high-accuracy guarded refresh
-    await refreshLocation();
-  }, [refreshLocation]);
+    if (locStatus !== "denied") await refreshLocation();
+  }, [locStatus, refreshLocation]);
 
   if (session.status === "loading" || loading) {
     return (
@@ -115,7 +109,6 @@ export default function MapScreen() {
           onPressCone={setSelectedConeId}
         />
 
-        {/* Top Alerts (GPS Errors) */}
         {locErr && (
           <View style={styles.overlayTop}>
             <CardShell status="warning" style={styles.alertCard}>
@@ -126,7 +119,6 @@ export default function MapScreen() {
           </View>
         )}
 
-        {/* Bottom Selection Card */}
         {activeCone && (
           <View style={styles.overlayBottom}>
             <MapOverlayCard
@@ -149,7 +141,7 @@ const styles = StyleSheet.create({
   flex1: { flex: 1 },
   overlayTop: {
     position: "absolute",
-    top: 60, // Clear the transparent header
+    top: 60,
     left: space.md,
     right: space.md,
   },
