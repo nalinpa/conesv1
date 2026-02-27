@@ -1,13 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Location from "expo-location";
+import { locationStore } from "@/lib/locationStore";
 
 export type LocationStatus = "unknown" | "granted" | "denied";
 
-export function useUserLocation({ autoRequest = true }: { autoRequest?: boolean } = {}) {
-  const [loc, setLoc] = useState<Location.LocationObject | null>(null);
-  const [status, setStatus] = useState<LocationStatus>("unknown");
+// Changed default autoRequest to false, as the global Provider now handles the baseline
+export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean } = {}) {
+  // Initialize with the global store instead of null
+  const initialLoc = locationStore.get();
+  
+  const [loc, setLoc] = useState<Location.LocationObject | null>(initialLoc);
+  
+  // If the store already has a location, we know permission is granted
+  const [status, setStatus] = useState<LocationStatus>(
+    initialLoc ? "granted" : "unknown"
+  );
+  
   const [err, setErr] = useState<string>("");
-
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Prevent setState after unmount (common with async location calls)
@@ -28,7 +37,15 @@ export function useUserLocation({ autoRequest = true }: { autoRequest?: boolean 
       }>,
     ) => {
       if (!aliveRef.current) return;
-      if ("loc" in next) setLoc(next.loc ?? null);
+      
+      if ("loc" in next) {
+        setLoc(next.loc ?? null);
+        // Feed high-accuracy manual refreshes back into the global store
+        if (next.loc) {
+          locationStore.set(next.loc);
+        }
+      }
+      
       if ("status" in next && next.status) setStatus(next.status);
       if ("err" in next) setErr(next.err ?? "");
     },

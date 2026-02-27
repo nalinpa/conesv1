@@ -9,6 +9,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { AppText } from "@/components/ui/AppText";
 
+import { useLocation } from "@/lib/providers/LocationProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
@@ -25,18 +26,24 @@ export default function MapScreen() {
   const { cones, loading, err } = useCones();
   const { completedConeIds: completedIds } = useMyCompletions();
 
-  const {
-    loc,
-    err: locErr,
-    status: locStatus,
-    request: requestLocation,
-    refresh: refreshLocation,
-    isRefreshing,
+  // 1. Get live location stream from global provider
+  const { location: loc, errorMsg: providerErr } = useLocation();
+
+  // 2. Keep the hook strictly for the manual, high-accuracy refresh action
+  const { 
+    refresh: refreshLocation, 
+    isRefreshing, 
+    err: manualErr 
   } = useUserLocation();
+
+  // Derive status from the combined providers
+  const locErr = providerErr || manualErr;
+  const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
 
   const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
 
   // Auto-select nearest unclimbed cone on first load
+  // Because 'loc' is now hot-loaded, this calculates instantly
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
 
   useEffect(() => {
@@ -71,9 +78,9 @@ export default function MapScreen() {
   }, [loading, mapCones, loc?.coords.latitude, loc?.coords.longitude]);
 
   const refreshGPS = useCallback(async () => {
-    if (locStatus === "unknown") await requestLocation();
+    // Rely exclusively on the high-accuracy guarded refresh
     await refreshLocation();
-  }, [locStatus, requestLocation, refreshLocation]);
+  }, [refreshLocation]);
 
   if (session.status === "loading" || loading) {
     return (

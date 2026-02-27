@@ -8,6 +8,7 @@ import { ErrorCard } from "@/components/ui/ErrorCard";
 import { Stack as UIStack } from "@/components/ui/Stack";
 
 import { useSession } from "@/lib/providers/SessionProvider";
+import { useLocation } from "@/lib/providers/LocationProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
 import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
@@ -30,13 +31,21 @@ export default function ConeDetailRoute() {
   const uid = session.status === "authed" ? session.uid : null;
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
+  
+  // 1. Get live location stream from global provider for instant UI updates
+  const { location: loc, errorMsg: providerErr } = useLocation();
+
+  // 2. Use the hook purely for the high-accuracy manual refresh capability
   const {
-    loc,
-    status: locStatus,
     refresh: refreshLocation,
-    request: requestLocation,
     isRefreshing,
+    err: manualErr,
   } = useUserLocation();
+
+  // 3. Combine errors to figure out overall status
+  const locErr = providerErr || manualErr;
+  const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
+
   const { completedId } = useConeCompletion(coneId);
 
   const {
@@ -45,7 +54,9 @@ export default function ConeDetailRoute() {
     err: mutationErr,
     reset: resetMutationErr,
   } = useConeCompletionMutation();
+  
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
+  
   const {
     avgRating,
     ratingCount,
@@ -60,9 +71,9 @@ export default function ConeDetailRoute() {
   const [draftText, setDraftText] = useState("");
 
   const refreshGPS = useCallback(async () => {
-    if (locStatus === "unknown") await requestLocation();
+    // We only need to trigger the high-accuracy refresh now
     if (locStatus !== "denied") await refreshLocation();
-  }, [locStatus, requestLocation, refreshLocation]);
+  }, [locStatus, refreshLocation]);
 
   // Sync GPS on App State Change
   useEffect(() => {
@@ -160,6 +171,7 @@ export default function ConeDetailRoute() {
           <ActionsCard
             completed={!!completedId}
             saving={completing}
+            hasLoc={!!loc} 
             onComplete={handleComplete}
             hasReview={!!myRating}
             onOpenReview={() => setReviewOpen(true)}
@@ -202,6 +214,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    marginTop: -20, // Overlap the hero for a layered look
+    marginTop: -20, 
   },
 });

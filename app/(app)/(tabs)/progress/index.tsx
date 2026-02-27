@@ -11,8 +11,8 @@ import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 
 import { useSession } from "@/lib/providers/SessionProvider";
+import { useLocation } from "@/lib/providers/LocationProvider";
 import { useBadgesData } from "@/lib/hooks/useBadgesData";
-import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCones } from "@/lib/hooks/useCones";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
@@ -68,7 +68,9 @@ function GuestProgress() {
 
 function AuthedProgress() {
   const { cones, loading: conesLoading, err: conesErr } = useCones();
-  const { loc, err: locErr } = useUserLocation();
+  
+  // Use the global location provider for instant hot-caching
+  const { location: loc, errorMsg: locErr } = useLocation();
 
   const my = useMyCompletions();
   const myReviews = useMyReviews();
