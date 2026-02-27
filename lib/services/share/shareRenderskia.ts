@@ -37,6 +37,7 @@ export async function renderShareCardPngAsync(
       p.setAntiAlias(true);
       p.setColor(Skia.Color(SURF_GREEN["primary-100"]));
       canvas.drawRect(Skia.XYWHRect(0, 0, W, H), p);
+      p.dispose(); // MEMORY CLEANUP
     }
 
     // Diagonal accents
@@ -55,6 +56,8 @@ export async function renderShareCardPngAsync(
       canvas.rotate(-10, W * 0.4, H * 0.55);
       canvas.drawRect(Skia.XYWHRect(-260, 640, W + 600, 260), p);
       canvas.restore();
+      
+      p.dispose(); // MEMORY CLEANUP
     }
 
     // Outer border
@@ -65,6 +68,7 @@ export async function renderShareCardPngAsync(
       p.setStrokeWidth(18);
       p.setColor(Skia.Color(SURF_GREEN["primary-800"]));
       canvas.drawRRect(Skia.RRectXY(Skia.XYWHRect(42, 42, W - 84, H - 84), 44, 44), p);
+      p.dispose(); // MEMORY CLEANUP
     }
 
     // Inner card
@@ -91,6 +95,9 @@ export async function renderShareCardPngAsync(
         Skia.RRectXY(Skia.XYWHRect(cardX, cardY, cardW, cardH), 50, 50),
         stroke,
       );
+      
+      bg.dispose(); // MEMORY CLEANUP
+      stroke.dispose(); // MEMORY CLEANUP
     }
 
     // Fonts
@@ -145,6 +152,8 @@ export async function renderShareCardPngAsync(
         textWhite,
         fontSmall,
       );
+      
+      p.dispose(); // MEMORY CLEANUP
     }
 
     // Cone name (2 lines max)
@@ -189,6 +198,9 @@ export async function renderShareCardPngAsync(
       canvas.drawText(stampText, sx + 45, sy + 56 + m.height, fillText, fontStamp);
 
       canvas.restore();
+      
+      stroke.dispose(); // MEMORY CLEANUP
+      fillText.dispose(); // MEMORY CLEANUP
     }
 
     // Footer bar
@@ -198,12 +210,31 @@ export async function renderShareCardPngAsync(
       p.setColor(Skia.Color(SURF_GREEN["primary-800"]));
       canvas.drawRect(Skia.XYWHRect(0, H - 120, W, 120), p);
       canvas.drawText("Auckland Volcanic Cones", 72, H - 120 + 78, textWhite, fontSmall);
+      p.dispose(); // MEMORY CLEANUP
     }
 
     const img = surface.makeImageSnapshot();
-    if (!img?.encodeToBytes) return null;
+    
+    // Extract bytes before destroying the surface and image
+    const bytes: Uint8Array | null = img?.encodeToBytes 
+      ? img.encodeToBytes(SkiaMod.ImageFormat.PNG, 100) 
+      : null;
 
-    const bytes: Uint8Array | null = img.encodeToBytes(SkiaMod.ImageFormat.PNG, 100);
+    // ========================================================
+    // CRITICAL MEMORY LEAK PREVENTION
+    // Skia objects live in C++. We must destroy them manually.
+    // ========================================================
+    if (img) img.dispose();
+    surface.dispose();
+    typeface.dispose();
+    fontTitle.dispose();
+    fontMeta.dispose();
+    fontSmall.dispose();
+    fontStamp.dispose();
+    textDark.dispose();
+    textHint.dispose();
+    textWhite.dispose();
+
     if (!bytes || bytes.length === 0) return null;
 
     const base64 = uint8ToBase64(bytes);
@@ -234,9 +265,13 @@ async function loadBundledTypefaceAsync(Skia: typeof SkiaType): Promise<any | nu
 
     const data = Skia.Data.fromBytes(bytes);
 
-    // FIX: Only use the standard method available in modern Skia types
     if (Skia?.Typeface?.MakeFreeTypeFaceFromData) {
-      return Skia.Typeface.MakeFreeTypeFaceFromData(data);
+      const typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data);
+      // Clean up the data object after creating the typeface
+      if (data && (data as any).dispose) {
+         (data as any).dispose();
+      }
+      return typeface;
     }
 
     return null;
