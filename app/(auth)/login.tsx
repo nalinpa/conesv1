@@ -1,5 +1,12 @@
 import React, { useEffect } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
+import { 
+  KeyboardAvoidingView, 
+  Platform, 
+  StyleSheet, 
+  View, 
+  TouchableWithoutFeedback, 
+  Keyboard 
+} from "react-native";
 import { Stack, router } from "expo-router";
 import { Mountain } from "lucide-react-native";
 
@@ -39,48 +46,50 @@ export default function LoginScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       <Screen padded={false}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.container}
-        >
-          <View style={styles.content}>
-            {/* Brand Header with Mountain Logo */}
-            <View style={styles.brandContainer}>
-              <View style={styles.logoWrapper}>
-                <Mountain
-                  size={40}
-                  color="#5FB3A2" // Your Surf Green
-                  strokeWidth={2.5}
-                />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.container}
+          >
+            <View style={styles.content}>
+              {/* Brand Header with Mountain Logo */}
+              <View style={styles.brandContainer}>
+                <View style={styles.logoWrapper}>
+                  <Mountain
+                    size={40}
+                    color="#5FB3A2" // Your Surf Green
+                    strokeWidth={2.5}
+                  />
+                </View>
+                <AppText variant="screenTitle" style={styles.appName}>
+                  Cones
+                </AppText>
+                <AppText variant="label" status="hint" style={styles.tagline}>
+                  Auckland Volcanic Field
+                </AppText>
               </View>
-              <AppText variant="screenTitle" style={styles.appName}>
-                Cones
-              </AppText>
-              <AppText variant="label" status="hint" style={styles.tagline}>
-                Auckland Volcanic Field
-              </AppText>
-            </View>
 
-            <AuthCard
-              mode={f.mode}
-              title={f.title}
-              subtitle={f.subtitle}
-              email={f.email}
-              password={f.password}
-              confirm={f.confirm}
-              busy={busy}
-              err={f.err}
-              notice={f.notice}
-              canSubmit={f.canSubmit}
-              onChangeMode={f.setMode}
-              onChangeEmail={f.setEmail}
-              onChangePassword={f.setPassword}
-              onChangeConfirm={f.setConfirm}
-              onSubmit={() => void f.submit()}
-              onGuest={handleGuestEntry}
-            />
-          </View>
-        </KeyboardAvoidingView>
+              <AuthCard
+                mode={f.mode}
+                title={f.title}
+                subtitle={f.subtitle}
+                email={f.email}
+                password={f.password}
+                confirm={f.confirm}
+                busy={busy}
+                err={f.err}
+                notice={f.notice}
+                canSubmit={f.canSubmit}
+                onChangeMode={f.setMode}
+                onChangeEmail={f.setEmail}
+                onChangePassword={f.setPassword}
+                onChangeConfirm={f.setConfirm}
+                onSubmit={() => void f.submit()}
+                onGuest={handleGuestEntry}
+              />
+            </View>
+          </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
       </Screen>
     </>
   );
@@ -109,7 +118,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: space.md,
-    // Subtle shadow to make the logo feel "lifted"
     shadowColor: "#5FB3A2",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,

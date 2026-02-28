@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { collection, query, where, orderBy } from "firebase/firestore";
+import { collection, query, where, orderBy, FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -12,7 +12,7 @@ export function useCones() {
       collection(db, COL.cones),
       where("active", "==", true),
       orderBy("name", "asc"),
-    );
+    ) as FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData>;
   }, []);
 
   const { data, loading, error } = useFirestoreQuery(q);

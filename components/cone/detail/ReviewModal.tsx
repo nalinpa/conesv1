@@ -148,6 +148,11 @@ export function ReviewModal({
                     style={styles.textInput}
                     maxLength={280}
                     textAlignVertical="top"
+                    returnKeyType="send" 
+                    submitBehavior="blurAndSubmit" 
+                    onSubmitEditing={() => {
+                      if (draftRating) onSave();
+                    }}
                   />
                   <Row justify="flex-end" style={styles.charCount}>
                     <AppText variant="label" status="hint">

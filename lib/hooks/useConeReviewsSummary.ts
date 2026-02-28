@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { doc } from "firebase/firestore";
+import { doc } from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";

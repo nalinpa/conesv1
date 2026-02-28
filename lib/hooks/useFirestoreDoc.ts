@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { onSnapshot, DocumentReference } from "firebase/firestore";
+import { onSnapshot, FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 
 type Options = {
   enabled?: boolean;
 };
 
-export function useFirestoreDoc<T>(
-  ref: DocumentReference<T> | null | undefined,
+export function useFirestoreDoc<T extends FirebaseFirestoreTypes.DocumentData>(
+  ref: FirebaseFirestoreTypes.DocumentReference<T> | null | undefined,
   opts?: Options,
 ) {
   const enabled = opts?.enabled ?? true;
@@ -26,7 +26,7 @@ export function useFirestoreDoc<T>(
     const unsub = onSnapshot(
       ref,
       (snap) => {
-        setData(snap.exists() ? snap.data() : null);
+        setData(snap.data() ?? null);
         setLoading(false);
         setError(null);
       },
