@@ -11,6 +11,7 @@ import {
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
+import { GAMEPLAY } from "../constants/gameplay";
 
 export type PublicReview = {
   id: string;
@@ -40,7 +41,7 @@ function clampRatingRequired(n: any): number {
   return r;
 }
 
-function cleanText(t: any, maxLen = 280): string | null {
+function cleanText(t: any, maxLen = GAMEPLAY.MAX_REVIEW_LENGTH): string | null {
   if (typeof t !== "string") return null;
   const s = t.trim();
   if (!s) return null;

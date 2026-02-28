@@ -25,6 +25,7 @@ interface ReviewModalProps {
   saving: boolean;
   draftRating: number | null;
   draftText: string;
+  error?: string | null;
   onChangeRating: (rating: number) => void;
   onChangeText: (text: string) => void;
   onClose: () => void;
@@ -36,6 +37,7 @@ export function ReviewModal({
   saving,
   draftRating,
   draftText,
+  error,
   onChangeRating,
   onChangeText,
   onClose,
@@ -81,6 +83,12 @@ export function ReviewModal({
                     How was your visit to this volcanic site?
                   </AppText>
                 </Stack>
+
+                {error && (
+                  <Pill status="danger" icon={AlertCircle}>
+                    {error}
+                  </Pill>
+                )}
 
                 {/* Rating Selection */}
                 <Stack gap="sm">

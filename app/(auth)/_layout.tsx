@@ -1,11 +1,10 @@
 import React, { useEffect } from "react";
-import { Redirect, Slot, useSegments } from "expo-router";
+import { Redirect, Slot } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useSession } from "@/lib/providers/SessionProvider";
 
 export default function AuthLayout() {
   const { session } = useSession();
-  const segments = useSegments();
 
   useEffect(() => {
     if (session.status !== "loading") {

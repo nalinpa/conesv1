@@ -49,7 +49,7 @@ export function useMyReviews(): {
     const atByCone: Record<string, number> = Object.create(null);
 
     for (const d of data.docs) {
-      const val = d.data();
+      const val = d.data({ serverTimestamps: "estimate" });
       const coneId = typeof val?.coneId === "string" ? val.coneId : null;
       if (!coneId) continue;
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, TextProps, StyleSheet } from "react-native";
+import { Text, TextProps } from "react-native";
 import { useTheme } from "@ui-kitten/components";
 
 const textStyles = {
@@ -18,28 +18,31 @@ interface AppTextProps extends TextProps {
   status?: "basic" | "hint" | "control" | "surf" | "danger";
 }
 
-export function AppText({ variant = "body", status = "basic", style, ...props }: AppTextProps) {
+export function AppText({
+  variant = "body",
+  status = "basic",
+  style,
+  ...props
+}: AppTextProps) {
   const theme = useTheme();
-  
+
   const getStatusColor = () => {
     switch (status) {
-      case "surf": return "#66B2A2";
-      case "danger": return theme["color-danger-500"]; // Standard red
-      case "hint": return theme["text-hint-color"];
-      case "control": return theme["text-control-color"]; // Usually white
+      case "surf":
+        return "#66B2A2";
+      case "danger":
+        return theme["color-danger-500"]; // Standard red
+      case "hint":
+        return theme["text-hint-color"];
+      case "control":
+        return theme["text-control-color"]; // Usually white
       case "basic":
-      default: return theme["text-basic-color"];
+      default:
+        return theme["text-basic-color"];
     }
   };
 
   return (
-    <Text
-      style={[
-        { color: getStatusColor() },
-        textStyles[variant],
-        style
-      ]}
-      {...props}
-    />
+    <Text style={[{ color: getStatusColor() }, textStyles[variant], style]} {...props} />
   );
 }

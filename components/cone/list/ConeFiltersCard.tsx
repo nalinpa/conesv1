@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, View, StyleSheet, TouchableOpacity } from "react-native";
+import * as Haptics from "expo-haptics";
 import {
   ChevronDown,
   ChevronUp,
@@ -41,6 +42,7 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
   const [expanded, setExpanded] = useState(false);
 
   const toggleHideCompleted = () => {
+    Haptics.selectionAsync();
     onChange({ ...value, hideCompleted: !value.hideCompleted });
   };
 
@@ -91,7 +93,10 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
                 {REGIONS.map((r) => (
                   <TouchableOpacity
                     key={r.value}
-                    onPress={() => onChange({ ...value, region: r.value })}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      onChange({ ...value, region: r.value });
+                    }}
                     style={[styles.chip, value.region === r.value && styles.activeChip]}
                   >
                     <AppText
@@ -121,7 +126,10 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
                 {CATEGORIES.map((c) => (
                   <TouchableOpacity
                     key={c.value}
-                    onPress={() => onChange({ ...value, category: c.value })}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      onChange({ ...value, category: c.value });
+                    }}
                     style={[styles.chip, value.category === c.value && styles.activeChip]}
                   >
                     <AppText

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AppState, ScrollView, StyleSheet } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -22,25 +23,23 @@ import { StatusCard } from "@/components/cone/detail/StatusCard";
 import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
 import { goConesHome, goConeReviews } from "@/lib/routes";
+import { GAMEPLAY } from "@/lib/constants/gameplay";
 
-const MAX_ACCURACY_METERS = 50;
+const MAX_ACCURACY_METERS = GAMEPLAY.MAX_GPS_ACCURACY_METERS;
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
   const { session } = useSession();
+  const [reviewErr, setReviewErr] = useState<string | null>(null);
   const uid = session.status === "authed" ? session.uid : null;
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
-  
+
   // 1. Get live location stream from global provider for instant UI updates
   const { location: loc, errorMsg: providerErr } = useLocation();
 
   // 2. Use the hook purely for the high-accuracy manual refresh capability
-  const {
-    refresh: refreshLocation,
-    isRefreshing,
-    err: manualErr,
-  } = useUserLocation();
+  const { refresh: refreshLocation, isRefreshing, err: manualErr } = useUserLocation();
 
   // 3. Combine errors to figure out overall status
   const locErr = providerErr || manualErr;
@@ -54,9 +53,9 @@ export default function ConeDetailRoute() {
     err: mutationErr,
     reset: resetMutationErr,
   } = useConeCompletionMutation();
-  
+
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
-  
+
   const {
     avgRating,
     ratingCount,
@@ -95,9 +94,10 @@ export default function ConeDetailRoute() {
 
     if (!uid) {
       setErr("Sign in to save your visit.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return;
     }
-    
+
     if (!gate.inRange) {
       setErr(
         gate.distanceMeters
@@ -107,7 +107,12 @@ export default function ConeDetailRoute() {
       return;
     }
     if (loc) {
-      await triggerComplete({ uid, cone, loc, gate });
+      const res = await triggerComplete({ uid, cone, loc, gate });
+      if (res.ok) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     }
   };
 
@@ -171,7 +176,7 @@ export default function ConeDetailRoute() {
           <ActionsCard
             completed={!!completedId}
             saving={completing}
-            hasLoc={!!loc} 
+            hasLoc={!!loc}
             onComplete={handleComplete}
             hasReview={!!myRating}
             onOpenReview={() => setReviewOpen(true)}
@@ -190,10 +195,21 @@ export default function ConeDetailRoute() {
         saving={reviewsSaving}
         draftRating={draftRating}
         draftText={draftText}
-        onChangeRating={setDraftRating}
-        onChangeText={setDraftText}
-        onClose={() => setReviewOpen(false)}
+        error={reviewErr}
+        onChangeRating={(val) => {
+          setDraftRating(val);
+          setReviewErr(null); // Clear error when they change input
+        }}
+        onChangeText={(text) => {
+          setDraftText(text);
+          setReviewErr(null); // Clear error when they change input
+        }}
+        onClose={() => {
+          setReviewOpen(false);
+          setReviewErr(null); // Clean up on close
+        }}
         onSave={async () => {
+          setReviewErr(null);
           const res = await saveReviewToDb({
             coneId: cone.id,
             coneSlug: cone.slug,
@@ -201,7 +217,13 @@ export default function ConeDetailRoute() {
             reviewRating: draftRating!,
             reviewText: draftText,
           });
-          if (res.ok) setReviewOpen(false);
+          if (res.ok) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setReviewOpen(false);
+          } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            setReviewErr(res.err);
+          }
         }}
       />
     </Screen>
@@ -214,6 +236,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
-    marginTop: -20, 
+    marginTop: -20,
   },
 });

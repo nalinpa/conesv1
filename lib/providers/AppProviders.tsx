@@ -19,9 +19,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <ApplicationProvider {...eva} theme={{ ...eva.light, ...surfGreenTheme }}>
         <SessionProvider>
           <DataProvider>
-            <LocationProvider>
-              {children}
-            </LocationProvider>
+            <LocationProvider>{children}</LocationProvider>
           </DataProvider>
         </SessionProvider>
 

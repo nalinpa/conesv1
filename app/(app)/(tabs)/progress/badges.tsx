@@ -92,7 +92,7 @@ export default function BadgesScreen() {
                     <AppText variant="sectionTitle" status="surf">
                       {nextUp.badge.name}
                     </AppText>
-                    <AppText variant="label" status="surf" style={{ opacity: 0.8 }}>
+                    <AppText variant="label" status="surf" style={styles.subtext}>
                       {nextUp.badge.unlockText}
                     </AppText>
                   </Stack>
@@ -151,6 +151,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     fontSize: 11,
   },
+  subtext: { opacity: 0.8 },
   nextUpIconBg: {
     width: 60,
     height: 60,

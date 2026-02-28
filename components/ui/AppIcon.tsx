@@ -3,16 +3,16 @@ import { useTheme } from "@ui-kitten/components";
 import type { LucideIcon } from "lucide-react-native";
 
 /**
- * Valid variants for the AppIcon. 
+ * Valid variants for the AppIcon.
  * Added 'success', 'warning', and 'danger' to match project-wide usage.
  */
-export type IconVariant = 
-  | "primary" 
-  | "control" 
-  | "hint" 
-  | "surf" 
-  | "success" 
-  | "warning" 
+export type IconVariant =
+  | "primary"
+  | "control"
+  | "hint"
+  | "surf"
+  | "success"
+  | "warning"
   | "danger";
 
 interface AppIconProps {
@@ -61,11 +61,5 @@ export function AppIcon({
     }
   };
 
-  return (
-    <Icon 
-      size={size} 
-      color={getVariantColor()} 
-      strokeWidth={strokeWidth} 
-    />
-  );
+  return <Icon size={size} color={getVariantColor()} strokeWidth={strokeWidth} />;
 }

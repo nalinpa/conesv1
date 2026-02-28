@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Location from "expo-location";
 import { locationStore } from "@/lib/locationStore";
+import { GAMEPLAY } from "@/lib/constants/gameplay";
 
 export type LocationStatus = "unknown" | "granted" | "denied";
 
@@ -8,14 +9,14 @@ export type LocationStatus = "unknown" | "granted" | "denied";
 export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean } = {}) {
   // Initialize with the global store instead of null
   const initialLoc = locationStore.get();
-  
+
   const [loc, setLoc] = useState<Location.LocationObject | null>(initialLoc);
-  
+
   // If the store already has a location, we know permission is granted
   const [status, setStatus] = useState<LocationStatus>(
-    initialLoc ? "granted" : "unknown"
+    initialLoc ? "granted" : "unknown",
   );
-  
+
   const [err, setErr] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -37,7 +38,7 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
       }>,
     ) => {
       if (!aliveRef.current) return;
-      
+
       if ("loc" in next) {
         setLoc(next.loc ?? null);
         // Feed high-accuracy manual refreshes back into the global store
@@ -45,7 +46,7 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
           locationStore.set(next.loc);
         }
       }
-      
+
       if ("status" in next && next.status) setStatus(next.status);
       if ("err" in next) setErr(next.err ?? "");
     },
@@ -57,7 +58,6 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
   // ---------------------------------------------------------------------------
   const inFlightRef = useRef<Promise<{ ok: boolean }> | null>(null);
   const lastRunAtRef = useRef<number>(0);
-  const MIN_INTERVAL_MS = 1200; // tweak to taste
 
   const runGuarded = useCallback(async (fn: () => Promise<{ ok: boolean }>) => {
     const now = Date.now();
@@ -66,7 +66,7 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     if (inFlightRef.current) return inFlightRef.current;
 
     // Throttle: prevent rapid repeated refresh triggers (tap spam / focus+active)
-    if (now - lastRunAtRef.current < MIN_INTERVAL_MS) {
+    if (now - lastRunAtRef.current < GAMEPLAY.GPS_REFRESH_THROTTLE_MS) {
       return { ok: false as const }; // skipped
     }
 
@@ -163,9 +163,9 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
       loc,
       status,
       err,
-      request, // permission + balanced fetch
-      refresh, // ✅ guarded high accuracy fetch
-      isRefreshing, // ✅ use to disable buttons / show spinner
+      request,
+      refresh,
+      isRefreshing,
     }),
     [loc, status, err, request, refresh, isRefreshing],
   );

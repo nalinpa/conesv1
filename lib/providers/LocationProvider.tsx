@@ -10,7 +10,9 @@ type LocationCtx = {
 const LocationContext = createContext<LocationCtx>({ location: null, errorMsg: null });
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
-  const [location, setLocation] = useState<Location.LocationObject | null>(locationStore.get());
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    locationStore.get(),
+  );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,7 +34,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         (newLocation) => {
           setLocation(newLocation);
           locationStore.set(newLocation); // Keep the global store in sync
-        }
+        },
       );
     }
 

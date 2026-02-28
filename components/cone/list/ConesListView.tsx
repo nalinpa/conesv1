@@ -37,6 +37,19 @@ export function ConesListView({
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListHeaderComponent={header ?? null}
       ListHeaderComponentStyle={styles.headerStyle}
+      // ==========================================
+      // PERFORMANCE PROPS
+      // ==========================================
+      // 1. Unmount views that are far off-screen (Massive memory saver on Android)
+      removeClippedSubviews={true}
+      // 2. Only render enough items to fill the initial screen, preventing a heavy mount
+      initialNumToRender={8}
+      // 3. Render next items in smaller chunks rather than all at once
+      maxToRenderPerBatch={8}
+      // 4. Keep fewer "invisible" items in memory (Default is 21 screens worth, 5 is much lighter)
+      windowSize={5}
+      // ==========================================
+
       renderItem={({ item }) => {
         const { cone, distanceMeters } = item;
 
@@ -73,6 +86,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 40,
+    flexGrow: 1,
   },
   headerStyle: {
     marginBottom: 16,
