@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { onSnapshot, Query, QuerySnapshot } from "firebase/firestore";
+import { onSnapshot, FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
 
-export function useFirestoreQuery<T>(queryRef: Query<T> | null | undefined) {
-  const [data, setData] = useState<QuerySnapshot<T> | null>(null);
+export function useFirestoreQuery<T extends FirebaseFirestoreTypes.DocumentData>(queryRef: FirebaseFirestoreTypes.Query<T> | null | undefined) {
+  const [data, setData] = useState<FirebaseFirestoreTypes.QuerySnapshot<T> | null>(null);
   const [loading, setLoading] = useState(!!queryRef);
   const [error, setError] = useState<Error | null>(null);
 

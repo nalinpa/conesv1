@@ -50,14 +50,14 @@ export function StatusCard({
   /* --- COMPLETED --- */
   if (completed) {
     return (
-      <CardShell status="success">
+      <CardShell>
         <Row gap="md" align="center">
-          <AppIcon icon={ShieldCheck} variant="control" size={24} />
+          <AppIcon icon={ShieldCheck} size={24} />
           <Stack style={styles.flex1}>
-            <AppText variant="sectionTitle" status="control">
+            <AppText variant="sectionTitle">
               Location Verified
             </AppText>
-            <AppText variant="label" status="control">
+            <AppText variant="label">
               You've visited this site.
             </AppText>
           </Stack>

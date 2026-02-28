@@ -1,6 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { ScrollView, StyleSheet, View, Pressable } from "react-native";
 import { Image } from "expo-image";
+import { Alert } from "react-native";
+import * as Linking from "expo-linking";
 import { Stack, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
@@ -91,6 +93,7 @@ export default function ShareFrameRoute() {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
+  
   const onShare = async () => {
     if (!previewUri) return;
     setSharing(true);

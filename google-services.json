@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "808761272356",
+    "project_id": "cones-app-fd230",
+    "storage_bucket": "cones-app-fd230.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:808761272356:android:4b084440d620817ad390b1",
+        "android_client_info": {
+          "package_name": "app.kompletion.cones"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBIRtOydverOvIZ-HQ5Vt5jCW7CXOwBGmI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

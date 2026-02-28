@@ -7,7 +7,8 @@ import {
   serverTimestamp,
   runTransaction,
   where,
-} from "firebase/firestore";
+  FirebaseFirestoreTypes,
+} from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -76,7 +77,7 @@ export const reviewService = {
     );
 
     const snap = await getDocs(qy);
-    return snap.docs.map((d) => mapPublicReview(d.id, d.data()));
+    return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => mapPublicReview(d.id, d.data()));
   },
 
   // ✅ Write (one per user per cone enforced by doc id)
@@ -113,7 +114,7 @@ export const reviewService = {
         const existing = reviewSnap.exists() ? reviewSnap.data() : null;
 
         // 3. Calculate Aggregates
-        const coneData = coneSnap.data();
+        const coneData = coneSnap.data()!;
         let count = (coneData.ratingCount || 0) as number;
         let sum = (coneData.ratingSum || 0) as number;
         const currentAvg = (coneData.avgRating || 0) as number;

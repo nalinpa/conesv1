@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { collection, query, where } from "firebase/firestore";
+import { collection, FirebaseFirestoreTypes, query, where } from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -30,9 +30,14 @@ export function useMyReviews(): {
   const uid = session.status === "authed" ? session.uid : null;
 
   const qy = useMemo(() => {
-    if (!uid) return null;
-    return query(collection(db, COL.coneReviews), where("userId", "==", uid));
-  }, [uid]);
+      if (!uid) return null;
+      
+      return query(
+        collection(db, COL.coneReviews), 
+        where("userId", "==", uid)
+      ) as FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData>;
+      
+    }, [uid]);
 
   const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
 
@@ -49,7 +54,7 @@ export function useMyReviews(): {
     const atByCone: Record<string, number> = Object.create(null);
 
     for (const d of data.docs) {
-      const val = d.data({ serverTimestamps: "estimate" });
+      const val = d.data() as any;
       const coneId = typeof val?.coneId === "string" ? val.coneId : null;
       if (!coneId) continue;
 

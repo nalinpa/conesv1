@@ -20,6 +20,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   android: {
     package: "app.kompletion.cones",
+    googleServicesFile: "./google-services.json", 
     adaptiveIcon: {
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#F8FAFC",
@@ -35,6 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: "app.kompletion.cones",
+    googleServicesFile: "./GoogleService-Info.plist", 
     config: {
       googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
     },
@@ -70,6 +72,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         locationAlwaysAndWhenInUsePermission:
           "Cones uses your location to verify summit visits.",
+      },
+    ],
+    "@react-native-firebase/app",
+    "@react-native-firebase/auth",
+    [
+      "expo-build-properties",
+      {
+        ios: {
+          useFrameworks: "static",
+        },
       },
     ],
   ],

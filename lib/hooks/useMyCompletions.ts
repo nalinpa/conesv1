@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { collection, query, where } from "firebase/firestore";
+import { collection, FirebaseFirestoreTypes, query, where } from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -29,11 +29,13 @@ export function useMyCompletions(): {
   const { session } = useSession();
 
   const uid = session.status === "authed" ? session.uid : null;
-
   const qy = useMemo(() => {
-    if (!uid) return null;
-    return query(collection(db, COL.coneCompletions), where("userId", "==", uid));
-  }, [uid]);
+      if (!uid) return null;
+      return query(
+        collection(db, COL.coneCompletions), 
+        where("userId", "==", uid)
+      ) as FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData>;
+    }, [uid]);
 
   const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
 
@@ -54,7 +56,7 @@ export function useMyCompletions(): {
     const completions: any[] = [];
 
     data.docs.forEach((doc) => {
-      const d = doc.data({ serverTimestamps: "estimate" });
+      const d = doc.data() as any;
       const coneId = d.coneId;
       if (!coneId) return;
 

@@ -1,4 +1,4 @@
-import { doc, serverTimestamp, runTransaction, updateDoc } from "firebase/firestore";
+import { doc, serverTimestamp, runTransaction, updateDoc } from "@react-native-firebase/firestore";
 import type { LocationObject } from "expo-location";
 
 import { db } from "@/lib/firebase";
