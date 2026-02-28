@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 import { goCone } from "@/lib/routes";
 import { Screen } from "@/components/ui/Screen";
@@ -14,7 +15,7 @@ import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useNearestUnclimbed } from "@/lib/hooks/useNearestUnclimbed";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useSession } from "@/lib/providers/SessionProvider";
-import { useAppData } from "@/lib/providers/DataProvider"; 
+import { useAppData } from "@/lib/providers/DataProvider";
 
 import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
@@ -28,11 +29,7 @@ export default function MapScreen() {
 
   const { location: loc, errorMsg: providerErr } = useLocation();
 
-  const {
-    refresh: refreshLocation,
-    isRefreshing,
-    err: manualErr,
-  } = useUserLocation();
+  const { refresh: refreshLocation, isRefreshing, err: manualErr } = useUserLocation();
 
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";

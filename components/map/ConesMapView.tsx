@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect } from "react";
 import { StyleSheet } from "react-native";
-import MapView, { LatLng, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import MapView, { PROVIDER_GOOGLE, Region } from "react-native-maps";
 
 import { TrackedMarker } from "@/components/map/TrackedMarker";
 export { initialRegionFrom } from "./MapRegion";

@@ -1,9 +1,9 @@
 import React from "react";
-import { View, ViewStyle, StyleSheet } from "react-native";
+import { View, ViewStyle } from "react-native";
 import { space } from "@/lib/ui/tokens";
 
 // Export Stack and also alias it as VStack so imports don't break
-export { Stack as VStack }; 
+export { Stack as VStack };
 
 interface StackProps {
   gap?: keyof typeof space;
@@ -15,11 +15,16 @@ interface StackProps {
 
 export function Stack({ gap, align, justify, children, style }: StackProps) {
   return (
-    <View style={[{ 
-      gap: gap ? space[gap] : undefined, 
-      alignItems: align, 
-      justifyContent: justify 
-    }, style]}>
+    <View
+      style={[
+        {
+          gap: gap ? space[gap] : undefined,
+          alignItems: align,
+          justifyContent: justify,
+        },
+        style,
+      ]}
+    >
       {children}
     </View>
   );

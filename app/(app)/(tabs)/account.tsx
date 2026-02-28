@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, StyleSheet, Modal } from "react-native";
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { LogOut, User, Trash2, ShieldAlert, LogIn } from "lucide-react-native";
 
 import { Screen } from "@/components/ui/Screen";
@@ -147,7 +148,10 @@ export default function AccountScreen() {
 
                 <AppButton
                   variant="ghost"
-                  onPress={() => setShowConfirm(true)}
+                  onPress={() => {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    setShowConfirm(true);
+                  }}
                   loading={isDeleting}
                 >
                   <Row gap="xs" align="center">
@@ -168,9 +172,7 @@ export default function AccountScreen() {
           <CardShell status="danger" style={styles.modalContent}>
             <Stack gap="lg">
               <Stack gap="xs">
-                <AppText variant="sectionTitle">
-                  Are you absolutely sure?
-                </AppText>
+                <AppText variant="sectionTitle">Are you absolutely sure?</AppText>
                 <AppText variant="body">
                   All progress, badges, and reviews will be permanently erased from the
                   Auckland Volcanic Field records.

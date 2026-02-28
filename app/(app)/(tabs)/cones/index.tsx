@@ -31,9 +31,9 @@ const DEFAULT_FILTERS: ConeFiltersValue = {
 export default function ConeListPage() {
   const { session } = useSession();
   const isGuest = session.status === "guest";
-  
+
   const { location: liveLoc, errorMsg: locErr } = useLocation();
-  const locStatus = locErr ? "denied" : liveLoc ? "granted" : "undetermined";
+  const locStatus = locErr ? "denied" : liveLoc ? "granted" : "unknown";
 
   const { conesData, completionsData } = useAppData();
   const { cones, loading: conesLoading, err: conesErr } = conesData;
@@ -89,7 +89,7 @@ export default function ConeListPage() {
       <ConesListHeader
         status={locStatus}
         hasLoc={!!lockedLoc}
-        locErr={locErr}
+        locErr={locErr || ""}
         onPressGPS={handleRefreshGPS}
       />
 

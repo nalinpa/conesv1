@@ -80,11 +80,7 @@ export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) 
                     {nextUp.progressLabel || "Keep exploring..."}
                   </AppText>
                 </View>
-                {nextUp.percent != null && (
-                  <Pill status="basic">
-                    {nextUp.percent}%
-                  </Pill>
-                )}
+                {nextUp.percent != null && <Pill status="basic">{nextUp.percent}%</Pill>}
               </Row>
             </View>
           </Stack>

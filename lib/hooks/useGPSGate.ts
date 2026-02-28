@@ -3,6 +3,7 @@ import type * as Location from "expo-location";
 
 import type { Cone } from "@/lib/models";
 import { nearestCheckpoint } from "@/lib/checkpoints";
+import { GAMEPLAY } from "../constants/gameplay";
 
 export function useGPSGate(
   cone: Cone | null,
@@ -21,7 +22,7 @@ export function useGPSGate(
   checkpointLat: number | null;
   checkpointLng: number | null;
 } {
-  const maxAccuracy = opts?.maxAccuracyMeters ?? 50;
+  const maxAccuracy = opts?.maxAccuracyMeters ?? GAMEPLAY.MAX_GPS_ACCURACY_METERS;
 
   return useMemo(() => {
     if (!cone || !loc) {

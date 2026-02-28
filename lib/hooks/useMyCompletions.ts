@@ -54,7 +54,7 @@ export function useMyCompletions(): {
     const completions: any[] = [];
 
     data.docs.forEach((doc) => {
-      const d = doc.data();
+      const d = doc.data({ serverTimestamps: "estimate" });
       const coneId = d.coneId;
       if (!coneId) return;
 

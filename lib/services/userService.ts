@@ -4,7 +4,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  sendEmailVerification,
 } from "firebase/auth";
 import { collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -12,12 +11,12 @@ import { COL } from "../constants/firestore";
 
 export const userService = {
   /**
-   * Signs in a user and reloads their profile to ensure 
+   * Signs in a user and reloads their profile to ensure
    * the 'emailVerified' status is up to date.
    */
   async login(email: string, password: string): Promise<User> {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    // Reload is necessary because Firebase caches the verification 
+    // Reload is necessary because Firebase caches the verification
     // status from the last time the user was seen.
     await credential.user.reload();
     return auth.currentUser!;
@@ -55,10 +54,7 @@ export const userService = {
     completionsSnap.forEach((d) => batch.delete(d.ref));
 
     // 2. Identify all review records for this user
-    const reviewsQ = query(
-      collection(db, COL.coneReviews), 
-      where("userId", "==", uid)
-    );
+    const reviewsQ = query(collection(db, COL.coneReviews), where("userId", "==", uid));
     const reviewsSnap = await getDocs(reviewsQ);
     reviewsSnap.forEach((d) => batch.delete(d.ref));
 

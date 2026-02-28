@@ -11,7 +11,7 @@ import {
 } from "@/lib/guestMode";
 
 /**
- * 1. Define the possible session states. 
+ * 1. Define the possible session states.
  * 'unverified' is used when a user has a Firebase account but hasn't clicked the email link.
  */
 export type Session =
@@ -54,15 +54,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
    */
   const session: Session = useMemo(() => {
     if (loading) return { status: "loading" };
-    
+
     // Priority 1: Logged-in Users
     if (user && uid) {
       return { status: "authed", uid };
     }
-    
+
     // Priority 2: Guest Mode
     if (guestEnabled) return { status: "guest" };
-    
+
     // Default: Logged Out
     return { status: "loggedOut" };
   }, [loading, user, uid, guestEnabled]);

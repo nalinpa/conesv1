@@ -45,7 +45,7 @@ type BadgesData = {
 export function useBadgesData(): BadgesData {
   // Destructure all the cached data from the global provider
   const { conesData, completionsData: my, reviewsData: reviews } = useAppData();
-  
+
   const { cones, loading: conesLoading, err: conesErr } = conesData;
 
   const completedConeIds = my.completedConeIds;

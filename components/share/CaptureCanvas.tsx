@@ -1,5 +1,6 @@
 import React, { forwardRef } from "react";
-import { View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { AppText } from "@/components/ui/AppText";
 import { Row } from "@/components/ui/Row";
 import type { ShareConePayload } from "@/lib/services/share/types";

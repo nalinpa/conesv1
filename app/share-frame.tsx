@@ -1,6 +1,8 @@
 import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { ScrollView, StyleSheet, View, Pressable, Image } from "react-native";
+import { ScrollView, StyleSheet, View, Pressable } from "react-native";
+import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, Image as ImageIcon, Trash2, Share2 } from "lucide-react-native";
@@ -51,7 +53,7 @@ export default function ShareFrameRoute() {
     try {
       const uri = await captureRef(shareCardRef, {
         format: "png",
-        quality: 1,
+        quality: 0.7,
         width: 1080,
         height: 1350,
       });
@@ -95,10 +97,13 @@ export default function ShareFrameRoute() {
     const res = await shareService.shareImageUriAsync(previewUri);
     if (res.ok) {
       setShareSuccess(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       if (uid)
         completionService
           .confirmShareBonus({ uid, coneId: payload.coneId, platform: "share-frame" })
           .catch(() => {});
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
     setSharing(false);
   };
@@ -141,7 +146,11 @@ export default function ShareFrameRoute() {
               {photoUri ? (
                 <>
                   <Image source={{ uri: photoUri }} style={styles.full} />
-                  <Pressable style={styles.removeBtn} onPress={() => setPhotoUri(null)}>
+                  <Pressable style={styles.removeBtn} 
+                              onPress={() => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                  setPhotoUri(null);
+                                }}>
                     <Trash2 size={16} color="#ef4444" />
                   </Pressable>
                 </>

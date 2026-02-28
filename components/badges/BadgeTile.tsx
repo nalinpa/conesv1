@@ -55,9 +55,7 @@ export function BadgeTile({
 
           <View style={styles.footer}>
             {unlocked ? (
-              <Pill status="surf">
-                Earned
-              </Pill>
+              <Pill status="surf">Earned</Pill>
             ) : (
               <AppText variant="label" status="hint" style={styles.progressText}>
                 {progressLabel ?? "Locked"}

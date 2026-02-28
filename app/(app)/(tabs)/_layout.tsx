@@ -5,12 +5,6 @@ import { BottomNavigation, BottomNavigationTab, useTheme } from "@ui-kitten/comp
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import {
-  goProgressHome,
-  goConesHome,
-  goMapHome,
-  goAccountHome,
-} from "../../../lib/routes";
 import { useSession } from "../../../lib/providers/SessionProvider";
 
 const ALL_TABS: Array<{
@@ -30,7 +24,7 @@ const ALL_TABS: Array<{
   { key: "account", title: "Profile", icon: "person-outline", activeIcon: "person" },
 ];
 
-function KittenTabBar({ state }: any) {
+function KittenTabBar({ state, navigation }: any) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const { session } = useSession();
@@ -55,11 +49,21 @@ function KittenTabBar({ state }: any) {
 
   const onSelect = (index: number) => {
     if (sessionLoading) return;
+
     const tab = visibleTabs[index];
-    if (tab.key === "cones") return goConesHome();
-    if (tab.key === "progress") return goProgressHome();
-    if (tab.key === "map") return goMapHome();
-    if (tab.key === "account") return goAccountHome();
+
+    const targetRoute = state.routes.find((r: any) => r.name === tab.key);
+    if (!targetRoute) return;
+
+    const event = navigation.emit({
+      type: "tabPress",
+      target: targetRoute.key,
+      canPreventDefault: true,
+    });
+
+    if (!event.defaultPrevented) {
+      navigation.navigate(tab.key);
+    }
   };
 
   return (

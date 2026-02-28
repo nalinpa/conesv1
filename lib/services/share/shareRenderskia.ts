@@ -56,7 +56,7 @@ export async function renderShareCardPngAsync(
       canvas.rotate(-10, W * 0.4, H * 0.55);
       canvas.drawRect(Skia.XYWHRect(-260, 640, W + 600, 260), p);
       canvas.restore();
-      
+
       p.dispose(); // MEMORY CLEANUP
     }
 
@@ -95,7 +95,7 @@ export async function renderShareCardPngAsync(
         Skia.RRectXY(Skia.XYWHRect(cardX, cardY, cardW, cardH), 50, 50),
         stroke,
       );
-      
+
       bg.dispose(); // MEMORY CLEANUP
       stroke.dispose(); // MEMORY CLEANUP
     }
@@ -152,7 +152,7 @@ export async function renderShareCardPngAsync(
         textWhite,
         fontSmall,
       );
-      
+
       p.dispose(); // MEMORY CLEANUP
     }
 
@@ -198,7 +198,7 @@ export async function renderShareCardPngAsync(
       canvas.drawText(stampText, sx + 45, sy + 56 + m.height, fillText, fontStamp);
 
       canvas.restore();
-      
+
       stroke.dispose(); // MEMORY CLEANUP
       fillText.dispose(); // MEMORY CLEANUP
     }
@@ -214,10 +214,10 @@ export async function renderShareCardPngAsync(
     }
 
     const img = surface.makeImageSnapshot();
-    
+
     // Extract bytes before destroying the surface and image
-    const bytes: Uint8Array | null = img?.encodeToBytes 
-      ? img.encodeToBytes(SkiaMod.ImageFormat.PNG, 100) 
+    const bytes: Uint8Array | null = img?.encodeToBytes
+      ? img.encodeToBytes(SkiaMod.ImageFormat.PNG, 100)
       : null;
 
     // ========================================================
@@ -269,7 +269,7 @@ async function loadBundledTypefaceAsync(Skia: typeof SkiaType): Promise<any | nu
       const typeface = Skia.Typeface.MakeFreeTypeFaceFromData(data);
       // Clean up the data object after creating the typeface
       if (data && (data as any).dispose) {
-         (data as any).dispose();
+        (data as any).dispose();
       }
       return typeface;
     }

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-// Switching to relative path to resolve import issues
-import { userService } from "../services/userService";
+import * as Haptics from "expo-haptics";
+
+import { userService } from "@/lib/services/userService";
 
 export type AuthMode = "login" | "signup" | "reset";
 
@@ -89,28 +90,34 @@ export function useAuthForm(initialMode: AuthMode = "login") {
         // Delegate to service
         await userService.sendResetEmail(e);
         setNotice("Reset link sent. Check your inbox (and spam).");
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         return { ok: true as const };
       }
 
       if (mode === "signup") {
         if (password.length < 6) {
           setErr("Password must be at least 6 characters.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           return { ok: false as const };
         }
         if (confirm !== password) {
           setErr("Passwords don’t match.");
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           return { ok: false as const };
         }
         // Delegate to service
         await userService.signup(e, password);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         return { ok: true as const };
       }
 
       // Default: Delegate login to service
       await userService.login(e, password);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return { ok: true as const };
     } catch (e) {
       setErr(normalizeAuthError(e));
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return { ok: false as const };
     } finally {
       setBusy(false);

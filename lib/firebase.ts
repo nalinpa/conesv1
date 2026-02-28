@@ -2,7 +2,7 @@ import { initializeApp, getApps } from "firebase/app";
 // @ts-ignore
 import { initializeAuth, getReactNativePersistence } from "firebase/auth";
 import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache } from "firebase/firestore";
 import Constants from "expo-constants";
 
 const firebaseConfig = Constants.expoConfig?.extra?.firebase;
@@ -13,4 +13,6 @@ export const auth = initializeAuth(app, {
   persistence: getReactNativePersistence(ReactNativeAsyncStorage),
 });
 
-export const db = getFirestore(app);
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache(),
+});
