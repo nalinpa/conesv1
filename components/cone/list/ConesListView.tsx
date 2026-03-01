@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { ConeListItem } from "@/components/cone/list/ConeListItem";
@@ -28,7 +29,7 @@ export function ConesListView({
   }, [rows, hideCompleted, completedIds]);
 
   return (
-    <FlatList
+    <FlashList
       data={visibleRows}
       keyExtractor={(item) => item.cone.id}
       showsVerticalScrollIndicator={false}
@@ -37,18 +38,7 @@ export function ConesListView({
       ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListHeaderComponent={header ?? null}
       ListHeaderComponentStyle={styles.headerStyle}
-      // ==========================================
-      // PERFORMANCE PROPS
-      // ==========================================
-      // 1. Unmount views that are far off-screen (Massive memory saver on Android)
-      removeClippedSubviews={true}
-      // 2. Only render enough items to fill the initial screen, preventing a heavy mount
-      initialNumToRender={8}
-      // 3. Render next items in smaller chunks rather than all at once
-      maxToRenderPerBatch={8}
-      // 4. Keep fewer "invisible" items in memory (Default is 21 screens worth, 5 is much lighter)
-      windowSize={5}
-      // ==========================================
+      estimatedItemSize={120}
 
       renderItem={({ item }) => {
         const { cone, distanceMeters } = item;

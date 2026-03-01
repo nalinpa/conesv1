@@ -76,7 +76,22 @@ export default function ShareFrameRoute() {
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permission.granted) return;
+    if (!permission.granted) {
+      Alert.alert(
+        "Permission Required",
+        `To share your summit, Cones needs access to your ${
+          useCamera ? "camera" : "photo library"
+        }. You can enable this in your device settings.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          { 
+            text: "Open Settings", 
+            onPress: () => Linking.openSettings() 
+          },
+        ]
+      );
+      return;
+    }
 
     const result = useCamera
       ? await ImagePicker.launchCameraAsync({
@@ -92,7 +107,6 @@ export default function ShareFrameRoute() {
 
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
-
   
   const onShare = async () => {
     if (!previewUri) return;

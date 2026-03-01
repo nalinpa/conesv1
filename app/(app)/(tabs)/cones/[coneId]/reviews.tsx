@@ -1,6 +1,8 @@
 import { useCallback, useMemo } from "react";
-import { View, FlatList, StyleSheet } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
+
+import { FlashList } from "@shopify/flash-list";
 
 import { goCone } from "@/lib/routes";
 import { Screen } from "@/components/ui/Screen";
@@ -67,9 +69,10 @@ export default function ConeReviewsPage() {
     <Screen padded={false}>
       <Stack.Screen options={{ title: "Community Reviews", headerTransparent: true }} />
 
-      <FlatList
+      <FlashList
         data={reviews}
         keyExtractor={(item) => item.id}
+        estimatedItemSize={100}
         renderItem={({ item }) => (
           <View style={styles.itemWrapper}>
             <ReviewListItem
