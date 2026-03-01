@@ -6,6 +6,44 @@
       "eas": {
         "projectId": "96e0a072-322d-4e01-a3b4-b4c6edc4cd9f"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/96e0a072-322d-4e01-a3b4-b4c6edc4cd9f"
+    },
+    "android": {
+      "package": "app.kompletion.cones",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#F8FAFC"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyASBTD67R6DxwLGhUkOiCpatrAcEhiBo3M"
+        }
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.kompletion.cones",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "config": {
+        "googleMapsApiKey": "AIzaSyASBTD67R6DxwLGhUkOiCpatrAcEhiBo3M"
+      },
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need camera access so you can take photos of your summit conquests.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to memorialize your volcano visits.",
+        "NSLocationWhenInUseUsageDescription": "Cones uses your location to verify your summit visits."
+      }
     }
   }
 }

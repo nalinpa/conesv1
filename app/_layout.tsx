@@ -8,6 +8,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { AppProviders } from "@/lib/providers/AppProviders";
 import * as Sentry from "@sentry/react-native";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -35,6 +36,7 @@ function RootLayout() {
 
   return (
     <AppProviders>
+      <OfflineBanner />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="share-frame"

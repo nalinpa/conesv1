@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useKeepAwake } from "expo-keep-awake";
 
 import { goCone } from "@/lib/routes";
 import { Screen } from "@/components/ui/Screen";
@@ -37,7 +38,8 @@ export default function MapScreen() {
   const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
-
+  useKeepAwake();
+  
   useEffect(() => {
     if (!selectedConeId && nearestUnclimbed?.cone?.id) {
       setSelectedConeId(nearestUnclimbed.cone.id);
@@ -103,7 +105,10 @@ export default function MapScreen() {
           completedIds={completedIds}
           initialRegion={initialRegion!}
           selectedConeId={selectedConeId}
-          onPressCone={setSelectedConeId}
+          onPressCone={(id) => {
+            Haptics.selectionAsync();
+            setSelectedConeId(id);
+          }}
         />
 
         {locErr && (
