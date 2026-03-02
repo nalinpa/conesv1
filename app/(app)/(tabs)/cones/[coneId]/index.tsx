@@ -1,16 +1,36 @@
-import { useCallback, useEffect, useState } from "react";
-import { AppState, ScrollView, StyleSheet } from "react-native";
-import { Stack, router, useLocalSearchParams } from "expo-router";
+import React, { 
+  useCallback, 
+  useEffect, 
+  useState,
+  useRef
+} from "react";
+import { 
+  AppState, 
+  ScrollView, 
+  StyleSheet, 
+  View, 
+  Platform,
+  Animated
+} from "react-native";
+import { 
+  Stack as ExpoStack, 
+  router, 
+  useLocalSearchParams 
+} from "expo-router";
 import * as Haptics from "expo-haptics";
 import * as StoreReview from 'expo-store-review';
 import * as Sentry from "@sentry/react-native";
 import LottieView from 'lottie-react-native';
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Navigation, Radar } from "lucide-react-native";
+import { BlurView } from 'expo-blur'; 
 
 import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { ErrorCard } from "@/components/ui/ErrorCard";
 import { Stack as UIStack } from "@/components/ui/Stack";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppText } from "@/components/ui/AppText";
+import { AppIcon } from "@/components/ui/AppIcon";
 
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
@@ -29,7 +49,6 @@ import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
-import { FloatingBackButton } from "@/components/cone/detail/FloatingBackButton";
 
 const MAX_ACCURACY_METERS = GAMEPLAY.MAX_GPS_ACCURACY_METERS;
 
@@ -40,6 +59,8 @@ export default function ConeDetailRoute() {
   const [reviewErr, setReviewErr] = useState<string | null>(null);
   const uid = session.status === "authed" ? session.uid : null;
   const [showCelebration, setShowCelebration] = useState(false);
+  const confettiRef = useRef(null);
+  const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
   const { location: loc, errorMsg: providerErr } = useLocation();
@@ -80,15 +101,36 @@ export default function ConeDetailRoute() {
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
-      if (
-        state === "active" &&
-        (!loc || (gate.accuracyMeters || 0) > MAX_ACCURACY_METERS)
-      ) {
+      if (state === "active" && (!loc || (gate.accuracyMeters || 0) > MAX_ACCURACY_METERS)) {
         refreshGPS();
       }
     });
     return () => sub.remove();
   }, [loc, gate.accuracyMeters, refreshGPS]);
+
+  // Explicitly trigger the animation when it mounts
+  useEffect(() => {
+    if (showCelebration) {
+      // Reset opacity to 1 every time it shows
+      opacityAnim.setValue(1);
+      confettiRef.current?.play();
+      
+      // Wait 2 seconds, then smoothly fade it out
+      const timer = setTimeout(() => {
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 500, // 500ms fade out duration
+          useNativeDriver: true,
+        }).start(({ finished }) => {
+          if (finished) {
+            setShowCelebration(false);
+          }
+        });
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [showCelebration, opacityAnim]);
 
   const handleComplete = async () => {
     if (!cone || completedId || completing) return;
@@ -102,11 +144,7 @@ export default function ConeDetailRoute() {
     }
 
     if (!gate.inRange) {
-      setErr(
-        gate.distanceMeters
-          ? `You're ${Math.round(gate.distanceMeters)}m away.`
-          : "Not in range.",
-      );
+      setErr(gate.distanceMeters ? `You're ${Math.round(gate.distanceMeters)}m away.` : "Not in range.");
       return;
     }
 
@@ -157,10 +195,35 @@ export default function ConeDetailRoute() {
 
   return (
     <Screen padded={false}>
-      <FloatingBackButton />
-      <Stack.Screen
-        options={{ title: cone.name, headerTransparent: true, headerTintColor: "#fff" }}
+      <ExpoStack.Screen
+        options={{ 
+          title: cone.name, 
+          headerTransparent: true, 
+          headerTintColor: "#fff", 
+          headerLeft: () => null 
+        }}
       />
+
+      {/* FLOATING GLASS BACK BUTTON */}
+      <View style={styles.floatingHeader}>
+        <BlurView 
+          intensity={Platform.OS === 'ios' ? 40 : 80} 
+          tint="dark"
+          style={styles.blurContainer}
+        >
+          <AppButton 
+            variant="ghost" 
+            size="sm" 
+            onPress={goConesHome} 
+            style={styles.backBtn}
+          >
+            <ArrowLeft size={16} color="#ffffff" />
+            <AppText variant="label" style={styles.backText}>
+              Back to Volcanoes
+            </AppText>
+          </AppButton>
+        </BlurView>
+      </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -210,6 +273,20 @@ export default function ConeDetailRoute() {
               })
             }
           />
+
+          {/* TEMPORARY TEST BUTTON */}
+          <AppButton 
+            variant="primary" 
+            onPress={() => {
+              console.log("Triggering confetti animation");
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              // reset to false then true to ensure animation plays multiple times
+              setShowCelebration(false);
+              setTimeout(() => setShowCelebration(true), 50);
+            }}
+          >
+            Test Confetti Animation
+          </AppButton>
         </UIStack>
       </ScrollView>
 
@@ -250,19 +327,59 @@ export default function ConeDetailRoute() {
         }}
       />
 
-      {!showCelebration && (
-        <></>
+      {/* Lottie Animation Overlay with touch-passthrough */}
+     {showCelebration && (
+        <View style={[styles.confettiOverlay]} pointerEvents="none">
+          <LottieView
+            ref={confettiRef}
+            autoPlay
+            loop={false}
+            source={require('@/assets/animations/success.confetti.json')} 
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+            onAnimationFinish={() => setShowCelebration(false)} 
+          />
+        </View>
       )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  floatingHeader: {
+    position: 'absolute',
+    top: 54, 
+    left: 16,
+    zIndex: 100,
+    overflow: 'hidden',
+    borderRadius: 24,
+  },
+  blurContainer: {
+    padding: 2,
+    borderRadius: 24,
+  },
+  backBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 6,
+  },
+  backText: {
+    color: '#ffffff',
+    fontWeight: '700',
+    fontSize: 13,
+  },
   scroll: {
     paddingBottom: 40,
   },
   content: {
     paddingHorizontal: 16,
     marginTop: -20,
+  },
+  confettiOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 9999, 
+    elevation: 9999,
   },
 });
