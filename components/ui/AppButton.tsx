@@ -43,19 +43,25 @@ export function AppButton({
     transform: [{ scale: scale.value }],
   }));
 
+  // Match the heavy, snappy physics of the CardShell
+  const springConfig = { damping: 20, stiffness: 300 };
+
   const handlePressIn = () => {
-    scale.value = withSpring(0.97);
+    // Prevent animation and haptics if the button is disabled or loading
+    if (disabled || loading) return; 
+    
+    // Buttons should squish slightly more than cards (0.96 vs 0.985)
+    scale.value = withSpring(0.96, springConfig);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
+    scale.value = withSpring(1, springConfig);
   };
 
-  // Combine dynamic height with variant-specific styles
   const buttonStyles = [
     styles.buttonBase,
-    { minHeight }, // Dynamic but non-variant dependent
+    { minHeight },
     variant === "primary" && styles.primaryVariant,
     style,
   ];

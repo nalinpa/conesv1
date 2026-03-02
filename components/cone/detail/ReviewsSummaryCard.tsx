@@ -50,11 +50,40 @@ export function ReviewsSummaryCard({
         ) : (
           <Row gap="md" align="center">
             <View style={styles.ratingContainer}>
-              <Row gap="xs" align="center">
+              <Row gap="sm" align="center">
                 <AppText variant="sectionTitle" style={styles.avgRatingText}>
                   {avgRating?.toFixed(1)}
                 </AppText>
-                <AppIcon icon={Star} variant="surf" size={20} />
+                
+                {/* 5-Star Row */}
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map((star) => {
+                    // Round to nearest 0.5 (e.g., 4.3 -> 4.5, 4.1 -> 4.0)
+                    const roundedRating = Math.round((avgRating || 0) * 2) / 2;
+                    const isFull = roundedRating >= star;
+                    const isHalf = roundedRating === star - 0.5;
+
+                    if (isFull) {
+                      return <Star key={star} size={16} color="#F59E0B" fill="#F59E0B" />;
+                    }
+
+                    if (isHalf) {
+                      return (
+                        <View key={star} style={styles.halfStarContainer}>
+                          {/* Empty background star */}
+                          <Star size={16} color="#CBD5E1" fill="transparent" />
+                          {/* Clipped foreground half-star */}
+                          <View style={styles.halfStarClip}>
+                            <Star size={16} color="#F59E0B" fill="#F59E0B" />
+                          </View>
+                        </View>
+                      );
+                    }
+
+                    // Empty Star
+                    return <Star key={star} size={16} color="#CBD5E1" fill="transparent" />;
+                  })}
+                </View>
               </Row>
             </View>
 
@@ -91,6 +120,21 @@ const styles = StyleSheet.create({
     paddingRight: space.md,
     borderRightWidth: 1,
     borderRightColor: "#E2E8F0",
+  },
+  starsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  halfStarContainer: {
+    position: "relative",
+  },
+  halfStarClip: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "50%",
+    overflow: "hidden",
   },
   emptyBox: {
     paddingVertical: space.sm,

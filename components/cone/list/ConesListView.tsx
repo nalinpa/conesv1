@@ -39,8 +39,7 @@ export function ConesListView({
       ListHeaderComponent={header ?? null}
       ListHeaderComponentStyle={styles.headerStyle}
       estimatedItemSize={120}
-
-      renderItem={({ item }) => {
+       renderItem={({ item, index }) => {
         const { cone, distanceMeters } = item;
 
         return (
@@ -51,6 +50,7 @@ export function ConesListView({
             distanceMeters={distanceMeters}
             completed={completedIds ? completedIds.has(cone.id) : false}
             onPress={onPressCone}
+            index={index}
           />
         );
       }}

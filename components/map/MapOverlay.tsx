@@ -1,7 +1,8 @@
 import React from "react";
-import { StyleSheet, ActivityIndicator } from "react-native";
+import { StyleSheet, ActivityIndicator, Pressable } from "react-native";
 import * as Linking from "expo-linking";
 import { Navigation, Info, AlertCircle } from "lucide-react-native";
+import { BlurView } from "expo-blur";
 
 import { CardShell } from "../ui/CardShell";
 import { Stack } from "../ui/Stack";
@@ -106,35 +107,37 @@ export function MapOverlayCard({
   const distanceLabel = formatDistanceMeters(distanceMeters);
 
   return (
-    <CardShell status="basic" onPress={onOpen}>
-      <Stack gap="md">
-        <Row justify="space-between" align="flex-start">
-          <Stack style={styles.flex1} gap="xxs">
-            <AppText variant="sectionTitle" numberOfLines={1}>
-              {title}
-            </AppText>
-          </Stack>
+   <Pressable onPress={onOpen}>
+      <BlurView intensity={80} tint="light" style={styles.blurCard}> 
+        <Stack gap="md">
+          <Row justify="space-between" align="flex-start">
+            <Stack style={styles.flex1} gap="xxs">
+              <AppText variant="sectionTitle" numberOfLines={1}>
+                {title}
+              </AppText>
+            </Stack>
 
-          <Pill status="surf" icon={Navigation}>
-            {distanceLabel}
-          </Pill>
-        </Row>
-
-        <AppButton
-          variant="primary"
-          size="md"
-          onPress={onOpen}
-          style={styles.actionButton}
-        >
-          <Row gap="xs" align="center">
-            <AppText variant="label" style={styles.whiteBold}>
-              View Details
-            </AppText>
-            <AppIcon icon={Info} variant="control" size={14} />
+            <Pill status="surf" icon={Navigation}>
+              {distanceLabel}
+            </Pill>
           </Row>
-        </AppButton>
-      </Stack>
-    </CardShell>
+
+          <AppButton
+            variant="primary"
+            size="md"
+            onPress={onOpen}
+            style={styles.actionButton}
+          >
+            <Row gap="xs" align="center">
+              <AppText variant="label" style={styles.whiteBold}>
+                View Details
+              </AppText>
+              <AppIcon icon={Info} variant="control" size={14} />
+            </Row>
+          </AppButton>
+        </Stack>
+      </BlurView>
+    </Pressable>
   );
 }
 
@@ -143,5 +146,12 @@ const styles = StyleSheet.create({
   whiteBold: { fontWeight: "800", color: "#FFFFFF" },
   actionButton: {
     borderRadius: 12,
+  },
+  blurCard: {
+    padding: 16,
+    borderRadius: 16,
+    overflow: "hidden", 
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
   },
 });

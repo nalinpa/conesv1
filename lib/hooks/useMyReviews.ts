@@ -42,7 +42,7 @@ export function useMyReviews(): {
   const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
 
   const { reviewedConeIds, reviewCount, reviewedAtByConeId } = useMemo(() => {
-    if (!data) {
+    if (!uid || !data) {
       return {
         reviewedConeIds: EMPTY_IDS,
         reviewCount: 0,
@@ -60,7 +60,6 @@ export function useMyReviews(): {
 
       ids.add(coneId);
 
-      // keep earliest timestamp we saw for this cone
       const t = toMs(val?.reviewCreatedAt);
       if (t > 0) {
         const prev = atByCone[coneId] ?? 0;
@@ -73,10 +72,10 @@ export function useMyReviews(): {
       reviewCount: ids.size,
       reviewedAtByConeId: atByCone,
     };
-  }, [data]);
+  }, [data, uid]);
 
   return {
-    loading: session.status === "loading" || queryLoading,
+    loading: session.status === "loading" || (!!uid && queryLoading),
     err: error?.message ?? "",
     reviewedConeIds,
     reviewCount,

@@ -1,6 +1,7 @@
 import React from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { MapPin, ChevronRight, Navigation } from "lucide-react-native";
+import { MotiView } from "moti"; // ✅ Added Moti
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -12,11 +13,26 @@ import { AppIcon } from "@/components/ui/AppIcon";
 import { AppButton } from "@/components/ui/AppButton";
 
 export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone }: any) {
+  
+  // --- SEARCHING / ERROR STATE ---
   if (!cone) {
     return (
       <CardShell status="basic">
         <Row gap="sm" align="center">
-          <AppIcon icon={Navigation} variant="hint" size={20} />
+          {locErr ? (
+            // Static icon if location is denied/error
+            <AppIcon icon={Navigation} variant="hint" size={20} />
+          ) : (
+            <View>
+              <MotiView
+                animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                transition={{ type: "timing", duration: 1500, loop: true }}
+              >
+                <AppIcon icon={Navigation} variant="surf" size={20} />
+              </MotiView>
+            </View>
+          )}
+          
           <AppText variant="body" status="hint">
             {locErr
               ? "Enable location to find nearby cones"
@@ -27,12 +43,12 @@ export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone 
     );
   }
 
+  // --- FOUND STATE ---
   return (
     <CardShell status="surf" onPress={() => onOpenCone(cone.id)} style={styles.card}>
       <Stack gap="md">
         <Row justify="space-between" align="center">
           <Row gap="xs" align="center">
-            {/* Surf Green Icon for the "pop", but dark text for legibility */}
             <AppIcon icon={MapPin} variant="surf" size={18} />
             <AppText variant="label" style={styles.headerLabel}>
               NEXT MISSION

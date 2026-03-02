@@ -2,6 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { AppState, ScrollView, StyleSheet } from "react-native";
 import { Stack, router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
+import * as StoreReview from 'expo-store-review';
+import * as Sentry from "@sentry/react-native";
+import LottieView from 'lottie-react-native';
+import { ArrowLeft } from "lucide-react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -16,6 +20,7 @@ import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
 import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
+import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 
 import { ConeHero } from "@/components/cone/detail/ConeHero";
 import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard";
@@ -24,29 +29,26 @@ import { ActionsCard } from "@/components/cone/detail/ActionsCard";
 import { ReviewModal } from "@/components/cone/detail/ReviewModal";
 import { goConesHome, goConeReviews } from "@/lib/routes";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
+import { FloatingBackButton } from "@/components/cone/detail/FloatingBackButton";
 
 const MAX_ACCURACY_METERS = GAMEPLAY.MAX_GPS_ACCURACY_METERS;
 
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
   const { session } = useSession();
+  const { completions } = useMyCompletions();
   const [reviewErr, setReviewErr] = useState<string | null>(null);
   const uid = session.status === "authed" ? session.uid : null;
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
-
-  // 1. Get live location stream from global provider for instant UI updates
   const { location: loc, errorMsg: providerErr } = useLocation();
-
-  // 2. Use the hook purely for the high-accuracy manual refresh capability
   const { refresh: refreshLocation, isRefreshing, err: manualErr } = useUserLocation();
 
-  // 3. Combine errors to figure out overall status
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
 
   const { completedId } = useConeCompletion(coneId);
-
   const {
     completeCone: triggerComplete,
     loading: completing,
@@ -55,11 +57,14 @@ export default function ConeDetailRoute() {
   } = useConeCompletionMutation();
 
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
+  const myCompletions = completions.length + 1;
+  const reviewMilestones = [2, 10, 25];
 
   const {
     avgRating,
     ratingCount,
     myRating,
+    myText: myReviewText,
     saving: reviewsSaving,
     saveReview: saveReviewToDb,
   } = useConeReviewsSummary(coneId);
@@ -70,11 +75,9 @@ export default function ConeDetailRoute() {
   const [draftText, setDraftText] = useState("");
 
   const refreshGPS = useCallback(async () => {
-    // We only need to trigger the high-accuracy refresh now
     if (locStatus !== "denied") await refreshLocation();
   }, [locStatus, refreshLocation]);
 
-  // Sync GPS on App State Change
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
       if (
@@ -106,10 +109,26 @@ export default function ConeDetailRoute() {
       );
       return;
     }
+
     if (loc) {
       const res = await triggerComplete({ uid, cone, loc, gate });
       if (res.ok) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        requestAnimationFrame(() => {
+          setShowCelebration(true);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        });
+
+        setTimeout(async () => {
+          if (reviewMilestones.includes(myCompletions)) {
+            try {
+              if (await StoreReview.hasAction()) {
+                await StoreReview.requestReview();
+              }
+            } catch (error) {
+              Sentry.captureException(error);
+            }
+          }
+        }, 1500);
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
@@ -138,6 +157,7 @@ export default function ConeDetailRoute() {
 
   return (
     <Screen padded={false}>
+      <FloatingBackButton />
       <Stack.Screen
         options={{ title: cone.name, headerTransparent: true, headerTintColor: "#fff" }}
       />
@@ -162,7 +182,8 @@ export default function ConeDetailRoute() {
             loc={loc}
             locStatus={locStatus}
             accuracyMeters={gate.accuracyMeters}
-            inRange={gate.inRange}
+            distanceMeters={gate.distanceMeters}
+            inRange={gate.inRange}  
             onRefreshGPS={refreshGPS}
             refreshingGPS={isRefreshing}
           />
@@ -179,6 +200,8 @@ export default function ConeDetailRoute() {
             hasLoc={!!loc}
             onComplete={handleComplete}
             hasReview={!!myRating}
+            myReviewRating={myRating}
+            myReviewText={myReviewText}
             onOpenReview={() => setReviewOpen(true)}
             onShareBonus={() =>
               router.push({
@@ -198,15 +221,15 @@ export default function ConeDetailRoute() {
         error={reviewErr}
         onChangeRating={(val) => {
           setDraftRating(val);
-          setReviewErr(null); // Clear error when they change input
+          setReviewErr(null);
         }}
         onChangeText={(text) => {
           setDraftText(text);
-          setReviewErr(null); // Clear error when they change input
+          setReviewErr(null);
         }}
         onClose={() => {
           setReviewOpen(false);
-          setReviewErr(null); // Clean up on close
+          setReviewErr(null);
         }}
         onSave={async () => {
           setReviewErr(null);
@@ -226,6 +249,10 @@ export default function ConeDetailRoute() {
           }
         }}
       />
+
+      {!showCelebration && (
+        <></>
+      )}
     </Screen>
   );
 }

@@ -8,6 +8,11 @@ export function goConesHome() {
   router.replace("/(tabs)/cones");
 }
 
+export function goConesList() {
+  router.replace("/(app)/(tabs)/cones/index");
+}
+
+
 export function goCone(coneId: string) {
   router.push({
     pathname: "/(tabs)/cones/[coneId]",

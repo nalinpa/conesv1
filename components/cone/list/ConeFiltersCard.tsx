@@ -154,7 +154,6 @@ export function ConeFiltersCard({ value, onChange, shownCount }: any) {
 
 const styles = StyleSheet.create({
   fullWidthContainer: {
-    width: "100%",
     backgroundColor: "#F8FAFC",
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",

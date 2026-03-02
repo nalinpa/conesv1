@@ -39,25 +39,30 @@ export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) 
                 Recently Earned
               </AppText>
             </Row>
-            {recentlyUnlocked.slice(0, 1).map((badge: any) => (
-              <View key={badge.id || "recent"} style={styles.unlockedBox}>
-                <Row gap="md" align="center">
-                  <View style={styles.emojiWrapper}>
-                    <AppText style={styles.emoji}>
-                      {badge.icon || badge.emoji || "🏆"}
-                    </AppText>
-                  </View>
-                  <View style={styles.flex1}>
-                    <AppText variant="body" style={styles.boldDark}>
-                      {badge.name || "New Achievement"}
-                    </AppText>
-                    <AppText variant="label" status="control" style={styles.bold}>
-                      Unlocked!
-                    </AppText>
-                  </View>
-                </Row>
-              </View>
-            ))}
+            {recentlyUnlocked.slice(0, 1).map((progress: any) => {
+              // Extract the actual badge definition from the progress object
+              const badgeDef = progress.badge; 
+              
+              return (
+                <View key={badgeDef?.id || "recent"} style={styles.unlockedBox}>
+                  <Row gap="md" align="center">
+                    <View style={styles.emojiWrapper}>
+                      <AppText style={styles.emoji}>
+                        {badgeDef?.icon || "🏆"}
+                      </AppText>
+                    </View>
+                    <View style={styles.flex1}>
+                      <AppText variant="body" style={styles.boldDark}>
+                        {badgeDef?.name || "New Achievement"}
+                      </AppText>
+                      <AppText variant="label" status="control" style={styles.boldDark}>
+                        Unlocked!
+                      </AppText>
+                    </View>
+                  </Row>
+                </View>
+              );
+            })}
           </Stack>
         )}
 
@@ -74,7 +79,7 @@ export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) 
                 </View>
                 <View style={styles.flex1}>
                   <AppText variant="body" style={styles.boldDark}>
-                    {nextUp.name || nextUp.badge?.name || "Next Badge"}
+                    {nextUp.badge?.name || "Next Badge"}
                   </AppText>
                   <AppText variant="label" status="hint" numberOfLines={1}>
                     {nextUp.progressLabel || "Keep exploring..."}
@@ -110,7 +115,6 @@ const styles = StyleSheet.create({
   },
   unlockedBox: {
     padding: space.md,
-    backgroundColor: "#F0FDF4",
     borderColor: "#BBF7D0",
     borderWidth: 1,
     borderRadius: radius.md,

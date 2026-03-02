@@ -1,6 +1,7 @@
 import React from "react";
 import { StyleSheet } from "react-native";
 import { Navigation, CheckCircle2, ChevronRight } from "lucide-react-native";
+import { MotiView } from "moti";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -18,6 +19,7 @@ type ConeListItemProps = {
   completed?: boolean;
   distanceMeters?: number | null;
   onPress: (id: string) => void;
+  index: number;
 };
 
 export function ConeListItem({
@@ -27,67 +29,79 @@ export function ConeListItem({
   completed = false,
   distanceMeters,
   onPress,
+  index,
 }: ConeListItemProps) {
   const hasDistance = distanceMeters != null;
 
   return (
-    <CardShell onPress={() => onPress(id)} status={completed ? "basic" : "surf"}>
-      <Stack gap="sm">
-        {/* Top Header Row */}
-        <Row justify="space-between" align="center">
-          <Row gap="xs" align="center" style={styles.flex1}>
-            {completed && <AppIcon icon={CheckCircle2} size={18} variant="success" />}
+    <MotiView
+      from={{ opacity: 0, translateY: 50 }}
+      animate={{ opacity: 1, translateY: 0 }}
+      transition={{
+        type: "spring",
+        delay: Math.min(index * 80, 400), 
+        damping: 14,
+        stiffness: 200,
+      }}
+    >
+      <CardShell onPress={() => onPress(id)} status={completed ? "basic" : "surf"}>
+        <Stack gap="sm">
+          {/* Top Header Row */}
+          <Row justify="space-between" align="center">
+            <Row gap="xs" align="center" style={styles.flex1}>
+              {completed && <AppIcon icon={CheckCircle2} size={18} variant="success" />}
+              <AppText
+                variant="sectionTitle"
+                style={[styles.title, completed && styles.completedText]}
+                numberOfLines={1}
+              >
+                {name}
+              </AppText>
+            </Row>
+
+            {/* Inline Pills */}
+            <Row gap="xs">
+              {hasDistance && (
+                <Pill status="surf" icon={Navigation}>
+                  {formatDistanceMeters(distanceMeters)}
+                </Pill>
+              )}
+              {completed && <Pill status="success">Visited</Pill>}
+            </Row>
+          </Row>
+
+          {/* Full-Width Description */}
+          {description?.trim() ? (
             <AppText
-              variant="sectionTitle"
-              style={[styles.title, completed && styles.completedText]}
-              numberOfLines={1}
+              variant="body"
+              status="hint"
+              numberOfLines={3}
+              style={[styles.description, completed && styles.completedText]}
             >
-              {name}
+              {description.trim()}
             </AppText>
-          </Row>
+          ) : null}
 
-          {/* Inline Pills */}
-          <Row gap="xs">
-            {hasDistance && (
-              <Pill status="surf" icon={Navigation}>
-                {formatDistanceMeters(distanceMeters)}
-              </Pill>
-            )}
-            {completed && <Pill status="success">Visited</Pill>}
+          {/* Footer Action */}
+          <Row justify="space-evenly" style={styles.footer}>
+            <Row gap="xs" align="center">
+              <AppText
+                variant="label"
+                status={completed ? "hint" : "surf"}
+                style={styles.bold}
+              >
+                View Details
+              </AppText>
+              <AppIcon
+                icon={ChevronRight}
+                size={14}
+                variant={completed ? "hint" : "surf"}
+              />
+            </Row>
           </Row>
-        </Row>
-
-        {/* Full-Width Description */}
-        {description?.trim() ? (
-          <AppText
-            variant="body"
-            status="hint"
-            numberOfLines={3}
-            style={[styles.description, completed && styles.completedText]}
-          >
-            {description.trim()}
-          </AppText>
-        ) : null}
-
-        {/* Footer Action */}
-        <Row justify="space-evenly" style={styles.footer}>
-          <Row gap="xs" align="center">
-            <AppText
-              variant="label"
-              status={completed ? "hint" : "surf"}
-              style={styles.bold}
-            >
-              View Details
-            </AppText>
-            <AppIcon
-              icon={ChevronRight}
-              size={14}
-              variant={completed ? "hint" : "surf"}
-            />
-          </Row>
-        </Row>
-      </Stack>
-    </CardShell>
+        </Stack>
+      </CardShell>
+    </MotiView>
   );
 }
 
