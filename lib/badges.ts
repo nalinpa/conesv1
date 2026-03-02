@@ -84,11 +84,11 @@ export const BADGES: BadgeDefinition[] = [
     icon: "🌋",
   },
   {
-    id: "cone-fan",
+    id: "cone_fan",
     name: "Cone Fan",
-    icon: "🍦",
-    unlockText: "Visit 10 different types of volcanic formations.",
+    unlockText: "Visit 10 cone-type volcanoes.",
     section: "Types",
+    icon: "🍦",
   },
   {
     id: "first_crater",
@@ -449,6 +449,12 @@ export function getBadgeState(
     doneConesType >= 1 ? null : `${doneConesType} / 1`,
     doneConesType >= 1 ? 0 : 1 - doneConesType,
   );
+  
+  {
+    const p = progressToThreshold(doneConesType, 10);
+    setProgress("cone_fan", p.earned, p.label, p.dist);
+  }
+
   setProgress(
     "first_crater",
     doneCraters >= 1,
@@ -553,15 +559,16 @@ export function getBadgeState(
     if (!nextUp || p.distanceToEarn < (nextUp.distanceToEarn ?? Infinity)) nextUp = p;
   }
 
-  // Calculate Recently Unlocked
-  const RECENT_WINDOW_MS = 48 * 60 * 60 * 1000;
-  const nowMs = Date.now();
-
+  // Gather timestamp data to find the single most recently unlocked badge
   const allActiveTimes = timesForCones(
     activeCones,
     completedConeIds,
     completedAtByConeId,
   );
+  
+  // Calculate a global fallback time (the time of your most recently completed volcano)
+  const globalLatestTime = allActiveTimes.length > 0 ? allActiveTimes[allActiveTimes.length - 1] : 0;
+
   const coneTimes = timesForCones(
     activeCones,
     completedConeIds,
@@ -595,6 +602,7 @@ export function getBadgeState(
   );
 
   unlockAtByBadgeId["first_cone"] = nthTime(coneTimes, 1);
+  unlockAtByBadgeId["cone_fan"] = nthTime(coneTimes, 10); // ADDED MISSING CONE FAN TIMESTAMP
   unlockAtByBadgeId["all_cones_type"] = maxTimeForAllRequired(
     activeCones.filter((c) => c.category === "cone"),
     completedConeIds,
@@ -657,20 +665,17 @@ export function getBadgeState(
     }
   }
 
+  // Calculate the single most Recently Unlocked badge
   const recentlyUnlocked = badges
     .filter((b) => earnedIds.has(b.id))
     .map((b) => ({
       badgeId: b.id,
-      unlockAtMs: unlockAtByBadgeId[b.id],
+      // If a specific timestamp is missing (like social badges), fallback to the latest known completion time
+      unlockAtMs: unlockAtByBadgeId[b.id] ?? globalLatestTime,
     }))
-    .filter(
-      (x): x is { badgeId: string; unlockAtMs: number } =>
-        x.unlockAtMs != null &&
-        Number.isFinite(x.unlockAtMs) &&
-        nowMs - x.unlockAtMs <= RECENT_WINDOW_MS,
-    )
+    .filter((x) => x.unlockAtMs > 0) // Only keep valid timestamps
     .sort((a, b) => b.unlockAtMs - a.unlockAtMs)
-    .slice(0, 4)
+    .slice(0, 1) // Always grab exactly 1 (the most recent)
     .map((x) => progressById[x.badgeId])
     .filter((p): p is BadgeProgress => !!p);
 

@@ -54,8 +54,8 @@ export const ConesMapView = React.memo(function ConesMapView({
           {
             latitude: cone.lat - 0.005,
             longitude: cone.lng,
-            latitudeDelta: 0.02,
-            longitudeDelta: 0.02,
+            latitudeDelta: 0.03,
+            longitudeDelta: 0.03,
           },
           500,
         );

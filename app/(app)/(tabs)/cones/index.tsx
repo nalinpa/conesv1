@@ -13,7 +13,7 @@ import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
 import { locationStore } from "@/lib/locationStore";
-import { useAppData } from "@/lib/providers/DataProvider"; // <-- New Import
+import { useAppData } from "@/lib/providers/DataProvider"; 
 
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
@@ -86,30 +86,38 @@ export default function ConeListPage() {
 
   const header = (
     <Stack gap="md" style={styles.headerStack}>
-      <ConesListHeader
-        status={locStatus}
-        hasLoc={!!lockedLoc}
-        locErr={locErr || ""}
-        onPressGPS={handleRefreshGPS}
-      />
+      {/* We wrap the items that still need padding in a new paddedSection view */}
+      <View style={styles.paddedSection}>
+        <ConesListHeader
+          status={locStatus}
+          hasLoc={!!lockedLoc}
+          locErr={locErr || ""}
+          onPressGPS={handleRefreshGPS}
+        />
+      </View>
 
       {isGuest ? (
-        <CardShell status="surf" onPress={goLogin}>
-          <Stack gap="xs">
-            <AppText variant="sectionTitle">Unlock Tracking</AppText>
-            <AppText variant="label" status="hint">
-              Sign in to filter by completion and track your summits.
-            </AppText>
-          </Stack>
-        </CardShell>
+        <View style={styles.paddedSection}>
+          <CardShell status="surf" onPress={goLogin}>
+            <Stack gap="xs">
+              <AppText variant="sectionTitle">Unlock Tracking</AppText>
+              <AppText variant="label" status="hint">
+                Sign in to filter by completion and track your summits.
+              </AppText>
+            </Stack>
+          </CardShell>
+        </View>
       ) : (
-        <ConeFiltersCard
-          value={filters}
-          onChange={setFilters}
-          completedCount={completedConeIds.size}
-          completionsLoading={compLoading}
-          shownCount={rows.length}
-        />
+        /* ConeFiltersCard is now explicitly told to stretch edge-to-edge! */
+        <View style={styles.fullWidth}>
+          <ConeFiltersCard
+            value={filters}
+            onChange={setFilters}
+            completedCount={completedConeIds.size}
+            completionsLoading={compLoading}
+            shownCount={rows.length}
+          />
+        </View>
       )}
     </Stack>
   );
@@ -119,14 +127,17 @@ export default function ConeListPage() {
       {rows.length === 0 ? (
         <View style={styles.emptyContainer}>
           {header}
-          <CardShell style={styles.emptyCard}>
-            <Stack gap="sm" align="center">
-              <AppText variant="h3">No Cones Found</AppText>
-              <AppText variant="body" status="hint" style={styles.centerText}>
-                Try adjusting your filters or checking a different region.
-              </AppText>
-            </Stack>
-          </CardShell>
+          {/* Pad the empty card here so the header can stay full-width above it */}
+          <View style={styles.paddedSection}>
+            <CardShell style={styles.emptyCard}>
+              <Stack gap="sm" align="center">
+                <AppText variant="h3">No Cones Found</AppText>
+                <AppText variant="body" status="hint" style={styles.centerText}>
+                  Try adjusting your filters or checking a different region.
+                </AppText>
+              </Stack>
+            </CardShell>
+          </View>
         </View>
       ) : (
         <ConesListView
@@ -143,13 +154,18 @@ export default function ConeListPage() {
 
 const styles = StyleSheet.create({
   headerStack: {
-    paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
+    width: "100%", // Explicitly ensure the Stack takes the full screen width
+  },
+  fullWidth: {
+    width: "100%", // Explicitly force the child card to stretch to the right edge
+  },
+  paddedSection: {
+    paddingHorizontal: 16,
   },
   emptyContainer: {
     flex: 1,
-    paddingHorizontal: 16,
   },
   emptyCard: {
     marginTop: 20,

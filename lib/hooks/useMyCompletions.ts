@@ -40,7 +40,10 @@ export function useMyCompletions(): {
   const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
 
   const state = useMemo<WatchMyCompletionsResult>(() => {
-    if (!data) {
+    // FIX: Explicitly check for !uid here. 
+    // If the user logs out, we instantly wipe the state instead of 
+    // waiting for `useFirestoreQuery` to realize the query is null.
+    if (!uid || !data) {
       return {
         completedConeIds: new Set(),
         shareBonusCount: 0,
@@ -73,10 +76,10 @@ export function useMyCompletions(): {
       sharedConeIds,
       completions,
     };
-  }, [data]);
+  }, [data, uid]); 
 
   return {
-    loading: session.status === "loading" || queryLoading,
+    loading: session.status === "loading" || (!!uid && queryLoading),
     err: error?.message ?? "",
     completedConeIds: state.completedConeIds,
     shareBonusCount: state.shareBonusCount,

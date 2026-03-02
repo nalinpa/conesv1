@@ -62,17 +62,20 @@ export function CardShell({
     opacity: opacity.value,
   }));
 
+  // Unified spring config for a heavy, tactile feel with zero wobble
+  const springConfig = { damping: 20, stiffness: 300 };
+
   const handlePressIn = () => {
     if (onPress && !disabled) {
-      scale.value = withSpring(0.98, { damping: 15 });
-      opacity.value = withSpring(0.92);
+      scale.value = withSpring(0.985, springConfig);
+      opacity.value = withSpring(0.97, springConfig);
       Haptics.selectionAsync();
     }
   };
 
   const handlePressOut = () => {
-    scale.value = withSpring(1);
-    opacity.value = withSpring(1);
+    scale.value = withSpring(1, springConfig);
+    opacity.value = withSpring(1, springConfig);
   };
 
   const content = (
