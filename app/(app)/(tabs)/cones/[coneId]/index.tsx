@@ -152,7 +152,8 @@ export default function ConeDetailRoute() {
       const res = await triggerComplete({ uid, cone, loc, gate });
       if (res.ok) {
         requestAnimationFrame(() => {
-          setShowCelebration(true);
+          setShowCelebration(false);
+          setTimeout(() => setShowCelebration(true), 50);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         });
 
@@ -273,20 +274,6 @@ export default function ConeDetailRoute() {
               })
             }
           />
-
-          {/* TEMPORARY TEST BUTTON */}
-          <AppButton 
-            variant="primary" 
-            onPress={() => {
-              console.log("Triggering confetti animation");
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              // reset to false then true to ensure animation plays multiple times
-              setShowCelebration(false);
-              setTimeout(() => setShowCelebration(true), 50);
-            }}
-          >
-            Test Confetti Animation
-          </AppButton>
         </UIStack>
       </ScrollView>
 
@@ -349,7 +336,7 @@ const styles = StyleSheet.create({
   floatingHeader: {
     position: 'absolute',
     top: 54, 
-    left: 16,
+    right: 16,
     zIndex: 100,
     overflow: 'hidden',
     borderRadius: 24,
