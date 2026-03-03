@@ -1,15 +1,17 @@
+import { useQuery } from "@tanstack/react-query";
 import { reviewService } from "@/lib/services/reviewService";
-import { useCachedQuery } from "@/lib/hooks/useCachedQuery";
 
 export function usePublicConeReviews(coneId: string) {
-  const { data, loading, error, refresh } = useCachedQuery(
-    ["public-reviews", coneId],
-    () => reviewService.getPublicConeReviews(coneId),
-  );
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["public-reviews", coneId],
+    queryFn: () => reviewService.getPublicConeReviews(coneId),
+    enabled: !!coneId, 
+  });
+
   return {
     reviews: data ?? [],
-    loading,
-    err: error?.message ?? null,
-    refresh,
+    loading: isLoading,
+    err: error instanceof Error ? error.message : null,
+    refresh: refetch, 
   };
 }

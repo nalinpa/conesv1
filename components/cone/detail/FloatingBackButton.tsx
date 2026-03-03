@@ -22,7 +22,7 @@ export function FloatingBackButton() {
         >
           <ArrowLeft size={16} color="#ffffff" />
           <AppText variant="label" style={styles.backText}>
-            View all Volcanoes
+            All Volcanoes
           </AppText>
         </AppButton>
       </BlurView>
@@ -33,7 +33,7 @@ export function FloatingBackButton() {
 const styles = StyleSheet.create({
   floatingHeader: {
     position: 'absolute',
-    top: 54, // Consider using useSafeAreaInsets() from react-native-safe-area-context here
+    top: 54, 
     right: 16,
     zIndex: 100,
     overflow: 'hidden',

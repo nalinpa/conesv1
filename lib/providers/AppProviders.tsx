@@ -10,6 +10,7 @@ import { surfGreenTheme } from "@/lib/kitten-theme";
 import { SessionProvider } from "@/lib/providers/SessionProvider";
 import { LocationProvider } from "./LocationProvider";
 import { DataProvider } from "./DataProvider";
+import { QueryProvider } from "./QueryProvider";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -17,12 +18,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <IconRegistry icons={EvaIconsPack} />
 
       <ApplicationProvider {...eva} theme={{ ...eva.light, ...surfGreenTheme }}>
-        <SessionProvider>
-          <DataProvider>
-            <LocationProvider>{children}</LocationProvider>
-          </DataProvider>
-        </SessionProvider>
-
+          <QueryProvider>
+            <SessionProvider>
+              <DataProvider>
+                <LocationProvider>{children}</LocationProvider>
+              </DataProvider>
+          </SessionProvider>
+          </QueryProvider>
         {/* Portals should live outside session/provider remount cycles */}
         <PortalHost />
       </ApplicationProvider>

@@ -1,10 +1,7 @@
-import { useMemo } from "react";
-import { collection, FirebaseFirestoreTypes, query, where } from "@react-native-firebase/firestore";
-
+import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { useSession } from "@/lib/providers/SessionProvider";
-import { useFirestoreQuery } from "@/lib/hooks/useFirestoreQuery";
 import type { WatchMyCompletionsResult } from "@/lib/services/completionService";
 
 function toMs(v: any): number {
@@ -15,76 +12,70 @@ function toMs(v: any): number {
   return 0;
 }
 
+/**
+ * Fetcher for the full list of user completions (used for badges/progress).
+ */
+async function fetchMyCompletions(uid: string) {
+  const snap = await db.collection(COL.coneCompletions)
+    .where("userId", "==", uid)
+    .get();
+
+  const completedConeIds = new Set<string>();
+  const sharedConeIds = new Set<string>();
+  const completedAtByConeId: Record<string, number> = {};
+  const completions: any[] = [];
+
+  snap.forEach((doc) => {
+    const d = doc.data() as any;
+    const coneId = d.coneId;
+    if (!coneId) return;
+
+    completedConeIds.add(coneId);
+    completedAtByConeId[coneId] = toMs(d.completedAt);
+    if (d.shareBonus) sharedConeIds.add(coneId);
+    completions.push({ id: doc.id, ...d });
+  });
+
+  return {
+    completedConeIds,
+    sharedConeIds,
+    completedAtByConeId,
+    shareBonusCount: sharedConeIds.size,
+    completions,
+  };
+}
+
 export function useMyCompletions(): {
   loading: boolean;
   err: string;
-
   completedConeIds: Set<string>;
   shareBonusCount: number;
   completedAtByConeId: Record<string, number>;
   sharedConeIds: Set<string>;
-
   completions: WatchMyCompletionsResult["completions"];
 } {
   const { session } = useSession();
-
   const uid = session.status === "authed" ? session.uid : null;
-  const qy = useMemo(() => {
-      if (!uid) return null;
-      return query(
-        collection(db, COL.coneCompletions), 
-        where("userId", "==", uid)
-      ) as FirebaseFirestoreTypes.Query<FirebaseFirestoreTypes.DocumentData>;
-    }, [uid]);
 
-  const { data, loading: queryLoading, error } = useFirestoreQuery(qy);
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["myCompletions", uid],
+    queryFn: () => fetchMyCompletions(uid!),
+    enabled: !!uid,
+  });
 
-  const state = useMemo<WatchMyCompletionsResult>(() => {
-    // FIX: Explicitly check for !uid here. 
-    // If the user logs out, we instantly wipe the state instead of 
-    // waiting for `useFirestoreQuery` to realize the query is null.
-    if (!uid || !data) {
-      return {
-        completedConeIds: new Set(),
-        shareBonusCount: 0,
-        completedAtByConeId: {},
-        completions: [],
-        sharedConeIds: new Set(),
-      };
-    }
+  const defaultState = {
+    completedConeIds: new Set<string>(),
+    sharedConeIds: new Set<string>(),
+    completedAtByConeId: {},
+    shareBonusCount: 0,
+    completions: [],
+  };
 
-    const completedConeIds = new Set<string>();
-    const sharedConeIds = new Set<string>();
-    const completedAtByConeId: Record<string, number> = {};
-    const completions: any[] = [];
-
-    data.docs.forEach((doc) => {
-      const d = doc.data() as any;
-      const coneId = d.coneId;
-      if (!coneId) return;
-
-      completedConeIds.add(coneId);
-      completedAtByConeId[coneId] = toMs(d.completedAt);
-      if (d.shareBonus) sharedConeIds.add(coneId);
-      completions.push({ id: doc.id, ...d });
-    });
-
-    return {
-      completedConeIds,
-      shareBonusCount: sharedConeIds.size,
-      completedAtByConeId,
-      sharedConeIds,
-      completions,
-    };
-  }, [data, uid]); 
+  const state = data || defaultState;
 
   return {
-    loading: session.status === "loading" || (!!uid && queryLoading),
-    err: error?.message ?? "",
-    completedConeIds: state.completedConeIds,
-    shareBonusCount: state.shareBonusCount,
-    completedAtByConeId: state.completedAtByConeId,
-    sharedConeIds: state.sharedConeIds,
-    completions: state.completions,
+    loading: session.status === "loading" || isLoading,
+    err: error instanceof Error ? error.message : "",
+    ...state, 
   };
 }

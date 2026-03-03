@@ -1,118 +1,112 @@
-import { useCallback, useMemo, useState } from "react";
-import { doc } from "@react-native-firebase/firestore";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import firestore from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { reviewService } from "@/lib/services/reviewService";
 import { useSession } from "@/lib/providers/SessionProvider";
-import { useFirestoreDoc } from "@/lib/hooks/useFirestoreDoc";
 
-type ReviewsSummaryState = {
-  avgRating: number | null;
-  ratingCount: number;
+/**
+ * Fetcher for the Cone's overall stats (average rating, count).
+ * Using db.doc() directly from your project's firebase instance.
+ */
+async function fetchConeStats(coneId: string) {
+  const ref = db.collection(COL.cones).doc(coneId);
+  const snap = await ref.get();
+  // Ensure we return null instead of undefined for TanStack Query compatibility
+  return snap.exists ? (snap.data() ?? null) : null;
+}
 
-  myRating: number | null;
-  myText: string | null;
+/**
+ * Fetcher for the user's specific review for this volcano.
+ */
+async function fetchMyReview(uid: string, coneId: string) {
+  const reviewId = `${uid}_${coneId}`;
+  const ref = db.collection(COL.coneReviews).doc(reviewId);
+  const snap = await ref.get();
+  // Defensive check: force undefined data to null
+  return snap.exists ? (snap.data() ?? null) : null;
+}
 
-  loading: boolean;
-  err: string | null;
-
-  saving: boolean;
-  saveReview: (_args: {
-    coneId: string;
-    coneSlug: string;
-    coneName: string;
-    reviewRating: number | null | undefined;
-    reviewText: string | null | undefined;
-  }) => Promise<{ ok: true } | { ok: false; err: string }>;
-};
-
-export function useConeReviewsSummary(
-  coneId: string | null | undefined,
-): ReviewsSummaryState {
+export function useConeReviewsSummary(coneId: string | null | undefined) {
   const { session } = useSession();
-
-  const [saving, setSaving] = useState(false);
-
+  const queryClient = useQueryClient();
   const uid = session.status === "authed" ? session.uid : null;
 
-  // 1. Cone Doc (for avgRating, ratingCount)
-  const coneRef = useMemo(() => {
-    if (!coneId) return null;
-    return doc(db, COL.cones, coneId);
-  }, [coneId]);
+  // Query 1: The Cone Stats (Shared cache key with useCone)
+  const { 
+    data: coneData, 
+    isLoading: coneLoading, 
+    error: coneError 
+  } = useQuery({
+    queryKey: ["cone", coneId],
+    queryFn: () => fetchConeStats(coneId!),
+    enabled: !!coneId,
+  });
 
-  const {
-    data: coneData,
-    loading: coneLoading,
-    error: coneError,
-  } = useFirestoreDoc(coneRef);
+  // Query 2: The User's personal review
+  const { 
+    data: reviewData, 
+    isLoading: reviewLoading, 
+    error: reviewError 
+  } = useQuery({
+    queryKey: ["coneReview", uid, coneId],
+    queryFn: () => fetchMyReview(uid!, coneId!),
+    enabled: !!uid && !!coneId,
+  });
 
-  // 2. My Review Doc (assuming deterministic ID: uid_coneId)
-  const reviewRef = useMemo(() => {
-    if (!uid || !coneId) return null;
-    const reviewId = `${uid}_${coneId}`;
-    return doc(db, COL.coneReviews, reviewId);
-  }, [uid, coneId]);
+  // Mutation: Saving or Updating a Review
+  const mutation = useMutation({
+    mutationFn: async (args: Parameters<typeof reviewService.saveReview>[0]) => {
+      const res = await reviewService.saveReview(args);
+      if (!res.ok) throw new Error(res.err || "Failed to save review");
+      return res;
+    },
+    onSuccess: (_, args) => {
+      // Refresh user review, volcano stats, and global app data (for badges)
+      queryClient.invalidateQueries({ queryKey: ["coneReview", uid, args.coneId] });
+      queryClient.invalidateQueries({ queryKey: ["cone", args.coneId] });
+      queryClient.invalidateQueries({ queryKey: ["appData"] });
+    }
+  });
 
-  const {
-    data: reviewData,
-    loading: reviewLoading,
-    error: reviewError,
-  } = useFirestoreDoc(reviewRef);
-
+  // Map state to the legacy signature your UI components expect
   const avgRating = coneData?.avgRating ?? null;
   const ratingCount = coneData?.ratingCount ?? 0;
   const myRating = reviewData?.rating ?? reviewData?.reviewRating ?? null;
   const myText = reviewData?.text ?? reviewData?.reviewText ?? null;
 
   const loading = session.status === "loading" || coneLoading || reviewLoading;
-  const err = coneError?.message ?? reviewError?.message ?? null;
+  const err = (coneError instanceof Error ? coneError.message : null) 
+           ?? (reviewError instanceof Error ? reviewError.message : null);
 
-  const saveReview = useCallback(
-    async (args: {
-      coneId: string;
-      coneSlug: string;
-      coneName: string;
-      reviewRating: number | null | undefined;
-      reviewText: string | null | undefined;
-    }) => {
-      if (session.status === "loading")
-        return { ok: false as const, err: "Session not ready" };
+  const saveReview = async (args: {
+    coneId: string;
+    coneSlug: string;
+    coneName: string;
+    reviewRating: number | null | undefined;
+    reviewText: string | null | undefined;
+  }) => {
+    if (session.status === "loading") return { ok: false as const, err: "Session not ready" };
+    if (session.status !== "authed") return { ok: false as const, err: "You must be logged in" };
+    if (!args.coneId) return { ok: false as const, err: "Missing coneId" };
 
-      if (session.status !== "authed")
-        return { ok: false as const, err: "You must be logged in" };
+    try {
+      await mutation.mutateAsync({ uid: uid!, ...args });
+      return { ok: true as const };
+    } catch (e: any) {
+      return { ok: false as const, err: e.message };
+    }
+  };
 
-      if (!args.coneId) return { ok: false as const, err: "Missing coneId" };
-
-      setSaving(true);
-      try {
-        return await reviewService.saveReview({
-          uid,
-          coneId: String(args.coneId),
-          coneSlug: String(args.coneSlug ?? ""),
-          coneName: String(args.coneName ?? ""),
-          reviewRating: args.reviewRating,
-          reviewText: args.reviewText,
-        });
-      } finally {
-        setSaving(false);
-      }
-    },
-    [session.status, uid],
-  );
-
-  return useMemo(
-    () => ({
-      avgRating,
-      ratingCount,
-      myRating,
-      myText,
-      loading,
-      err,
-      saving,
-      saveReview,
-    }),
-    [avgRating, ratingCount, myRating, myText, loading, err, saving, saveReview],
-  );
+  return {
+    avgRating,
+    ratingCount,
+    myRating,
+    myText,
+    loading,
+    err,
+    saving: mutation.isPending,
+    saveReview,
+  };
 }

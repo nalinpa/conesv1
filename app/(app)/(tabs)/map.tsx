@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import { View, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
 import * as Haptics from "expo-haptics";
@@ -21,6 +21,7 @@ import { useAppData } from "@/lib/providers/DataProvider";
 import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 import { space } from "@/lib/ui/tokens";
+import { useMapStore } from "@/lib/store";
 
 export default function MapScreen() {
   const { session } = useSession();
@@ -35,11 +36,11 @@ export default function MapScreen() {
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
 
-  const [selectedConeId, setSelectedConeId] = useState<string | null>(null);
+  const { selectedConeId, setSelectedConeId } = useMapStore();
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
   useKeepAwake();
-  
+
   useEffect(() => {
     if (!selectedConeId && nearestUnclimbed?.cone?.id) {
       setSelectedConeId(nearestUnclimbed.cone.id);
