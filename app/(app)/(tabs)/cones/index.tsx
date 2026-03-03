@@ -12,21 +12,12 @@ import { goCone, goLogin } from "@/lib/routes";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
-import { locationStore } from "@/lib/locationStore";
+import { useLocationStore, useFiltersStore } from "@/lib/store";
 import { useAppData } from "@/lib/providers/DataProvider"; 
 
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";
-import {
-  ConeFiltersCard,
-  type ConeFiltersValue,
-} from "@/components/cone/list/ConeFiltersCard";
-
-const DEFAULT_FILTERS: ConeFiltersValue = {
-  hideCompleted: false,
-  region: "all",
-  category: "all",
-};
+import { ConeFiltersCard } from "@/components/cone/list/ConeFiltersCard";
 
 export default function ConeListPage() {
   const { session } = useSession();
@@ -39,8 +30,8 @@ export default function ConeListPage() {
   const { cones, loading: conesLoading, err: conesErr } = conesData;
   const { completedConeIds, loading: compLoading } = completionsData;
 
-  const [lockedLoc, setLockedLoc] = useState(() => locationStore.get());
-  const [filters, setFilters] = useState<ConeFiltersValue>(DEFAULT_FILTERS);
+  const [lockedLoc, setLockedLoc] = useState(() => useLocationStore.getState().location);
+  const { filters, setFilters } = useFiltersStore();
 
   useEffect(() => {
     if (!lockedLoc && liveLoc) {
@@ -86,7 +77,6 @@ export default function ConeListPage() {
 
   const header = (
     <Stack gap="md" style={styles.headerStack}>
-      {/* We wrap the items that still need padding in a new paddedSection view */}
       <View style={styles.paddedSection}>
         <ConesListHeader
           status={locStatus}
@@ -108,7 +98,6 @@ export default function ConeListPage() {
           </CardShell>
         </View>
       ) : (
-        /* ConeFiltersCard is now explicitly told to stretch edge-to-edge! */
         <View style={styles.fullWidth}>
           <ConeFiltersCard
             value={filters}
@@ -127,7 +116,6 @@ export default function ConeListPage() {
       {rows.length === 0 ? (
         <View style={styles.emptyContainer}>
           {header}
-          {/* Pad the empty card here so the header can stay full-width above it */}
           <View style={styles.paddedSection}>
             <CardShell style={styles.emptyCard}>
               <Stack gap="sm" align="center">
@@ -156,10 +144,10 @@ const styles = StyleSheet.create({
   headerStack: {
     paddingTop: 12,
     paddingBottom: 8,
-    width: "100%", // Explicitly ensure the Stack takes the full screen width
+    width: "100%",
   },
   fullWidth: {
-    width: "100%", // Explicitly force the child card to stretch to the right edge
+    width: "100%",
   },
   paddedSection: {
     paddingHorizontal: 16,

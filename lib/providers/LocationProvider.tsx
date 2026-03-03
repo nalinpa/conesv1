@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as Location from "expo-location";
-import { locationStore } from "@/lib/locationStore";
+import { useLocationStore } from "@/lib/store";
 
 type LocationCtx = {
   location: Location.LocationObject | null;
@@ -11,13 +11,13 @@ const LocationContext = createContext<LocationCtx>({ location: null, errorMsg: n
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useState<Location.LocationObject | null>(
-    locationStore.get(),
+    useLocationStore.getState().location
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null;
-    let isMounted = true; // Safety flag
+    let isMounted = true;
 
     async function startTracking() {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -34,12 +34,11 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         (newLocation) => {
           if (isMounted) {
             setLocation(newLocation);
-            locationStore.set(newLocation);
+            useLocationStore.getState().setLocation(newLocation);
           }
         }
       );
       
-      // If the component unmounted WHILE we were waiting for the GPS, kill it immediately
       if (!isMounted) {
         sub.remove();
       } else {

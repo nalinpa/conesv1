@@ -57,7 +57,7 @@ export default function LoginScreen() {
                 <View style={styles.logoWrapper}>
                   <Mountain
                     size={40}
-                    color="#5FB3A2" // Your Surf Green
+                    color="#5FB3A2" 
                     strokeWidth={2.5}
                   />
                 </View>

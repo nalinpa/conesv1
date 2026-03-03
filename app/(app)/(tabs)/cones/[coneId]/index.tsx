@@ -21,7 +21,7 @@ import * as Haptics from "expo-haptics";
 import * as StoreReview from 'expo-store-review';
 import * as Sentry from "@sentry/react-native";
 import LottieView from 'lottie-react-native';
-import { ArrowLeft, Navigation, Radar } from "lucide-react-native";
+import { ArrowLeft } from "lucide-react-native";
 import { BlurView } from 'expo-blur'; 
 
 import { Screen } from "@/components/ui/Screen";
@@ -30,17 +30,16 @@ import { ErrorCard } from "@/components/ui/ErrorCard";
 import { Stack as UIStack } from "@/components/ui/Stack";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppText } from "@/components/ui/AppText";
-import { AppIcon } from "@/components/ui/AppIcon";
 
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
-import { useConeCompletion } from "@/lib/hooks/useConeCompletion";
 import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
+import { useDraftsStore } from "@/lib/store";
 
 import { ConeHero } from "@/components/cone/detail/ConeHero";
 import { ReviewsSummaryCard } from "@/components/cone/detail/ReviewsSummaryCard";
@@ -55,9 +54,15 @@ const MAX_ACCURACY_METERS = GAMEPLAY.MAX_GPS_ACCURACY_METERS;
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
   const { session } = useSession();
-  const { completions } = useMyCompletions();
-  const [reviewErr, setReviewErr] = useState<string | null>(null);
   const uid = session.status === "authed" ? session.uid : null;
+
+  // DATA ALIGNMENT: Use the global completions list instead of a separate single doc fetch
+  const { completedConeIds, sharedConeIds, loading: compsLoading } = useMyCompletions();
+  
+  const isCompleted = !!coneId && completedConeIds.has(coneId);
+  const hasShareBonus = !!coneId && sharedConeIds.has(coneId);
+
+  const [reviewErr, setReviewErr] = useState<string | null>(null);
   const [showCelebration, setShowCelebration] = useState(false);
   const confettiRef = useRef(null);
   const opacityAnim = useRef(new Animated.Value(1)).current;
@@ -69,7 +74,6 @@ export default function ConeDetailRoute() {
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
 
-  const { completedId } = useConeCompletion(coneId);
   const {
     completeCone: triggerComplete,
     loading: completing,
@@ -78,7 +82,9 @@ export default function ConeDetailRoute() {
   } = useConeCompletionMutation();
 
   const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
-  const myCompletions = completions.length + 1;
+  
+  // Total count for review milestones
+  const totalCompletions = completedConeIds.size;
   const reviewMilestones = [2, 10, 25];
 
   const {
@@ -92,8 +98,9 @@ export default function ConeDetailRoute() {
 
   const [err, setErr] = useState("");
   const [reviewOpen, setReviewOpen] = useState(false);
-  const [draftRating, setDraftRating] = useState<number | null>(null);
-  const [draftText, setDraftText] = useState("");
+  
+  const { drafts, setDraft, clearDraft } = useDraftsStore();
+  const currentDraft = drafts[coneId || ''] || { rating: null, text: "" };
 
   const refreshGPS = useCallback(async () => {
     if (locStatus !== "denied") await refreshLocation();
@@ -108,18 +115,15 @@ export default function ConeDetailRoute() {
     return () => sub.remove();
   }, [loc, gate.accuracyMeters, refreshGPS]);
 
-  // Explicitly trigger the animation when it mounts
   useEffect(() => {
     if (showCelebration) {
-      // Reset opacity to 1 every time it shows
       opacityAnim.setValue(1);
       confettiRef.current?.play();
       
-      // Wait 2 seconds, then smoothly fade it out
       const timer = setTimeout(() => {
         Animated.timing(opacityAnim, {
           toValue: 0,
-          duration: 500, // 500ms fade out duration
+          duration: 500,
           useNativeDriver: true,
         }).start(({ finished }) => {
           if (finished) {
@@ -133,7 +137,7 @@ export default function ConeDetailRoute() {
   }, [showCelebration, opacityAnim]);
 
   const handleComplete = async () => {
-    if (!cone || completedId || completing) return;
+    if (!cone || isCompleted || completing) return;
     setErr("");
     resetMutationErr();
 
@@ -151,14 +155,11 @@ export default function ConeDetailRoute() {
     if (loc) {
       const res = await triggerComplete({ uid, cone, loc, gate });
       if (res.ok) {
-        requestAnimationFrame(() => {
-          setShowCelebration(false);
-          setTimeout(() => setShowCelebration(true), 50);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        });
+        setShowCelebration(true);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
         setTimeout(async () => {
-          if (reviewMilestones.includes(myCompletions)) {
+          if (reviewMilestones.includes(totalCompletions)) {
             try {
               if (await StoreReview.hasAction()) {
                 await StoreReview.requestReview();
@@ -174,7 +175,7 @@ export default function ConeDetailRoute() {
     }
   };
 
-  if (coneLoading || session.status === "loading") {
+  if (coneLoading || compsLoading || session.status === "loading") {
     return (
       <Screen>
         <LoadingState label="Preparing summit..." />
@@ -205,7 +206,6 @@ export default function ConeDetailRoute() {
         }}
       />
 
-      {/* FLOATING GLASS BACK BUTTON */}
       <View style={styles.floatingHeader}>
         <BlurView 
           intensity={Platform.OS === 'ios' ? 40 : 80} 
@@ -230,7 +230,7 @@ export default function ConeDetailRoute() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
       >
-        <ConeHero cone={cone} completed={!!completedId} />
+        <ConeHero cone={cone} completed={isCompleted} />
 
         <UIStack gap="md" style={styles.content}>
           {(err || mutationErr) && (
@@ -242,7 +242,7 @@ export default function ConeDetailRoute() {
           )}
 
           <StatusCard
-            completed={!!completedId}
+            completed={isCompleted}
             loc={loc}
             locStatus={locStatus}
             accuracyMeters={gate.accuracyMeters}
@@ -259,7 +259,7 @@ export default function ConeDetailRoute() {
           />
 
           <ActionsCard
-            completed={!!completedId}
+            completed={isCompleted}
             saving={completing}
             hasLoc={!!loc}
             onComplete={handleComplete}
@@ -280,15 +280,15 @@ export default function ConeDetailRoute() {
       <ReviewModal
         visible={reviewOpen}
         saving={reviewsSaving}
-        draftRating={draftRating}
-        draftText={draftText}
+        draftRating={currentDraft.rating}
+        draftText={currentDraft.text}
         error={reviewErr}
         onChangeRating={(val) => {
-          setDraftRating(val);
+          if (coneId) setDraft(coneId, val, currentDraft.text);
           setReviewErr(null);
         }}
         onChangeText={(text) => {
-          setDraftText(text);
+          if (coneId) setDraft(coneId, currentDraft.rating, text);
           setReviewErr(null);
         }}
         onClose={() => {
@@ -301,10 +301,11 @@ export default function ConeDetailRoute() {
             coneId: cone.id,
             coneSlug: cone.slug,
             coneName: cone.name,
-            reviewRating: draftRating!,
-            reviewText: draftText,
+            reviewRating: currentDraft.rating!,
+            reviewText: currentDraft.text,
           });
           if (res.ok) {
+            if (coneId) clearDraft(coneId);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             setReviewOpen(false);
           } else {
@@ -314,7 +315,6 @@ export default function ConeDetailRoute() {
         }}
       />
 
-      {/* Lottie Animation Overlay with touch-passthrough */}
      {showCelebration && (
         <View style={[styles.confettiOverlay]} pointerEvents="none">
           <LottieView

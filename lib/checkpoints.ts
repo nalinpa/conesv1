@@ -1,4 +1,4 @@
-import { haversineMeters } from "./geo";
+import { getDistance } from 'geolib';
 
 export type Checkpoint = {
   id?: string;
@@ -21,6 +21,13 @@ export type EffectiveCheckpoint = Checkpoint & {
   label: string;
   source: "checkpoint" | "fallback";
 };
+
+export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  return getDistance(
+    { latitude: lat1, longitude: lng1 },
+    { latitude: lat2, longitude: lng2 }
+  );
+}
 
 export function getEffectiveCheckpoints(
   cone: ConeWithCheckpoints,

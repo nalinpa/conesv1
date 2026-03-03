@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Location from "expo-location";
-import { locationStore } from "@/lib/locationStore";
+import { useLocationStore } from "@/lib/store";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
 
 export type LocationStatus = "unknown" | "granted" | "denied";
 
-// Changed default autoRequest to false, as the global Provider now handles the baseline
 export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean } = {}) {
-  // Initialize with the global store instead of null
-  const initialLoc = locationStore.get();
+  const initialLoc = useLocationStore.getState().location;
 
   const [loc, setLoc] = useState<Location.LocationObject | null>(initialLoc);
-
-  // If the store already has a location, we know permission is granted
   const [status, setStatus] = useState<LocationStatus>(
     initialLoc ? "granted" : "unknown",
   );
@@ -20,7 +16,6 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
   const [err, setErr] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Prevent setState after unmount (common with async location calls)
   const aliveRef = useRef(true);
   useEffect(() => {
     aliveRef.current = true;
@@ -41,9 +36,8 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
 
       if ("loc" in next) {
         setLoc(next.loc ?? null);
-        // Feed high-accuracy manual refreshes back into the global store
         if (next.loc) {
-          locationStore.set(next.loc);
+          useLocationStore.getState().setLocation(next.loc);
         }
       }
 
@@ -53,21 +47,16 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     [],
   );
 
-  // ---------------------------------------------------------------------------
-  // ✅ Guarding: single-flight + (optional) minimum interval
-  // ---------------------------------------------------------------------------
   const inFlightRef = useRef<Promise<{ ok: boolean }> | null>(null);
   const lastRunAtRef = useRef<number>(0);
 
   const runGuarded = useCallback(async (fn: () => Promise<{ ok: boolean }>) => {
     const now = Date.now();
 
-    // If a refresh is already running, return the same promise (single-flight)
     if (inFlightRef.current) return inFlightRef.current;
 
-    // Throttle: prevent rapid repeated refresh triggers (tap spam / focus+active)
     if (now - lastRunAtRef.current < GAMEPLAY.GPS_REFRESH_THROTTLE_MS) {
-      return { ok: false as const }; // skipped
+      return { ok: false as const };
     }
 
     if (aliveRef.current) setIsRefreshing(true);
@@ -86,10 +75,6 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     return p;
   }, []);
 
-  /**
-   * Ask permission + do a "good enough" location fetch.
-   * Best for list/progress/map screens where speed matters.
-   */
   const request = useCallback(async () => {
     safeSet({ err: "" });
 
@@ -118,10 +103,6 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     }
   }, [safeSet]);
 
-  /**
-   * ✅ High accuracy refresh (GUARDED).
-   * Best for cone completion / range checks.
-   */
   const refresh = useCallback(() => {
     return runGuarded(async () => {
       safeSet({ err: "" });
@@ -152,7 +133,6 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     });
   }, [runGuarded, safeSet]);
 
-  // Auto-run once (default behavior)
   useEffect(() => {
     if (!autoRequest) return;
     void request();
