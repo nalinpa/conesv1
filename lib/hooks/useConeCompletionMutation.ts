@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { completionService } from "@/lib/services/completionService";
+import * as Sentry from "@sentry/react-native";
 
 export function useConeCompletionMutation() {
   const queryClient = useQueryClient();
@@ -17,28 +18,31 @@ export function useConeCompletionMutation() {
       // 1. Instantly invalidate the global completions list
       // This ensures the Set in useMyCompletions updates across the whole app
       queryClient.invalidateQueries({ queryKey: ["myCompletions", uid] });
-      
+
       // 2. Invalidate the specific volcano details (to update stats like completion counts)
       queryClient.invalidateQueries({ queryKey: ["cone", coneId] });
 
       // 3. Invalidate global app data (badges/progress tabs)
       queryClient.invalidateQueries({ queryKey: ["appData"] });
-    }
+    },
   });
 
-  const completeCone = async (args: Parameters<typeof completionService.completeCone>[0]) => {
+  const completeCone = async (
+    args: Parameters<typeof completionService.completeCone>[0],
+  ) => {
     try {
       await mutation.mutateAsync(args);
       return { ok: true };
     } catch (error: any) {
+      Sentry.captureException(error);
       return { ok: false, err: error.message };
     }
   };
 
-  return { 
-    completeCone, 
+  return {
+    completeCone,
     loading: mutation.isPending,
-    err: mutation.error?.message ?? null, 
-    reset: mutation.reset 
+    err: mutation.error?.message ?? null,
+    reset: mutation.reset,
   };
 }

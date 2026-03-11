@@ -1,5 +1,13 @@
-import { doc, serverTimestamp, runTransaction, updateDoc } from "@react-native-firebase/firestore";
+import {
+  doc,
+  serverTimestamp,
+  runTransaction,
+  updateDoc,
+  setDoc,
+} from "@react-native-firebase/firestore";
 import type { LocationObject } from "expo-location";
+import * as Sentry from "@sentry/react-native";
+import NetInfo from "@react-native-community/netinfo";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -48,43 +56,64 @@ export const completionService = {
     const completionId = `${uid}_${cone.id}`;
     const ref = doc(db, COL.coneCompletions, completionId);
 
+    // 1. Define the payload once
+    const completionData = {
+      coneId: cone.id,
+      coneSlug: cone.slug ?? "",
+      coneName: cone.name ?? "",
+      userId: uid,
+
+      completedAt: serverTimestamp(),
+
+      deviceLat: loc.coords.latitude,
+      deviceLng: loc.coords.longitude,
+      accuracyMeters: loc.coords.accuracy ?? null,
+
+      distanceMeters: gate.distanceMeters ?? null,
+
+      checkpointId: gate.checkpointId ?? null,
+      checkpointLabel: gate.checkpointLabel ?? null,
+      checkpointLat: gate.checkpointLat ?? null,
+      checkpointLng: gate.checkpointLng ?? null,
+      checkpointRadiusMeters: gate.checkpointRadius ?? null,
+      checkpointDistanceMeters: gate.distanceMeters ?? null,
+
+      shareBonus: false,
+      shareConfirmed: false,
+      sharedAt: null,
+      sharedPlatform: null,
+    };
+
     try {
-      await runTransaction(db, async (tx) => {
-        const snap = await tx.get(ref);
+      // 2. Ask NetInfo if we have a real connection to the outside world
+      const networkState = await NetInfo.fetch();
 
-        // Idempotent — don't overwrite if already completed
-        if (snap.exists()) return;
+      // isInternetReachable can be null on first load, so we explicitly check for false
+      const isOnline =
+        networkState.isConnected && networkState.isInternetReachable !== false;
 
-        tx.set(ref, {
-          coneId: cone.id,
-          coneSlug: cone.slug ?? "",
-          coneName: cone.name ?? "",
-          userId: uid,
+      if (isOnline) {
+        // ==========================================
+        // PATH A: ONLINE (The Strict Transaction)
+        // ==========================================
+        await runTransaction(db, async (tx) => {
+          const snap = await tx.get(ref);
 
-          completedAt: serverTimestamp(),
+          if (snap.exists()) return;
 
-          deviceLat: loc.coords.latitude,
-          deviceLng: loc.coords.longitude,
-          accuracyMeters: loc.coords.accuracy ?? null,
-
-          distanceMeters: gate.distanceMeters ?? null,
-
-          checkpointId: gate.checkpointId ?? null,
-          checkpointLabel: gate.checkpointLabel ?? null,
-          checkpointLat: gate.checkpointLat ?? null,
-          checkpointLng: gate.checkpointLng ?? null,
-          checkpointRadiusMeters: gate.checkpointRadius ?? null,
-          checkpointDistanceMeters: gate.distanceMeters ?? null,
-
-          shareBonus: false,
-          shareConfirmed: false,
-          sharedAt: null,
-          sharedPlatform: null,
+          tx.set(ref, completionData);
         });
-      });
+      } else {
+        // ==========================================
+        // PATH B: OFFLINE (The Cache Queue)
+        // ==========================================
+        // Bypasses the transaction. Firebase instantly saves it locally and queues it.
+        await setDoc(ref, completionData, { merge: true });
+      }
 
       return { ok: true };
     } catch (e: any) {
+      Sentry.captureException(e);
       return { ok: false, err: e?.message ?? "Failed to complete cone" };
     }
   },
@@ -113,7 +142,7 @@ export const completionService = {
 
       return { ok: true };
     } catch (e: any) {
-      console.error("[completionService] confirmShareBonus error:", e);
+      Sentry.captureException(e);
       return { ok: false, err: e?.message ?? "Failed to confirm share" };
     }
   },

@@ -1,6 +1,4 @@
-// lib/routes.ts
-import { router } from "expo-router";
-
+import { router, Href } from "expo-router";
 /**
  * Cones
  */
@@ -12,21 +10,14 @@ export function goConesList() {
   router.replace("/(app)/(tabs)/cones/index");
 }
 
-
 export function goCone(coneId: string) {
-  router.push({
-    pathname: "/(tabs)/cones/[coneId]",
-    params: { coneId },
-  });
+  router.push(`/(tabs)/cones/${coneId}` as Href);
 }
 
 export function goConeReviews(coneId: string, coneName?: string) {
   router.push({
-    pathname: "/(tabs)/cones/[coneId]/reviews",
-    params: {
-      coneId,
-      ...(coneName ? { coneName } : {}),
-    },
+    pathname: `/(tabs)/cones/${coneId}/reviews` as any,
+    params: coneName ? { coneName } : {},
   });
 }
 

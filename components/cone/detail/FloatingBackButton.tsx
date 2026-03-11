@@ -1,58 +1,61 @@
-import React from 'react';
-import { View, Platform, StyleSheet } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { ArrowLeft } from 'lucide-react-native';
+import React from "react";
+import { Platform, StyleSheet } from "react-native";
+import { BlurView } from "expo-blur";
+import { ArrowLeft } from "lucide-react-native";
+import { MotiView } from "moti";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppText } from "@/components/ui/AppText";
 import { goConesHome } from "@/lib/routes";
 
-export function FloatingBackButton() {
+export function FloatingBackButton({ visible = true }: { visible?: boolean }) {
   return (
-    <View style={styles.floatingHeader}>
-      <BlurView 
-        intensity={Platform.OS === 'ios' ? 40 : 80} 
+    <MotiView
+      style={styles.floatingHeader}
+      animate={{
+        opacity: visible ? 1 : 0,
+        translateY: visible ? 0 : -20,
+        scale: visible ? 1 : 0.95,
+      }}
+      transition={{ type: "timing", duration: 200 }}
+      pointerEvents={visible ? "auto" : "none"} // Prevents accidental clicks when hidden
+    >
+      <BlurView
+        intensity={Platform.OS === "ios" ? 40 : 80}
         tint="dark"
         style={styles.blurContainer}
       >
-        <AppButton 
-          variant="ghost" 
-          size="sm" 
-          onPress={goConesHome} 
-          style={styles.backBtn}
-        >
-          <ArrowLeft size={16} color="#ffffff" />
+        <AppButton variant="ghost" size="sm" onPress={goConesHome} style={styles.backBtn}>
+          <ArrowLeft size={18} color="#ffffff" />
           <AppText variant="label" style={styles.backText}>
-            All Volcanoes
+            Back
           </AppText>
         </AppButton>
       </BlurView>
-    </View>
+    </MotiView>
   );
 }
 
 const styles = StyleSheet.create({
   floatingHeader: {
-    position: 'absolute',
-    top: 54, 
+    position: "absolute",
+    top: 54,
     right: 16,
     zIndex: 100,
-    overflow: 'hidden',
+    overflow: "hidden",
     borderRadius: 24,
   },
   blurContainer: {
-    padding: 1,
     borderRadius: 24,
   },
   backBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   backText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14,
   },
 });

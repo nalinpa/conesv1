@@ -1,4 +1,4 @@
-import { getDistance } from 'geolib';
+import { getDistance, findNearest } from "geolib";
 
 export type Checkpoint = {
   id?: string;
@@ -21,13 +21,6 @@ export type EffectiveCheckpoint = Checkpoint & {
   label: string;
   source: "checkpoint" | "fallback";
 };
-
-export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
-  return getDistance(
-    { latitude: lat1, longitude: lng1 },
-    { latitude: lat2, longitude: lng2 }
-  );
-}
 
 export function getEffectiveCheckpoints(
   cone: ConeWithCheckpoints,
@@ -61,20 +54,19 @@ export function nearestCheckpoint(
   deviceLng: number,
 ): { checkpoint: EffectiveCheckpoint; distanceMeters: number } {
   const cps = getEffectiveCheckpoints(cone);
+  const userCoords = { latitude: deviceLat, longitude: deviceLng };
 
-  let best = cps[0];
-  let bestDist = haversineMeters(deviceLat, deviceLng, best.lat, best.lng);
+  const formattedCps = cps.map((cp) => ({
+    ...cp,
+    latitude: cp.lat,
+    longitude: cp.lng,
+  }));
 
-  for (let i = 1; i < cps.length; i++) {
-    const cp = cps[i];
-    const d = haversineMeters(deviceLat, deviceLng, cp.lat, cp.lng);
-    if (d < bestDist) {
-      best = cp;
-      bestDist = d;
-    }
-  }
+  const nearest = findNearest(userCoords, formattedCps) as (typeof formattedCps)[0];
 
-  return { checkpoint: best, distanceMeters: bestDist };
+  const distanceMeters = getDistance(userCoords, nearest);
+
+  return { checkpoint: nearest, distanceMeters };
 }
 
 export function inRange(

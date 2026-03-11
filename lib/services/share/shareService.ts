@@ -1,6 +1,7 @@
 import { NativeModules, Platform, Share as RNShare } from "react-native";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
+import * as Sentry from "@sentry/react-native";
 
 import type { ShareConePayload, ShareResult } from "./types";
 import { formatRegionLabel } from "./shareTheme";
@@ -52,14 +53,15 @@ async function shareImageAsync(fileUri: string): Promise<boolean> {
       });
       return true;
     }
-  } catch {
-    // fall through
+  } catch (e) {
+    Sentry.captureException(e);
   }
 
   try {
     await RNShare.share({ url: fileUri });
     return true;
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return false;
   }
 }
@@ -69,7 +71,8 @@ async function shareTextAsync(payload: ShareConePayload): Promise<boolean> {
   try {
     await RNShare.share({ message, title });
     return true;
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return false;
   }
 }
@@ -80,7 +83,8 @@ async function safeUnlink(uri: string) {
     if (FileSystem.cacheDirectory && uri.startsWith(FileSystem.cacheDirectory)) {
       await FileSystem.deleteAsync(uri, { idempotent: true });
     }
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     // ignore
   }
 }
@@ -110,7 +114,8 @@ export const shareService = {
           void safeUnlink(uri);
           if (ok) return { ok: true, mode: "image", shared: true };
         }
-      } catch {
+      } catch (e) {
+        Sentry.captureException(e);
         // ignore → fallback
       }
     }

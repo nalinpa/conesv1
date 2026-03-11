@@ -1,13 +1,13 @@
-import React, { useMemo, useRef, useState, useEffect, useCallback } from "react";
-import { ScrollView, StyleSheet, View, Pressable } from "react-native";
+import React, { useMemo, useRef, useState, useCallback, useEffect } from "react";
+import { ScrollView, StyleSheet, View, Pressable, Alert } from "react-native";
 import { Image } from "expo-image";
-import { Alert } from "react-native";
 import * as Linking from "expo-linking";
 import { Stack, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { captureRef } from "react-native-view-shot";
 import * as ImagePicker from "expo-image-picker";
 import { Camera, Image as ImageIcon, Trash2, Share2 } from "lucide-react-native";
+import * as Sentry from "@sentry/react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { CardShell } from "@/components/ui/CardShell";
@@ -20,13 +20,16 @@ import { CaptureCanvas } from "@/components/share/CaptureCanvas";
 import { ShareSuccess } from "@/components/share/ShareSuccess";
 
 import { useSession } from "@/lib/providers/SessionProvider";
-import { shareService } from "@/lib/services/share/shareService";
-import { completionService } from "@/lib/services/completionService";
 import { space, radius } from "@/lib/ui/tokens";
+import { useShareBonus } from "@/lib/hooks/useShareBonus";
 
 export default function ShareFrameRoute() {
   const { session } = useSession();
   const uid = session.status === "authed" ? session.uid : null;
+
+  // ✅ Initialize our clean new data hook
+  const { mutateAsync: submitShareBonus } = useShareBonus();
+
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
@@ -49,27 +52,37 @@ export default function ShareFrameRoute() {
     [params],
   );
 
-  const refreshPreview = useCallback(async () => {
-    if (!photoUri || !shareCardRef.current) return;
-    setRendering(true);
-    try {
-      const uri = await captureRef(shareCardRef, {
-        format: "png",
-        quality: 0.7,
-        width: 1080,
-        height: 1350,
-      });
-      setPreviewUri(uri);
-    } catch (_e) {
-      setPreviewUri(null);
-    } finally {
-      setRendering(false);
-    }
+  useEffect(() => {
+    if (!photoUri) setPreviewUri(null);
   }, [photoUri]);
 
-  useEffect(() => {
-    if (photoUri) refreshPreview();
-  }, [photoUri, refreshPreview]);
+  const refreshPreview = useCallback(() => {
+    setRendering(true);
+
+    // Give the phone a split second to physically draw the pixels
+    setTimeout(async () => {
+      if (!shareCardRef.current) {
+        setRendering(false);
+        return;
+      }
+
+      try {
+        const uri = await captureRef(shareCardRef, {
+          format: "png",
+          quality: 0.7,
+          width: 1080,
+          height: 1350,
+        });
+
+        setPreviewUri(uri);
+      } catch (error) {
+        Sentry.captureException(error);
+        setPreviewUri(null);
+      } finally {
+        setRendering(false);
+      }
+    }, 200);
+  }, []);
 
   const pickImage = async (useCamera: boolean) => {
     const permission = useCamera
@@ -84,11 +97,11 @@ export default function ShareFrameRoute() {
         }. You can enable this in your device settings.`,
         [
           { text: "Cancel", style: "cancel" },
-          { 
-            text: "Open Settings", 
-            onPress: () => Linking.openSettings() 
+          {
+            text: "Open Settings",
+            onPress: () => Linking.openSettings(),
           },
-        ]
+        ],
       );
       return;
     }
@@ -96,41 +109,48 @@ export default function ShareFrameRoute() {
     const result = useCamera
       ? await ImagePicker.launchCameraAsync({
           aspect: [4, 5],
-          allowsEditing: true,
+          allowsEditing: false,
           quality: 1,
         })
       : await ImagePicker.launchImageLibraryAsync({
           aspect: [4, 5],
-          allowsEditing: true,
+          allowsEditing: false,
           quality: 1,
         });
 
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
-  
+
   const onShare = async () => {
     if (!previewUri) return;
     setSharing(true);
-    const res = await shareService.shareImageUriAsync(previewUri);
-    if (res.ok) {
+
+    try {
+      // ✅ Hand off all the database and cache logic to the hook
+      await submitShareBonus({ previewUri, uid, coneId: payload.coneId });
+
       setShareSuccess(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      if (uid)
-        completionService
-          .confirmShareBonus({ uid, coneId: payload.coneId, platform: "share-frame" })
-          .catch(() => {});
-    } else {
+    } catch (error) {
+      // The native share sheet was dismissed or failed
+      Sentry.captureException(error);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setSharing(false);
     }
-    setSharing(false);
   };
 
   if (shareSuccess) return <ShareSuccess coneName={payload.coneName} />;
 
   return (
     <Screen padded={false}>
-      <Stack.Screen options={{ title: "Share Frame" }} />
-      <CaptureCanvas ref={shareCardRef} payload={payload as any} photoUri={photoUri} />
+      <Stack.Screen options={{ title: "Share your visit" }} />
+      <CaptureCanvas
+        ref={shareCardRef}
+        payload={payload as any}
+        photoUri={photoUri}
+        onImageLoad={refreshPreview}
+      />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <CardShell>
@@ -163,11 +183,13 @@ export default function ShareFrameRoute() {
               {photoUri ? (
                 <>
                   <Image source={{ uri: photoUri }} style={styles.full} />
-                  <Pressable style={styles.removeBtn} 
-                              onPress={() => {
-                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                                  setPhotoUri(null);
-                                }}>
+                  <Pressable
+                    style={styles.removeBtn}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                      setPhotoUri(null);
+                    }}
+                  >
                     <Trash2 size={16} color="#ef4444" />
                   </Pressable>
                 </>
@@ -192,7 +214,9 @@ export default function ShareFrameRoute() {
               ) : previewUri ? (
                 <Image source={{ uri: previewUri }} style={styles.full} />
               ) : (
-                <AppText variant="hint">Add photo first</AppText>
+                <VStack align="center" justify="center" style={styles.flex1}>
+                  <AppText variant="hint">Add photo first</AppText>
+                </VStack>
               )}
             </View>
             <AppButton

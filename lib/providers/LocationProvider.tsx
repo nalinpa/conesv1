@@ -11,7 +11,7 @@ const LocationContext = createContext<LocationCtx>({ location: null, errorMsg: n
 
 export function LocationProvider({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useState<Location.LocationObject | null>(
-    useLocationStore.getState().location
+    useLocationStore.getState().location,
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -36,9 +36,9 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
             setLocation(newLocation);
             useLocationStore.getState().setLocation(newLocation);
           }
-        }
+        },
       );
-      
+
       if (!isMounted) {
         sub.remove();
       } else {

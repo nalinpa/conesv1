@@ -18,7 +18,7 @@ const Ctx = createContext<SessionCtx | null>(null);
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const { user, uid, loading: authLoading } = useAuthUser();
-  
+
   const isGuest = useGuestStore((state) => state.isGuest);
   const setGuest = useGuestStore((state) => state.setGuest);
 

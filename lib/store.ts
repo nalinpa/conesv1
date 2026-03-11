@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Location from 'expo-location';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Location from "expo-location";
 
-// 1. Guest Store 
+// 1. Guest Store
 interface GuestState {
   isGuest: boolean;
   setGuest: (val: boolean) => void;
@@ -15,10 +15,10 @@ export const useGuestStore = create<GuestState>()(
       setGuest: (val) => set({ isGuest: val }),
     }),
     {
-      name: 'guest-storage',
+      name: "guest-storage",
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 // 2. Location Store (Memory only - we don't want to persist stale GPS coords)
@@ -31,7 +31,7 @@ export const useLocationStore = create<LocationState>((set) => ({
   setLocation: (loc) => set({ location: loc }),
 }));
 
-// 3. Filters Store 
+// 3. Filters Store
 export type ConeFiltersValue = {
   category: string | null;
   region: string | null;
@@ -48,13 +48,13 @@ export const useFiltersStore = create<FiltersState>()(
       setFilters: (filters) => set({ filters }),
     }),
     {
-      name: 'cones-filters',
+      name: "cones-filters",
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
-// 4. App Settings Store 
+// 4. App Settings Store
 interface AppSettingsState {
   hasSeenOnboarding: boolean;
   completeOnboarding: () => void;
@@ -66,10 +66,10 @@ export const useAppSettingsStore = create<AppSettingsState>()(
       completeOnboarding: () => set({ hasSeenOnboarding: true }),
     }),
     {
-      name: 'app-settings',
+      name: "app-settings",
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 // 5. Map State Store (In-Memory)
@@ -82,7 +82,7 @@ export const useMapStore = create<MapState>((set) => ({
   setSelectedConeId: (id) => set({ selectedConeId: id }),
 }));
 
-// 6. Review Drafts Store 
+// 6. Review Drafts Store
 interface DraftsState {
   drafts: Record<string, { rating: number | null; text: string }>;
   setDraft: (coneId: string, rating: number | null, text: string) => void;
@@ -101,6 +101,6 @@ export const useDraftsStore = create<DraftsState>()(
           return { drafts: newDrafts };
         }),
     }),
-    { name: 'review-drafts', storage: createJSONStorage(() => AsyncStorage) }
-  )
+    { name: "review-drafts", storage: createJSONStorage(() => AsyncStorage) },
+  ),
 );

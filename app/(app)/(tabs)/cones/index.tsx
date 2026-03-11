@@ -13,7 +13,7 @@ import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
 import { useLocationStore, useFiltersStore } from "@/lib/store";
-import { useAppData } from "@/lib/providers/DataProvider"; 
+import { useAppData } from "@/lib/providers/DataProvider";
 
 import { ConesListView } from "@/components/cone/list/ConesListView";
 import { ConesListHeader } from "@/components/cone/list/ConeListHeader";

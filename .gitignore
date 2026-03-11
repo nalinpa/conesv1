@@ -41,3 +41,7 @@ yarn-error.*
 /android
 
 .env.local
+
+# Firebase Configs
+GoogleService-Info.plist
+google-services.json

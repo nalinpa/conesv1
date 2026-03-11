@@ -1,8 +1,15 @@
 import React, { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import * as Linking from "expo-linking";
-import { Navigation, AlertCircle, Radar, ShieldCheck, Zap, RefreshCw, MapPin, Footprints } from "lucide-react-native";
-import { MotiView } from "moti";
+import {
+  Navigation,
+  AlertCircle,
+  Radar,
+  ShieldCheck,
+  MapPin,
+  Footprints,
+  Map,
+} from "lucide-react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
@@ -11,7 +18,6 @@ import { Pill } from "@/components/ui/Pill";
 import { AppText } from "@/components/ui/AppText";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppIcon } from "@/components/ui/AppIcon";
-import { space } from "@/lib/ui/tokens";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
 
 type GPSState =
@@ -33,14 +39,15 @@ interface StatusCardProps {
   loc: any;
   locStatus: string;
   accuracyMeters: number | null;
-  distanceMeters: number | null; 
+  distanceMeters: number | null;
   inRange: boolean;
   onRefreshGPS: () => void;
   refreshingGPS?: boolean;
   maxAccuracyMeters?: number;
+  onGetDirections?: () => void;
 }
 
-const APPROACHING_THRESHOLD = GAMEPLAY.APPROACHING_THRESHOLD
+const APPROACHING_THRESHOLD = GAMEPLAY.APPROACHING_THRESHOLD;
 
 export function StatusCard({
   completed,
@@ -52,10 +59,10 @@ export function StatusCard({
   onRefreshGPS,
   refreshingGPS = false,
   maxAccuracyMeters = 50,
+  onGetDirections,
 }: StatusCardProps) {
   const status = normalizeLocStatus(locStatus);
-  const hasAccuracy = accuracyMeters !== null && accuracyMeters !== undefined;
-  
+
   const gpsState: GPSState = useMemo(() => {
     if (status === "denied") return "denied";
     if (status === "unknown") return "unknown_permission";
@@ -63,7 +70,6 @@ export function StatusCard({
     if (accuracyMeters != null && accuracyMeters > maxAccuracyMeters)
       return "low_accuracy";
     if (!inRange) {
-      // Logic split: Approaching vs Too Far
       if (distanceMeters !== null && distanceMeters <= APPROACHING_THRESHOLD) {
         return "approaching";
       }
@@ -72,7 +78,7 @@ export function StatusCard({
     return "ready";
   }, [status, loc, accuracyMeters, maxAccuracyMeters, inRange, distanceMeters]);
 
-  const refreshLabel = refreshingGPS ? "Checking…" : "Refresh location";
+  const refreshLabel = refreshingGPS ? "Checking…" : "Refresh GPS";
 
   /* --- COMPLETED --- */
   if (completed) {
@@ -83,11 +89,9 @@ export function StatusCard({
             <ShieldCheck size={24} color="#10B981" />
           </View>
           <Stack style={styles.flex1}>
-            <AppText variant="sectionTitle">
-              Summit Verified
-            </AppText>
+            <AppText variant="sectionTitle">You Made It!</AppText>
             <AppText variant="label" status="hint">
-              You've officially summited this volcano.
+              You've explored this volcano.
             </AppText>
           </Stack>
         </Row>
@@ -107,13 +111,24 @@ export function StatusCard({
             </AppText>
           </Row>
           <AppText variant="label" status="control">
-            We need GPS to verify your visit. Please enable permissions in your device settings.
+            We need GPS to verify your visit. Please enable permissions in your device
+            settings.
           </AppText>
           <Row gap="sm">
-            <AppButton variant="danger" size="sm" onPress={() => Linking.openSettings()} style={styles.flex1}>
+            <AppButton
+              variant="danger"
+              size="sm"
+              onPress={() => Linking.openSettings()}
+              style={styles.flex1}
+            >
               Open Settings
             </AppButton>
-            <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} style={styles.flex1}>
+            <AppButton
+              variant="secondary"
+              size="sm"
+              onPress={onRefreshGPS}
+              style={styles.flex1}
+            >
               Try again
             </AppButton>
           </Row>
@@ -134,9 +149,22 @@ export function StatusCard({
             </AppText>
           </Row>
           <AppText variant="body" status="hint">
-            Accuracy is {Math.round(accuracyMeters || 0)}m. We need {maxAccuracyMeters}m or better to verify your summit.
+            Your GPS signal is too weak to verify your visit.
           </AppText>
-          <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} loading={refreshingGPS}>
+
+          <View style={styles.disclaimerBox}>
+            <AppText variant="label" style={styles.disclaimerText}>
+              Tip: Step away from tall trees, buildings, or deep craters to get a clearer
+              view of the sky.
+            </AppText>
+          </View>
+
+          <AppButton
+            variant="secondary"
+            size="sm"
+            onPress={onRefreshGPS}
+            loading={refreshingGPS}
+          >
             {refreshLabel}
           </AppButton>
         </Stack>
@@ -156,14 +184,19 @@ export function StatusCard({
                 Keep Going!
               </AppText>
             </Row>
-            <Pill status="warning" icon={MapPin}>
+            <Pill status="danger" icon={MapPin}>
               {Math.round(distanceMeters || 0)}m away
             </Pill>
           </Row>
           <AppText variant="body" status="hint">
-            You're getting close! Get a little closer to the summit to mark your visit.
+            You're getting close! Get a little closer to the center to mark your visit.
           </AppText>
-          <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} loading={refreshingGPS}>
+          <AppButton
+            variant="secondary"
+            size="sm"
+            onPress={onRefreshGPS}
+            loading={refreshingGPS}
+          >
             {refreshLabel}
           </AppButton>
         </Stack>
@@ -178,14 +211,37 @@ export function StatusCard({
         <Stack gap="md">
           <Row gap="sm" align="center">
             <AppIcon icon={Footprints} size={20} color="#64748B" />
-            <AppText variant="sectionTitle">Volcano Nearby</AppText>
+            <AppText variant="sectionTitle">Start the Journey</AppText>
           </Row>
           <AppText variant="body" status="hint">
-            Head toward the volcano summit to verify your visit and mark it as completed.
+            Make your way to this volcano to mark your visit.
           </AppText>
-          <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} loading={refreshingGPS}>
-            {refreshLabel}
-          </AppButton>
+          <Row gap="sm">
+            {onGetDirections && (
+              <AppButton
+                variant="primary"
+                size="sm"
+                onPress={onGetDirections}
+                style={styles.flex1}
+              >
+                <Row gap="xs" align="center" justify="center">
+                  <Map size={16} color="#FFF" />
+                  <AppText variant="label" style={styles.directionsText}>
+                    Directions
+                  </AppText>
+                </Row>
+              </AppButton>
+            )}
+            <AppButton
+              variant="secondary"
+              size="sm"
+              onPress={onRefreshGPS}
+              loading={refreshingGPS}
+              style={styles.flex1}
+            >
+              {refreshLabel}
+            </AppButton>
+          </Row>
         </Stack>
       </CardShell>
     );
@@ -199,44 +255,23 @@ export function StatusCard({
           <Row justify="space-between" align="center">
             <Row gap="xs" align="center">
               <AppIcon icon={Navigation} variant="surf" size={16} />
-              <AppText variant="label" style={styles.bold}>GPS Verified</AppText>
-            </Row>
-            <Pill status="success" icon={ShieldCheck}>In Range</Pill>
-          </Row>
-
-          <View style={styles.grid}>
-            <Stack gap="xs" style={styles.gridItem}>
-              <AppText variant="label" status="hint">Accuracy</AppText>
-              <AppText variant="sectionTitle">{hasAccuracy ? `${Math.round(accuracyMeters)}m` : "--"}</AppText>
-            </Stack>
-            <Stack gap="xs" style={styles.gridItem}>
-              <AppText variant="label" status="hint">Status</AppText>
-              <Row gap="xs" align="center">
-                <View style={styles.statusDot} />
-                <AppText variant="body" style={styles.statusText}>Ready</AppText>
-              </Row>
-            </Stack>
-          </View>
-
-          <AppButton variant="ghost" size="sm" onPress={onRefreshGPS} disabled={refreshingGPS} style={styles.refreshBtn}>
-            <Row gap="xs" align="center">
-              <MotiView
-                animate={{ rotate: refreshingGPS ? '360deg' : '0deg' }}
-                transition={{ type: 'timing', duration: 1000, loop: refreshingGPS }}
-              >
-                <RefreshCw size={14} color="#5FB3A2" />
-              </MotiView>
-              <AppText variant="label" status="surf">
-                {refreshingGPS ? "Updating..." : "Refresh GPS"}
+              <AppText variant="label" style={styles.bold}>
+                GPS Verified
               </AppText>
             </Row>
-          </AppButton>
+            <Pill status="success" icon={ShieldCheck}>
+              In Range
+            </Pill>
+          </Row>
+
+          <AppText variant="body" style={styles.bold}>
+            You are in range and ready to check in!
+          </AppText>
         </Stack>
       </CardShell>
     );
   }
 
-  /* --- DEFAULT / REQUESTING --- */
   return (
     <CardShell>
       <Stack gap="md">
@@ -244,7 +279,12 @@ export function StatusCard({
           <Radar size={20} color="#64748B" />
           <AppText variant="sectionTitle">Finding your location...</AppText>
         </Row>
-        <AppButton variant="secondary" size="sm" onPress={onRefreshGPS} loading={refreshingGPS}>
+        <AppButton
+          variant="secondary"
+          size="sm"
+          onPress={onRefreshGPS}
+          loading={refreshingGPS}
+        >
           {refreshLabel}
         </AppButton>
       </Stack>
@@ -260,22 +300,21 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 12,
   },
-  grid: {
-    flexDirection: "row",
-    backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    padding: space.md,
-    borderWidth: 1,
-    borderColor: "#F1F5F9",
-  },
-  gridItem: { flex: 1 },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#10B981",
-  },
-  statusText: { textTransform: "capitalize", fontWeight: "600", color: "#10B981" },
   refreshBtn: { alignSelf: "flex-start", paddingHorizontal: 0 },
   warningTitle: { color: "#92400E" },
+  disclaimerBox: {
+    backgroundColor: "#FEF3C7",
+    padding: 8,
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: "#F59E0B",
+  },
+  disclaimerText: {
+    color: "#92400E",
+    fontSize: 12,
+  },
+  directionsText: {
+    color: "#FFF",
+    fontWeight: "700",
+  },
 });

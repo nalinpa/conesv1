@@ -1,11 +1,12 @@
 import "@/lib/polyfills/buffer";
 import React, { useEffect } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Text, Button } from "react-native"; 
 import { Stack, useNavigationContainerRef, ErrorBoundaryProps } from "expo-router";
 import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { ErrorCard } from "@/components/ui/ErrorCard";
+// Note: We removed the ErrorCard import!
 import { AppProviders } from "@/lib/providers/AppProviders";
 import * as Sentry from "@sentry/react-native";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
@@ -22,7 +23,6 @@ Sentry.init({
   enableNativeFramesTracking: false,
 });
 
-// Prevent splash screen auto-hide
 SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
@@ -35,39 +35,34 @@ function RootLayout() {
   }, [ref]);
 
   return (
-    <AppProviders>
-      <OfflineBanner />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen
-          name="share-frame"
-          options={{
-            presentation: "modal",
-            headerShown: true,
-            title: "Share",
-          }}
-        />
-      </Stack>
-    </AppProviders>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppProviders>
+        <OfflineBanner />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="share-frame"
+            options={{
+              presentation: "modal",
+              headerShown: true,
+              title: "Share",
+            }}
+          />
+        </Stack>
+      </AppProviders>
+    </GestureHandlerRootView>
   );
 }
 
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
-  // Report the error to Sentry behind the scenes
   useEffect(() => {
     Sentry.captureException(error);
   }, [error]);
 
   return (
     <View style={styles.errorBoundaryContainer}>
-      <ErrorCard
-        status="danger"
-        title="App Crashed"
-        message={error.message || "An unexpected error occurred."}
-        action={{
-          label: "Restart App",
-          onPress: retry,
-        }}
-      />
+      <Text style={styles.errorTitle}>App Crashed</Text>
+      <Text style={styles.errorMessage}>{error.message || "An unexpected error occurred."}</Text>
+      <Button title="Restart App" color="#2D5A47" onPress={retry} />
     </View>
   );
 }
@@ -78,6 +73,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 24,
     backgroundColor: "#F8FAFC",
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#1A3328",
+    marginBottom: 8,
+  },
+  errorMessage: {
+    fontSize: 16,
+    color: "#4A7A66",
+    marginBottom: 24,
   },
 });
 

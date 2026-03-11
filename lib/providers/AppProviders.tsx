@@ -18,13 +18,13 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       <IconRegistry icons={EvaIconsPack} />
 
       <ApplicationProvider {...eva} theme={{ ...eva.light, ...surfGreenTheme }}>
-          <QueryProvider>
-            <SessionProvider>
-              <DataProvider>
-                <LocationProvider>{children}</LocationProvider>
-              </DataProvider>
+        <QueryProvider>
+          <SessionProvider>
+            <DataProvider>
+              <LocationProvider>{children}</LocationProvider>
+            </DataProvider>
           </SessionProvider>
-          </QueryProvider>
+        </QueryProvider>
         {/* Portals should live outside session/provider remount cycles */}
         <PortalHost />
       </ApplicationProvider>

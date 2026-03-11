@@ -1,8 +1,10 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef } from "react";
 import { View, StyleSheet } from "react-native";
 import { Stack } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import BottomSheet, { BottomSheetView } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from "react-native-safe-area-context"; 
 
 import { goCone } from "@/lib/routes";
 import { Screen } from "@/components/ui/Screen";
@@ -41,11 +43,17 @@ export default function MapScreen() {
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
   useKeepAwake();
 
+  const bottomSheetRef = useRef<BottomSheet>(null);
+  const insets = useSafeAreaInsets();
+  
+  //Define Snap Points (15% for peeking, 40% for details)
+  const snapPoints = useMemo(() => ['15%', '40%'], []);
+
   useEffect(() => {
     if (!selectedConeId && nearestUnclimbed?.cone?.id) {
       setSelectedConeId(nearestUnclimbed.cone.id);
     }
-  }, [nearestUnclimbed?.cone?.id, selectedConeId]);
+  }, [nearestUnclimbed?.cone?.id, selectedConeId, setSelectedConeId]);
 
   const mapCones = useMemo(() => {
     return cones.map((c) => ({
@@ -63,18 +71,26 @@ export default function MapScreen() {
 
   const gate = useGPSGate(selectedCone, loc);
 
+  const lat = loc?.coords.latitude;
+  const lng = loc?.coords.longitude;
+  const hasMapCones = mapCones.length > 0;
+
   const initialRegion = useMemo(() => {
-    if (loading) return null;
-    return initialRegionFrom(
-      loc?.coords.latitude ?? null,
-      loc?.coords.longitude ?? null,
-      mapCones,
-    );
-  }, [loading, mapCones, loc?.coords.latitude, loc?.coords.longitude]);
+    if (loading || !hasMapCones) return null;
+
+    return initialRegionFrom(lat ?? null, lng ?? null, mapCones);
+  }, [loading, hasMapCones, lat, lng, mapCones]);
 
   const refreshGPS = useCallback(async () => {
     if (locStatus !== "denied") await refreshLocation();
   }, [locStatus, refreshLocation]);
+
+  const handleConePress = useCallback((id: string) => {
+    Haptics.selectionAsync();
+    setSelectedConeId(id);
+    // Snap the sheet up so they can read the MapOverlayCard clearly
+    bottomSheetRef.current?.snapToIndex(1); 
+  }, [setSelectedConeId]);
 
   if (session.status === "loading" || loading) {
     return (
@@ -106,10 +122,7 @@ export default function MapScreen() {
           completedIds={completedIds}
           initialRegion={initialRegion!}
           selectedConeId={selectedConeId}
-          onPressCone={(id) => {
-            Haptics.selectionAsync();
-            setSelectedConeId(id);
-          }}
+          onPressCone={handleConePress} 
         />
 
         {locErr && (
@@ -123,17 +136,17 @@ export default function MapScreen() {
         )}
 
         {activeCone && (
-          <View style={styles.overlayBottom}>
-            <MapOverlayCard
-              title={activeCone.name}
-              distanceMeters={overlayDistance ?? 0}
-              onOpen={() => goCone(activeCone.id)}
-              locStatus={locStatus}
-              hasLoc={!!loc}
-              onRefreshGPS={() => void refreshGPS()}
-              refreshingGPS={isRefreshing}
-            />
-          </View>
+          <MapOverlayCard 
+            title={activeCone.name}
+            distanceMeters={overlayDistance ?? 0}
+            onOpen={() => goCone(activeCone.id)}
+            locStatus={locStatus}
+            hasLoc={!!loc}
+            onRefreshGPS={() => void refreshGPS()}
+            refreshingGPS={isRefreshing}
+            lat={activeCone.lat}
+            lng={activeCone.lng}
+          />
         )}
       </View>
     </Screen>

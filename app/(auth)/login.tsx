@@ -1,14 +1,15 @@
 import React, { useEffect } from "react";
-import { 
-  KeyboardAvoidingView, 
-  Platform, 
-  StyleSheet, 
-  View, 
-  TouchableWithoutFeedback, 
-  Keyboard 
+import {
+  KeyboardAvoidingView,
+  Platform,
+  StyleSheet,
+  View,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { Stack, router } from "expo-router";
-import { Mountain } from "lucide-react-native";
+import { Image } from "expo-image"; // <-- 1. Import Image from expo-image
+import * as Sentry from "@sentry/react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -37,7 +38,7 @@ export default function LoginScreen() {
     try {
       await enableGuest();
     } catch (e) {
-      console.error("Failed to enable guest mode:", e);
+      Sentry.captureException(e);
     }
   };
 
@@ -52,13 +53,14 @@ export default function LoginScreen() {
             style={styles.container}
           >
             <View style={styles.content}>
-              {/* Brand Header with Mountain Logo */}
+              {/* Brand Header with Custom Logo */}
               <View style={styles.brandContainer}>
                 <View style={styles.logoWrapper}>
-                  <Mountain
-                    size={40}
-                    color="#5FB3A2" 
-                    strokeWidth={2.5}
+                  {/* 2. Replace Mountain with your custom asset */}
+                  <Image
+                    source={require("@/assets/adaptive-icon.png")}
+                    style={styles.customIcon}
+                    contentFit="contain"
                   />
                 </View>
                 <AppText variant="screenTitle" style={styles.appName}>
@@ -103,26 +105,30 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: space.lg,
-    justifyContent: "center",
-    paddingBottom: space.xl,
+    paddingBottom: space.md,
+    paddingTop: space.xl,
   },
   brandContainer: {
     alignItems: "center",
-    marginBottom: space.xl,
+    marginBottom: space.sm,
   },
   logoWrapper: {
-    width: 80,
-    height: 80,
+    width: 90,
+    height: 90,
     borderRadius: 24,
     backgroundColor: "#F0FDFB",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: space.md,
+    marginBottom: space.sm,
     shadowColor: "#5FB3A2",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 2,
+  },
+  customIcon: {
+    width: 90,
+    height: 90,
   },
   appName: {
     fontSize: 36,

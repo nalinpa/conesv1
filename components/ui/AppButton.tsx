@@ -16,8 +16,9 @@ type Props = Omit<ButtonProps, "children"> & {
   variant?: Variant;
   size?: Size;
   loading?: boolean;
-  children: React.ReactNode;
   loadingLabel?: string;
+  fullWidth?: boolean;
+  children: React.ReactNode;
 };
 
 export function AppButton({
@@ -25,6 +26,7 @@ export function AppButton({
   size = "md",
   loading = false,
   loadingLabel = "Loading…",
+  fullWidth = false,
   disabled,
   style,
   children,
@@ -43,14 +45,11 @@ export function AppButton({
     transform: [{ scale: scale.value }],
   }));
 
-  // Match the heavy, snappy physics of the CardShell
   const springConfig = { damping: 20, stiffness: 300 };
+  const isEffectivelyDisabled = disabled || loading;
 
   const handlePressIn = () => {
-    // Prevent animation and haptics if the button is disabled or loading
-    if (disabled || loading) return; 
-    
-    // Buttons should squish slightly more than cards (0.96 vs 0.985)
+    if (isEffectivelyDisabled) return;
     scale.value = withSpring(0.96, springConfig);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
@@ -59,24 +58,31 @@ export function AppButton({
     scale.value = withSpring(1, springConfig);
   };
 
-  const buttonStyles = [
-    styles.buttonBase,
-    { minHeight },
-    variant === "primary" && styles.primaryVariant,
-    style,
-  ];
-
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View
+      style={[
+        styles.container,
+        animatedStyle,
+        isEffectivelyDisabled && styles.disabledWrapper,
+        fullWidth && styles.fullWidth,
+        style,
+      ]}
+      pointerEvents={isEffectivelyDisabled ? "none" : "auto"}
+    >
       <Button
         {...rest}
         appearance={appearance}
         status={status}
-        disabled={disabled || loading}
+        accessibilityState={{ disabled: !!isEffectivelyDisabled }}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
         onPress={onPress}
-        style={buttonStyles}
+        style={[
+          styles.buttonBase,
+          { minHeight },
+          fullWidth && styles.fullWidth,
+          variant === "primary" && styles.primaryVariant,
+        ]}
       >
         {loading ? loadingLabel : (children as any)}
       </Button>
@@ -88,6 +94,9 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 4,
   },
+  disabledWrapper: {
+    opacity: 0.5,
+  },
   buttonBase: {
     paddingHorizontal: space.lg,
     borderRadius: radius.md,
@@ -95,5 +104,8 @@ const styles = StyleSheet.create({
   primaryVariant: {
     backgroundColor: "#66B2A2",
     borderColor: "#66B2A2",
+  },
+  fullWidth: {
+    width: "100%",
   },
 });

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { collection, query, where } from "@react-native-firebase/firestore";
+import { collection, query, where, getDocs } from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -17,12 +17,9 @@ function toMs(v: any): number {
 const EMPTY_IDS = new Set<string>();
 
 async function fetchMyReviews(uid: string) {
-  const qy = query(
-    collection(db, COL.coneReviews),
-    where("userId", "==", uid)
-  );
+  const qy = query(collection(db, COL.coneReviews), where("userId", "==", uid));
 
-  const snap = await qy.get();
+  const snap = await getDocs(qy);
 
   const ids = new Set<string>();
   const atByCone: Record<string, number> = Object.create(null);

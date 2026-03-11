@@ -3,6 +3,7 @@ import { View, StyleSheet, Modal } from "react-native";
 import { router } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { LogOut, User, Trash2, ShieldAlert, LogIn } from "lucide-react-native";
+import * as Sentry from "@sentry/react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { CardShell } from "@/components/ui/CardShell";
@@ -44,6 +45,7 @@ export default function AccountScreen() {
       await disableGuest();
       router.replace("/login");
     } catch (e: any) {
+      Sentry.captureException(e);
       if (e.code === "auth/requires-recent-login") {
         setError("Security: Please log out and back in before deleting.");
       } else {

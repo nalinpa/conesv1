@@ -21,7 +21,6 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
   return (
     <View style={[styles.container, completed && styles.completedBg]}>
       <Stack gap="md">
-
         {/* 1. Region & Status */}
         <MotiView
           from={{ opacity: 0, translateX: -10 }}
@@ -39,11 +38,11 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
               status={completed ? "success" : "basic"}
               icon={completed ? CheckCircle2 : undefined}
             >
-              {completed ? "Visited" : "Unclimbed"}
+              {completed ? "Visited" : "Unexplored"}
             </Pill>
           </Row>
         </MotiView>
-        
+
         {/* 2. Title */}
         <AppText variant="screenTitle" style={styles.titleText}>
           {cone.name}
@@ -59,7 +58,6 @@ export function ConeHero({ cone, completed }: { cone: Cone; completed: boolean }
             {desc || "A unique peak in the Auckland Volcanic Field awaiting exploration."}
           </AppText>
         </MotiView>
-
       </Stack>
     </View>
   );
@@ -73,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
   },
   completedBg: {
-    backgroundColor: "#F0FDF4", 
+    backgroundColor: "#F0FDF4",
   },
   upper: {
     textTransform: "uppercase",
@@ -97,5 +95,5 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontWeight: "700",
-  }
+  },
 });

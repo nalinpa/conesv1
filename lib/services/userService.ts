@@ -3,9 +3,17 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
-  FirebaseAuthTypes
+  reload,
+  FirebaseAuthTypes,
 } from "@react-native-firebase/auth";
-import { collection, query, where, getDocs, writeBatch, FirebaseFirestoreTypes } from "@react-native-firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  writeBatch,
+  FirebaseFirestoreTypes,
+} from "@react-native-firebase/firestore";
 import { auth, db } from "../firebase";
 import { COL } from "../constants/firestore";
 
@@ -16,9 +24,9 @@ export const userService = {
    */
   async login(email: string, password: string): Promise<FirebaseAuthTypes.User> {
     const credential = await signInWithEmailAndPassword(auth, email, password);
-    // Reload is necessary because Firebase caches the verification
-    // status from the last time the user was seen.
-    await credential.user.reload();
+
+    await reload(credential.user);
+
     return auth.currentUser!;
   },
 
@@ -51,12 +59,17 @@ export const userService = {
       where("userId", "==", uid),
     );
     const completionsSnap = await getDocs(completionsQ);
-    completionsSnap.docs.forEach((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => batch.delete(d.ref));
+
+    completionsSnap.forEach((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+      batch.delete(d.ref),
+    );
 
     // 2. Identify all review records for this user
     const reviewsQ = query(collection(db, COL.coneReviews), where("userId", "==", uid));
     const reviewsSnap = await getDocs(reviewsQ);
-    reviewsSnap.docs.forEach((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => batch.delete(d.ref));
+    reviewsSnap.forEach((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+      batch.delete(d.ref),
+    );
 
     // 3. Commit Firestore deletions
     await batch.commit();

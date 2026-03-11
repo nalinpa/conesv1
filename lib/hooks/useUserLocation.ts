@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Location from "expo-location";
+import * as Sentry from "@sentry/react-native";
+
 import { useLocationStore } from "@/lib/store";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
 
@@ -47,7 +49,7 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     [],
   );
 
-  const inFlightRef = useRef<Promise<{ ok: boolean }> | null>(null);
+  const inFlightRef = useRef<Promise<{ ok: boolean } | undefined> | null>(null);
   const lastRunAtRef = useRef<number>(0);
 
   const runGuarded = useCallback(async (fn: () => Promise<{ ok: boolean }>) => {
@@ -64,6 +66,8 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     const p = (async () => {
       try {
         return await fn();
+      } catch (e) {
+        Sentry.captureException(e);
       } finally {
         lastRunAtRef.current = Date.now();
         inFlightRef.current = null;
@@ -98,6 +102,7 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
       safeSet({ loc: cur, err: "" });
       return { ok: true as const };
     } catch (e: any) {
+      Sentry.captureException(e);
       safeSet({ err: e?.message ?? "Could not get location." });
       return { ok: false as const };
     }
@@ -127,6 +132,7 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
         safeSet({ loc: cur, err: "" });
         return { ok: true as const };
       } catch (e: any) {
+        Sentry.captureException(e);
         safeSet({ err: e?.message ?? "Failed to refresh location." });
         return { ok: false as const };
       }

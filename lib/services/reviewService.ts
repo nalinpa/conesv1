@@ -9,6 +9,7 @@ import {
   where,
   FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
+import * as Sentry from "@sentry/react-native";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -17,6 +18,7 @@ import { GAMEPLAY } from "../constants/gameplay";
 export type PublicReview = {
   id: string;
   userId: string;
+  userName?: string; // ✅ Added userName
   coneId: string;
   coneName?: string;
   reviewRating: number; // 1..5
@@ -57,6 +59,7 @@ function mapPublicReview(id: string, data: any): PublicReview {
   return {
     id,
     userId: String(data.userId ?? ""),
+    userName: typeof data.userName === "string" ? data.userName : "this user", // ✅ Added mapper with fallback
     coneId: String(data.coneId ?? ""),
     coneName: typeof data.coneName === "string" ? data.coneName : undefined,
     reviewRating: clampRatingRequired(data.reviewRating),
@@ -77,12 +80,16 @@ export const reviewService = {
     );
 
     const snap = await getDocs(qy);
-    return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) => mapPublicReview(d.id, d.data()));
+
+    return snap.docs.map((d: FirebaseFirestoreTypes.QueryDocumentSnapshot) =>
+      mapPublicReview(d.id, d.data()),
+    );
   },
 
   // ✅ Write (one per user per cone enforced by doc id)
   async saveReview(args: {
     uid: string | null | undefined; // Allow null to flow in, handled by check below
+    userName: string | null | undefined; // ✅ Added to args
     coneId: string;
     coneSlug: string;
     coneName: string;
@@ -144,6 +151,7 @@ export const reviewService = {
             coneSlug: String(args.coneSlug ?? ""),
             coneName: String(args.coneName ?? ""),
             userId: uid,
+            userName: args.userName ? String(args.userName) : "Unknown User", // ✅ Write to DB
             reviewRating: rating,
             reviewText: text ?? null,
             reviewCreatedAt: existing?.reviewCreatedAt ?? serverTimestamp(),
@@ -162,6 +170,7 @@ export const reviewService = {
 
       return { ok: true };
     } catch (e: any) {
+      Sentry.captureException(e);
       return { ok: false, err: e?.message ?? "Failed to save review." };
     }
   },

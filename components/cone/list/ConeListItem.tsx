@@ -39,7 +39,7 @@ export function ConeListItem({
       animate={{ opacity: 1, translateY: 0 }}
       transition={{
         type: "spring",
-        delay: Math.min(index * 80, 400), 
+        delay: Math.min(index * 80, 400),
         damping: 14,
         stiffness: 200,
       }}

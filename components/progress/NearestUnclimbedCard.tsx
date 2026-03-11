@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, View } from "react-native";
-import { MapPin, ChevronRight, Navigation } from "lucide-react-native";
-import { MotiView } from "moti"; // ✅ Added Moti
+import { MapPin, Navigation } from "lucide-react-native";
+import { MotiView } from "moti";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { Pill } from "@/components/ui/Pill";
@@ -13,7 +13,6 @@ import { AppIcon } from "@/components/ui/AppIcon";
 import { AppButton } from "@/components/ui/AppButton";
 
 export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone }: any) {
-  
   // --- SEARCHING / ERROR STATE ---
   if (!cone) {
     return (
@@ -32,7 +31,7 @@ export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone 
               </MotiView>
             </View>
           )}
-          
+
           <AppText variant="body" status="hint">
             {locErr
               ? "Enable location to find nearby cones"
@@ -68,18 +67,8 @@ export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone 
           </AppText>
         </Stack>
 
-        <AppButton
-          variant="primary"
-          size="sm"
-          onPress={() => onOpenCone(cone.id)}
-          style={styles.button}
-        >
-          <Row gap="xs" align="center">
-            <AppText variant="label" status="control">
-              View Details
-            </AppText>
-            <AppIcon icon={ChevronRight} variant="control" size={16} />
-          </Row>
+        <AppButton variant="primary" size="sm" onPress={() => onOpenCone(cone.id)}>
+          View Details
         </AppButton>
       </Stack>
     </CardShell>
@@ -101,10 +90,5 @@ const styles = StyleSheet.create({
   },
   description: {
     color: "#475569",
-  },
-  button: {
-    alignSelf: "flex-start",
-    marginTop: 4,
-    backgroundColor: "#66B2A2",
   },
 });

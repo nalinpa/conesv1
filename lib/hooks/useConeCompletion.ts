@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { doc, getDoc } from "@react-native-firebase/firestore";
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { useSession } from "@/lib/providers/SessionProvider";
@@ -7,17 +8,21 @@ import { useSession } from "@/lib/providers/SessionProvider";
  * Fetcher for a single completion document.
  */
 async function fetchSpecificCompletion(uid: string, coneId: string) {
-  // We use the deterministic ID pattern: userId_coneId
   const completionId = `${uid}_${coneId}`;
-  const snap = await db.collection(COL.coneCompletions).doc(completionId).get();
+
+  const docRef = doc(db, COL.coneCompletions, completionId);
+
+  const snap = await getDoc(docRef);
 
   if (!snap.exists) {
     return null;
   }
 
+  const data = snap.data() as { shareBonus?: boolean };
+
   return {
     id: snap.id,
-    ...snap.data(),
+    ...data,
   };
 }
 
@@ -26,12 +31,6 @@ export function useConeCompletion(coneId?: string | null) {
   const uid = session.status === "authed" ? session.uid : null;
 
   const { data, isLoading, error } = useQuery({
-    /**
-     * THE FIX: We use a unique key "cone-completion-status".
-     * If this were just ["cone", coneId], TanStack Query would return the 
-     * volcano details from the cache. Since the volcano always has an ID, 
-     * the app would think 'completedId' is truthy for every volcano.
-     */
     queryKey: ["cone-completion-status", uid, coneId],
     queryFn: () => fetchSpecificCompletion(uid!, coneId!),
     enabled: !!uid && !!coneId,
@@ -39,7 +38,6 @@ export function useConeCompletion(coneId?: string | null) {
     placeholderData: null,
   });
 
-  // Map to the return values the UI expects
   const completedId = data ? data.id : null;
   const shareBonus = !!data?.shareBonus;
 

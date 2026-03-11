@@ -1,6 +1,5 @@
 import React, { forwardRef } from "react";
-import { View, StyleSheet } from "react-native";
-import { Image } from "expo-image";
+import { View, StyleSheet, Image } from "react-native";
 import { AppText } from "@/components/ui/AppText";
 import { Row } from "@/components/ui/Row";
 import type { ShareConePayload } from "@/lib/services/share/types";
@@ -11,10 +10,11 @@ const SURF_DARK = "#0F172A";
 interface CaptureCanvasProps {
   payload: ShareConePayload;
   photoUri: string | null;
+  onImageLoad?: () => void;
 }
 
 export const CaptureCanvas = forwardRef<View, CaptureCanvasProps>(
-  ({ payload, photoUri }, ref) => (
+  ({ payload, photoUri, onImageLoad }, ref) => (
     <View pointerEvents="none" style={styles.hiddenContainer}>
       <View ref={ref} collapsable={false} style={styles.canvas}>
         <View style={styles.inner}>
@@ -26,7 +26,13 @@ export const CaptureCanvas = forwardRef<View, CaptureCanvasProps>(
           </Row>
 
           <View style={styles.photoWindow}>
-            {photoUri && <Image source={{ uri: photoUri }} style={styles.fullSize} />}
+            {photoUri && (
+              <Image
+                source={{ uri: photoUri }}
+                style={styles.fullSize}
+                onLoad={onImageLoad}
+              />
+            )}
           </View>
 
           <View style={styles.captureFooter}>
@@ -41,7 +47,7 @@ export const CaptureCanvas = forwardRef<View, CaptureCanvasProps>(
 );
 
 const styles = StyleSheet.create({
-  hiddenContainer: { position: "absolute", top: -10000, left: -10000 },
+  hiddenContainer: { position: "absolute", left: -2000, top: 0 },
   canvas: { width: 1080, height: 1350 },
   inner: { flex: 1, backgroundColor: SURF, padding: 48, justifyContent: "space-between" },
   hiddenHeaderTitle: { color: "white", fontSize: 84, fontWeight: "900", flex: 1 },

@@ -1,13 +1,14 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
-import { Star, Flag } from "lucide-react-native";
+import { Star } from "lucide-react-native";
+import * as Sentry from "@sentry/react-native";
 
 import { CardShell } from "@/components/ui/CardShell";
 import { AppText } from "@/components/ui/AppText";
 import { Row } from "@/components/ui/Row";
 import { Stack } from "@/components/ui/Stack";
-import { AppButton } from "@/components/ui/AppButton";
 
+import { ReviewOptionsMenu } from "@/components/reviews/ReviewOptionsMenu";
 import { space } from "@/lib/ui/tokens";
 
 function formatDate(ts: any): string {
@@ -18,21 +19,26 @@ function formatDate(ts: any): string {
       month: "short",
       year: "numeric",
     });
-  } catch {
+  } catch (e) {
+    Sentry.captureException(e);
     return "Recently";
   }
 }
 
 export function ReviewListItem({
+  reviewId,
+  authorId,
+  authorName = "User", // Fallback just in case
   rating,
   text,
   createdAt,
-  onReport,
 }: {
+  reviewId: string;
+  authorId: string;
+  authorName?: string;
   rating: number;
   text?: string | null;
   createdAt?: any;
-  onReport?: () => void;
 }) {
   const r = Math.max(1, Math.min(5, Math.round(rating)));
   const when = formatDate(createdAt);
@@ -41,7 +47,7 @@ export function ReviewListItem({
   return (
     <CardShell status="basic" style={styles.card}>
       <Stack gap="sm">
-        {/* Header: Stars and Date */}
+        {/* Header: Stars, Date, and Options Menu */}
         <Row justify="space-between" align="center">
           <Row gap="xxs">
             {[1, 2, 3, 4, 5].map((i) => (
@@ -53,9 +59,17 @@ export function ReviewListItem({
               />
             ))}
           </Row>
-          <AppText variant="label" status="hint">
-            {when}
-          </AppText>
+
+          <Row gap="md" align="center">
+            <AppText variant="label" status="hint">
+              {when}
+            </AppText>
+            <ReviewOptionsMenu
+              reviewId={reviewId}
+              authorId={authorId}
+              authorName={authorName}
+            />
+          </Row>
         </Row>
 
         {/* The Review Content */}
@@ -64,20 +78,6 @@ export function ReviewListItem({
             {comment || "Checked in without a note."}
           </AppText>
         </View>
-
-        {/* Footer: Report/Actions */}
-        {onReport && (
-          <Row justify="flex-end" style={styles.footer}>
-            <AppButton variant="ghost" size="sm" onPress={onReport}>
-              <Row gap="xs" align="center">
-                <Flag size={12} color="#94A3B8" />
-                <AppText variant="label" status="hint">
-                  Report
-                </AppText>
-              </Row>
-            </AppButton>
-          </Row>
-        )}
       </Stack>
     </CardShell>
   );
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     padding: space.md,
   },
   text: {
-    color: "#1E293B", // Slate 800 for readability
+    color: "#1E293B",
     lineHeight: 20,
     fontWeight: "500",
   },
@@ -98,11 +98,5 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingVertical: 2,
-  },
-  footer: {
-    marginTop: 4,
-    borderTopWidth: 1,
-    borderTopColor: "#F1F5F9",
-    paddingTop: 4,
   },
 });

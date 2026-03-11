@@ -41,7 +41,7 @@ export function ConesToReviewCard({
         </Row>
 
         <AppText variant="body" status="hint">
-          Help the community by sharing your experience at these recent summits.
+          Share your thoughts on your recent adventures.
         </AppText>
 
         {/* List of Cones */}

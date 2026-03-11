@@ -41,15 +41,13 @@ export function BadgesSummaryCard({ nextUp, recentlyUnlocked, onViewAll }: any) 
             </Row>
             {recentlyUnlocked.slice(0, 1).map((progress: any) => {
               // Extract the actual badge definition from the progress object
-              const badgeDef = progress.badge; 
-              
+              const badgeDef = progress.badge;
+
               return (
                 <View key={badgeDef?.id || "recent"} style={styles.unlockedBox}>
                   <Row gap="md" align="center">
                     <View style={styles.emojiWrapper}>
-                      <AppText style={styles.emoji}>
-                        {badgeDef?.icon || "🏆"}
-                      </AppText>
+                      <AppText style={styles.emoji}>{badgeDef?.icon || "🏆"}</AppText>
                     </View>
                     <View style={styles.flex1}>
                       <AppText variant="body" style={styles.boldDark}>

@@ -1,6 +1,7 @@
 import * as FileSystem from "expo-file-system";
 import { Asset } from "expo-asset";
 import type { SkFont, SkPaint, Skia as SkiaType } from "@shopify/react-native-skia";
+import * as Sentry from "@sentry/react-native";
 
 import type { ShareConePayload } from "./types";
 import { SURF_GREEN, formatRegionLabel, formatVisitedLabel } from "./shareTheme";
@@ -244,7 +245,7 @@ export async function renderShareCardPngAsync(
 
     return uri;
   } catch (e) {
-    console.log("[share] renderShareCardPngAsync failed", e);
+    Sentry.captureException(e);
     return null;
   }
 }
@@ -276,7 +277,7 @@ async function loadBundledTypefaceAsync(Skia: typeof SkiaType): Promise<any | nu
 
     return null;
   } catch (e) {
-    console.log("[share] loadBundledTypefaceAsync failed", e);
+    Sentry.captureException(e);
     return null;
   }
 }

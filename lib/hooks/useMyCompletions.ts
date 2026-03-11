@@ -1,8 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  FirebaseFirestoreTypes,
+} from "@react-native-firebase/firestore";
+
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { useSession } from "@/lib/providers/SessionProvider";
-import type { WatchMyCompletionsResult } from "@/lib/services/completionService";
 
 function toMs(v: any): number {
   if (!v) return 0;
@@ -12,70 +20,80 @@ function toMs(v: any): number {
   return 0;
 }
 
-/**
- * Fetcher for the full list of user completions (used for badges/progress).
- */
-async function fetchMyCompletions(uid: string) {
-  const snap = await db.collection(COL.coneCompletions)
-    .where("userId", "==", uid)
-    .get();
+const defaultState = {
+  completedConeIds: new Set<string>(),
+  sharedConeIds: new Set<string>(),
+  pendingConeIds: new Set<string>(),
+  completedAtByConeId: {},
+  shareBonusCount: 0,
+  completions: [],
+};
 
-  const completedConeIds = new Set<string>();
-  const sharedConeIds = new Set<string>();
-  const completedAtByConeId: Record<string, number> = {};
-  const completions: any[] = [];
-
-  snap.forEach((doc) => {
-    const d = doc.data() as any;
-    const coneId = d.coneId;
-    if (!coneId) return;
-
-    completedConeIds.add(coneId);
-    completedAtByConeId[coneId] = toMs(d.completedAt);
-    if (d.shareBonus) sharedConeIds.add(coneId);
-    completions.push({ id: doc.id, ...d });
-  });
-
-  return {
-    completedConeIds,
-    sharedConeIds,
-    completedAtByConeId,
-    shareBonusCount: sharedConeIds.size,
-    completions,
-  };
-}
-
-export function useMyCompletions(): {
-  loading: boolean;
-  err: string;
-  completedConeIds: Set<string>;
-  shareBonusCount: number;
-  completedAtByConeId: Record<string, number>;
-  sharedConeIds: Set<string>;
-  completions: WatchMyCompletionsResult["completions"];
-} {
+export function useMyCompletions() {
   const { session } = useSession();
   const uid = session.status === "authed" ? session.uid : null;
+  const queryClient = useQueryClient();
 
+  // 1. Real-Time Firebase Listener
+  useEffect(() => {
+    if (!uid) return;
+
+    const q = query(collection(db, COL.coneCompletions), where("userId", "==", uid));
+
+    const unsubscribe = onSnapshot(
+      q,
+      { includeMetadataChanges: true }, // Tells Firebase to fire when offline sync finishes
+      (snap) => {
+        const completedConeIds = new Set<string>();
+        const sharedConeIds = new Set<string>();
+        const pendingConeIds = new Set<string>();
+        const completedAtByConeId: Record<string, number> = {};
+        const completions: any[] = [];
+
+        snap.forEach((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => {
+          const d = doc.data() as any;
+          const coneId = d.coneId;
+          if (!coneId) return;
+
+          completedConeIds.add(coneId);
+          completedAtByConeId[coneId] = toMs(d.completedAt);
+          if (d.shareBonus) sharedConeIds.add(coneId);
+
+          if (doc.metadata.hasPendingWrites) {
+            pendingConeIds.add(coneId);
+          }
+
+          completions.push({ id: doc.id, ...d });
+        });
+
+        // 2. Inject the real-time data directly into TanStack Querys cache
+        queryClient.setQueryData(["myCompletions", uid], {
+          completedConeIds,
+          sharedConeIds,
+          pendingConeIds,
+          completedAtByConeId,
+          shareBonusCount: sharedConeIds.size,
+          completions,
+        });
+      },
+    );
+
+    return () => unsubscribe();
+  }, [uid, queryClient]);
+
+  // 3. Let React Query distribute the cached data effortlessly
   const { data, isLoading, error } = useQuery({
     queryKey: ["myCompletions", uid],
-    queryFn: () => fetchMyCompletions(uid!),
-    enabled: !!uid,
+    queryFn: () => defaultState,
+    initialData: defaultState,
+    enabled: false, // Turned off because onSnapshot is manually feeding the cache!
   });
 
-  const defaultState = {
-    completedConeIds: new Set<string>(),
-    sharedConeIds: new Set<string>(),
-    completedAtByConeId: {},
-    shareBonusCount: 0,
-    completions: [],
-  };
-
-  const state = data || defaultState;
+  const state = (data as typeof defaultState) || defaultState;
 
   return {
     loading: session.status === "loading" || isLoading,
     err: error instanceof Error ? error.message : "",
-    ...state, 
+    ...state,
   };
 }

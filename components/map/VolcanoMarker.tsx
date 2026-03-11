@@ -2,12 +2,12 @@ import React from "react";
 import { View, StyleSheet } from "react-native";
 import { Check, MountainIcon } from "lucide-react-native";
 
-// Total canvas size needs to be larger than the circle to account for shadows and badges
 const CANVAS_SIZE = 37;
 const CIRCLE_SIZE = 32;
 const BG_COLOR = "white";
 
-export function VolcanoMarker({
+// Memoize the visual component to avoid re-calculating SVG paths
+export const VolcanoMarker = React.memo(function VolcanoMarker({
   selected,
   completed,
 }: {
@@ -34,7 +34,7 @@ export function VolcanoMarker({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -42,7 +42,6 @@ const styles = StyleSheet.create({
     height: CANVAS_SIZE,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "transparent",
   },
   circle: {
     alignItems: "center",
@@ -55,21 +54,11 @@ const styles = StyleSheet.create({
   },
   unselected: {
     borderColor: "rgba(30, 41, 59, 0.8)",
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
   },
   selected: {
     borderColor: "rgba(95,179,162,1)",
     borderWidth: 3,
     transform: [{ scale: 1.1 }],
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
   },
   badge: {
     position: "absolute",
@@ -83,6 +72,5 @@ const styles = StyleSheet.create({
     borderColor: BG_COLOR,
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 2,
   },
 });

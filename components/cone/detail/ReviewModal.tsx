@@ -148,8 +148,8 @@ export function ReviewModal({
                     style={styles.textInput}
                     maxLength={280}
                     textAlignVertical="top"
-                    returnKeyType="send" 
-                    submitBehavior="blurAndSubmit" 
+                    returnKeyType="send"
+                    submitBehavior="blurAndSubmit"
                     onSubmitEditing={() => {
                       if (draftRating) onSave();
                     }}

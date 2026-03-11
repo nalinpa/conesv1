@@ -449,7 +449,7 @@ export function getBadgeState(
     doneConesType >= 1 ? null : `${doneConesType} / 1`,
     doneConesType >= 1 ? 0 : 1 - doneConesType,
   );
-  
+
   {
     const p = progressToThreshold(doneConesType, 10);
     setProgress("cone_fan", p.earned, p.label, p.dist);
@@ -565,9 +565,10 @@ export function getBadgeState(
     completedConeIds,
     completedAtByConeId,
   );
-  
+
   // Calculate a global fallback time (the time of your most recently completed volcano)
-  const globalLatestTime = allActiveTimes.length > 0 ? allActiveTimes[allActiveTimes.length - 1] : 0;
+  const globalLatestTime =
+    allActiveTimes.length > 0 ? allActiveTimes[allActiveTimes.length - 1] : 0;
 
   const coneTimes = timesForCones(
     activeCones,

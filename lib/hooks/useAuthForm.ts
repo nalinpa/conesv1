@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import * as Haptics from "expo-haptics";
+import * as Sentry from "@sentry/react-native";
 
 import { userService } from "@/lib/services/userService";
 
@@ -116,6 +117,7 @@ export function useAuthForm(initialMode: AuthMode = "login") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       return { ok: true as const };
     } catch (e) {
+      Sentry.captureException(e);
       setErr(normalizeAuthError(e));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       return { ok: false as const };
