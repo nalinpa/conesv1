@@ -49,6 +49,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         "Cones needs access to your photo library so you can attach photos of your visits.",
       NSLocationWhenInUseUsageDescription:
         "Cones uses your location to track your distance and verify when you have successfully reached a volcano.",
+      ITSAppUsesNonExemptEncryption: false,
     },
   },
 
