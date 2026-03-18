@@ -10,16 +10,10 @@
       "android": {
         "buildType": "apk"
       },
-      "ios": {
-        "googleServicesFile": "./GoogleService-Info.plist"
-      },
       "channel": "development"
     },
     "preview": {
       "distribution": "internal",
-      "ios": {
-        "googleServicesFile": "./GoogleService-Info.plist"
-      },
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "@EXPO_PUBLIC_SENTRY_DSN",
         "EXPO_PUBLIC_GMAPS_API_KEY": "@EXPO_PUBLIC_GMAPS_API_KEY"
@@ -27,9 +21,6 @@
       "channel": "preview"
     },
     "production": {
-      "ios": {
-        "googleServicesFile": "./GoogleService-Info.plist"
-      },
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "@EXPO_PUBLIC_SENTRY_DSN",
         "EXPO_PUBLIC_GMAPS_API_KEY": "@EXPO_PUBLIC_GMAPS_API_KEY"
