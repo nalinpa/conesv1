@@ -56,6 +56,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     "expo-router",
     [
+      "react-native-maps",
+      {
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
+      },
+    ],
+    [
       "@sentry/react-native/expo",
       {
         url: "https://sentry.io/",
@@ -86,6 +92,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         ios: {
           useFrameworks: "static",
+          forceStaticLinking: ["RNFBApp", "RNFBAuth", "RNFBFirestore"],
         },
       },
     ],
