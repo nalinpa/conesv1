@@ -40,7 +40,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     buildNumber: "1",
     googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
     config: {
-      googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
+      googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_IOS_API_KEY,
     },
     infoPlist: {
       NSCameraUsageDescription:
@@ -58,7 +58,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "react-native-maps",
       {
-        googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
+        googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_IOS_API_KEY,
       },
     ],
     [

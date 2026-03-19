@@ -7,6 +7,7 @@ import {
   onSnapshot,
   FirebaseFirestoreTypes,
 } from "@react-native-firebase/firestore";
+import * as Sentry from "@sentry/react-native";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -34,7 +35,6 @@ export function useMyCompletions() {
   const uid = session.status === "authed" ? session.uid : null;
   const queryClient = useQueryClient();
 
-  // 1. Real-Time Firebase Listener
   useEffect(() => {
     if (!uid) return;
 
@@ -42,7 +42,7 @@ export function useMyCompletions() {
 
     const unsubscribe = onSnapshot(
       q,
-      { includeMetadataChanges: true }, // Tells Firebase to fire when offline sync finishes
+      { includeMetadataChanges: true },
       (snap) => {
         const completedConeIds = new Set<string>();
         const sharedConeIds = new Set<string>();
@@ -66,7 +66,6 @@ export function useMyCompletions() {
           completions.push({ id: doc.id, ...d });
         });
 
-        // 2. Inject the real-time data directly into TanStack Querys cache
         queryClient.setQueryData(["myCompletions", uid], {
           completedConeIds,
           sharedConeIds,
@@ -76,17 +75,22 @@ export function useMyCompletions() {
           completions,
         });
       },
+      (error) => {
+        Sentry.captureException(error, {
+          tags: { hook: "useMyCompletions" },
+          extra: { uid },
+        });
+      },
     );
 
     return () => unsubscribe();
   }, [uid, queryClient]);
 
-  // 3. Let React Query distribute the cached data effortlessly
   const { data, isLoading, error } = useQuery({
     queryKey: ["myCompletions", uid],
     queryFn: () => defaultState,
     initialData: defaultState,
-    enabled: false, // Turned off because onSnapshot is manually feeding the cache!
+    enabled: false,
   });
 
   const state = (data as typeof defaultState) || defaultState;
