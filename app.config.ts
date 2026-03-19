@@ -38,7 +38,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: true,
     bundleIdentifier: "app.kompletion.cones",
     buildNumber: "1",
-    googleServicesFile: "./GoogleService-Info.plist",
+    googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
     config: {
       googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
     },
