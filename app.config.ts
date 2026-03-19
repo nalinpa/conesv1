@@ -86,6 +86,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         ios: {
           useFrameworks: "static",
+          extraPods: [
+            {
+              name: "react-native-maps",
+              modular_headers: true,
+            },
+          ],
         },
       },
     ],
