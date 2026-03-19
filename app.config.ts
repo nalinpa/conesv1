@@ -55,7 +55,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   plugins: [
     "expo-router",
-    "./plugins/withRNMapsModularHeaders",
     [
       "@sentry/react-native/expo",
       {
