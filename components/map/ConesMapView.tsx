@@ -83,7 +83,6 @@ export const ConesMapView = React.memo(function ConesMapView({
       minZoomLevel={10}
       maxZoomLevel={18}
       moveOnMarkerPress={false}
-      showsPointsOfInterest={false}
       showsTraffic={false}
       showsBuildings={false}
     >

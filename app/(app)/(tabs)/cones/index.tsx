@@ -8,7 +8,7 @@ import { CardShell } from "@/components/ui/CardShell";
 import { Stack } from "@/components/ui/Stack";
 import { AppText } from "@/components/ui/AppText";
 
-import { goCone, goLogin } from "@/lib/routes";
+import { goCone, goAccountHome } from "@/lib/routes";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
@@ -92,7 +92,7 @@ export default function ConeListPage() {
 
       {isGuest ? (
         <View style={styles.paddedSection}>
-          <CardShell status="surf" onPress={goLogin}>
+          <CardShell status="surf" onPress={goAccountHome}>
             <Stack gap="xs">
               <AppText variant="sectionTitle">Unlock Tracking</AppText>
               <AppText variant="label" status="hint">

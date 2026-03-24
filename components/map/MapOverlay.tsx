@@ -85,12 +85,12 @@ export function MapOverlayCard({
         <CardShell status="danger">
           <Stack gap="md">
             <Row gap="sm" align="center">
-              <AppIcon icon={AlertCircle} variant="control" size={20} />
-              <AppText variant="sectionTitle" status="control">
+              <AppIcon icon={AlertCircle} variant="warning" size={20} />
+              <AppText variant="sectionTitle" status="warning">
                 GPS Disabled
               </AppText>
             </Row>
-            <AppText variant="label" status="control">
+            <AppText variant="label" status="warning">
               Enable location to track your proximity to the volcanic sites.
             </AppText>
             <Row gap="sm">
