@@ -43,7 +43,7 @@ export function goMapHome() {
  * Auth
  */
 export function goLogin() {
-  router.replace("/login");
+  router.push("/login");
 }
 
 export function goAccountHome() {

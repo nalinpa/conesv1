@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, Linking } from "react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -40,7 +40,11 @@ export default function ConeListPage() {
   }, [liveLoc, lockedLoc]);
 
   const handleRefreshGPS = () => {
-    setLockedLoc(null);
+    if (locStatus === "denied") {
+      Linking.openSettings();
+    } else {
+      setLockedLoc(null);
+    }
   };
 
   const filteredRows = useMemo(() => {

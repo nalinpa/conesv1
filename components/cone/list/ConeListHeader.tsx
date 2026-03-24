@@ -61,7 +61,11 @@ export function ConesListHeader({
       {(status === "denied" || locErr) && (
         <CardShell status={locErr ? "danger" : "warning"} style={styles.alertCard}>
           <Row gap="sm" align="center">
-            <AppIcon icon={AlertCircle} size={16} variant="control" />
+            <AppIcon 
+              icon={AlertCircle} 
+              size={16} 
+              variant={locErr ? "danger" : "warning"}  
+            />
             <AppText variant="label" style={styles.alertText}>
               {status === "denied"
                 ? "Turn on location to sort by distance"
@@ -85,6 +89,5 @@ const styles = StyleSheet.create({
   },
   alertText: {
     fontWeight: "800",
-    color: "#FFFFFF",
   },
 });

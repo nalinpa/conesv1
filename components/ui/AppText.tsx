@@ -15,7 +15,7 @@ type TextVariant = keyof typeof textStyles;
 
 interface AppTextProps extends TextProps {
   variant?: TextVariant;
-  status?: "basic" | "hint" | "control" | "surf" | "danger";
+  status?: "basic" | "hint" | "control" | "surf" | "danger" | "warning";
 }
 
 export function AppText({
@@ -32,6 +32,8 @@ export function AppText({
         return "#66B2A2";
       case "danger":
         return theme["color-danger-500"]; // Standard red
+      case "warning":
+        return theme["color-warning-500"];
       case "hint":
         return theme["text-hint-color"];
       case "control":

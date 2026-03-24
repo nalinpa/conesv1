@@ -78,6 +78,7 @@ export function AuthCard({
                 value={email}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                textContentType="emailAddress"
                 onChangeText={onChangeEmail}
                 editable={!busy}
                 // Keyboard jumping logic
