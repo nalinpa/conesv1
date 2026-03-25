@@ -20,7 +20,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   ios: {
     bundleIdentifier: "app.kompletion.cones",
-    buildNumber: "1",
     supportsTablet: false,
     googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
     infoPlist: {

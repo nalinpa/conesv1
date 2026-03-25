@@ -20,6 +20,12 @@
       "channel": "preview"
     },
     "production": {
+      "ios": {
+        "autoIncrement": true
+      },
+      "android": {
+        "autoIncrement": true
+      },
       "env": {
         "EXPO_PUBLIC_SENTRY_DSN": "@EXPO_PUBLIC_SENTRY_DSN",
       },
