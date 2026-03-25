@@ -30,9 +30,6 @@ export type ConeCompletionWrite = {
   userId: string;
 
   completedAt: any;
-
-  deviceLat: number;
-  deviceLng: number;
   accuracyMeters: number | null;
 
   // Distance to nearest checkpoint (or fallback).

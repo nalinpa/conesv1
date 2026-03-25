@@ -64,9 +64,6 @@ export const completionService = {
       userId: uid,
 
       completedAt: serverTimestamp(),
-
-      deviceLat: loc.coords.latitude,
-      deviceLng: loc.coords.longitude,
       accuracyMeters: loc.coords.accuracy ?? null,
 
       distanceMeters: gate.distanceMeters ?? null,

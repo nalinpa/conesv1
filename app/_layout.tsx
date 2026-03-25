@@ -6,7 +6,6 @@ import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-// Note: We removed the ErrorCard import!
 import { AppProviders } from "@/lib/providers/AppProviders";
 import * as Sentry from "@sentry/react-native";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";

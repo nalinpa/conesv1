@@ -6,7 +6,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   name: "Cones",
   slug: "cones",
   scheme: "cones",
-  version: "1.0.2",
+  version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "automatic",
@@ -18,6 +18,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     backgroundColor: "#F8FAFC",
   },
 
+  ios: {
+    bundleIdentifier: "app.kompletion.cones",
+    buildNumber: "1",
+    supportsTablet: true,
+    googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
+    infoPlist: {
+      NSCameraUsageDescription: "Cones needs camera access to capture and share photos of your volcano explorations.",
+      NSPhotoLibraryUsageDescription: "Cones needs access to your photos so you can select and share your favorite shots.",
+      NSLocationWhenInUseUsageDescription: "Cones uses your location to track your progress and verify when you have reached a volcano.",
+      ITSAppUsesNonExemptEncryption: false,
+    },
+  },
+
   android: {
     package: "app.kompletion.cones",
     versionCode: 1,
@@ -26,41 +39,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: "./assets/adaptive-icon.png",
       backgroundColor: "#F8FAFC",
     },
-    config: {
-      googleMaps: {
-        apiKey: process.env.EXPO_PUBLIC_GMAPS_API_KEY,
-      },
-    },
+    permissions: [
+      "CAMERA",
+      "READ_EXTERNAL_STORAGE",
+      "WRITE_EXTERNAL_STORAGE",
+      "ACCESS_FINE_LOCATION",
+      "ACCESS_COARSE_LOCATION"
+    ],
     edgeToEdgeEnabled: true,
-  },
-
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: "app.kompletion.cones",
-    buildNumber: "1",
-    googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
-    config: {
-      googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_IOS_API_KEY,
-    },
-    infoPlist: {
-      NSCameraUsageDescription:
-        "Cones needs camera access so you can take photos of your volcano explorations.",
-      NSPhotoLibraryUsageDescription:
-        "Cones needs access to your photo library so you can attach photos of your visits.",
-      NSLocationWhenInUseUsageDescription:
-        "Cones uses your location to track your distance and verify when you have successfully reached a volcano.",
-      ITSAppUsesNonExemptEncryption: false,
-    },
   },
 
   plugins: [
     "expo-router",
-    [
-      "react-native-maps",
-      {
-        googleMapsApiKey: process.env.EXPO_PUBLIC_GMAPS_IOS_API_KEY,
-      },
-    ],
+    ["react-native-maps", {}],
     [
       "@sentry/react-native/expo",
       {
@@ -72,17 +63,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-image-picker",
       {
-        photosPermission:
-          "Cones needs access to your photo library so you can attach photos to your volcano reviews.",
-        cameraPermission:
-          "Cones needs camera access so you can take photos of your volcano explorations to add to your reviews.",
+        photosPermission: "Allow Cones to access your photos to share your volcanic adventures.",
+        cameraPermission: "Allow Cones to use your camera to capture your summit moments."
       },
     ],
     [
       "expo-location",
       {
-        locationAlwaysAndWhenInUsePermission:
-          "Cones uses your location to track your distance and verify when you have successfully reached a volcano.",
+        locationAlwaysAndWhenInUsePermission: "Cones uses your location to track your distance and verify when you have reached a volcano.",
       },
     ],
     "@react-native-firebase/app",

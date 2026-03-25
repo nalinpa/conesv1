@@ -66,7 +66,9 @@ export function ConesListHeader({
               size={16} 
               variant={locErr ? "danger" : "warning"}  
             />
-            <AppText variant="label" style={styles.alertText}>
+            <AppText 
+              variant="label" 
+              style={styles.alertText}>
               {status === "denied"
                 ? "Turn on location to sort by distance"
                 : "Unable to find your location"}
