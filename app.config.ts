@@ -21,7 +21,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: "app.kompletion.cones",
     buildNumber: "1",
-    supportsTablet: true,
+    supportsTablet: false,
     googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
     infoPlist: {
       NSCameraUsageDescription: "Cones needs camera access to capture and share photos of your volcano explorations.",
