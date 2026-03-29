@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "inspect": "EXPO_ATLAS=1 npx expo start"
   },
   "dependencies": {
     "@eva-design/eva": "^2.2.0",

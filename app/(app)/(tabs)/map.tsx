@@ -23,7 +23,7 @@ import { useAppData } from "@/lib/providers/DataProvider";
 import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 import { space } from "@/lib/ui/tokens";
-import { useMapStore } from "@/lib/store";
+import { useMapStore, useTrackingStore } from "@/lib/store";
 
 export default function MapScreen() {
   const { session } = useSession();
@@ -41,6 +41,7 @@ export default function MapScreen() {
   const { selectedConeId, setSelectedConeId } = useMapStore();
 
   const nearestUnclimbed = useNearestUnclimbed(cones, completedIds, loc);
+  const { targetId, isTracking } = useTrackingStore();
   useKeepAwake();
 
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -50,10 +51,15 @@ export default function MapScreen() {
   const snapPoints = useMemo(() => ['15%', '40%'], []);
 
   useEffect(() => {
-    if (!selectedConeId && nearestUnclimbed?.cone?.id) {
-      setSelectedConeId(nearestUnclimbed.cone.id);
+    // Only auto-select if nothing is currently selected
+    if (!selectedConeId) {
+      if (isTracking && targetId) {
+        setSelectedConeId(targetId);
+      } else if (nearestUnclimbed?.cone?.id) {
+        setSelectedConeId(nearestUnclimbed.cone.id);
+      }
     }
-  }, [nearestUnclimbed?.cone?.id, selectedConeId, setSelectedConeId]);
+  }, [selectedConeId, isTracking, targetId, nearestUnclimbed?.cone?.id, setSelectedConeId]);
 
   const mapCones = useMemo(() => {
     return cones.map((c) => ({
@@ -137,15 +143,18 @@ export default function MapScreen() {
 
         {activeCone && (
           <MapOverlayCard 
+            id={activeCone.id}
             title={activeCone.name}
             distanceMeters={overlayDistance ?? 0}
             onOpen={() => goCone(activeCone.id)}
             locStatus={locStatus}
             hasLoc={!!loc}
+            userlocation={loc}
             onRefreshGPS={() => void refreshGPS()}
             refreshingGPS={isRefreshing}
             lat={activeCone.lat}
             lng={activeCone.lng}
+            completed={completedIds.has(activeCone.id)}
           />
         )}
       </View>

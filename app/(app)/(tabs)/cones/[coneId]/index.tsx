@@ -255,6 +255,8 @@ export default function ConeDetailRoute() {
           )}
 
           <StatusCard
+            coneId={cone.id}
+            title={cone.name}
             completed={isCompleted}
             loc={loc}
             locStatus={locStatus}

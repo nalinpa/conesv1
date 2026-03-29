@@ -104,3 +104,45 @@ export const useDraftsStore = create<DraftsState>()(
     { name: "review-drafts", storage: createJSONStorage(() => AsyncStorage) },
   ),
 );
+
+// 7. Tracking Store
+interface TrackingState {
+  targetId: string | null;
+  targetName: string | null;
+  isTracking: boolean;
+  startTracking: (id: string, name: string) => void;
+  stopTracking: () => void;
+}
+
+export const useTrackingStore = create<TrackingState>()(
+  persist(
+    (set, get) => ({ // Added 'get' here
+      targetId: null,
+      targetName: null,
+      isTracking: false,
+      
+      startTracking: (id, name) => {
+        const current = get();
+        
+        // If we are already tracking this specific cone, just ignore.
+        if (current.isTracking && current.targetId === id) return;
+
+        set({ 
+          targetId: id, 
+          targetName: name, 
+          isTracking: true 
+        });
+      },
+      
+      stopTracking: () => set({ 
+        targetId: null, 
+        targetName: null, 
+        isTracking: false 
+      }),
+    }),
+    {
+      name: "tracking-mission",
+      storage: createJSONStorage(() => AsyncStorage),
+    },
+  ),
+);

@@ -32,7 +32,7 @@ export function ActionsCard({
   onShareBonus,
   shareLoading = false,
   shareError = null,
-  isOffline = false, // ✅ We explicitly check for offline status!
+  isOffline = false, 
 }: any) {
   // ---- NOT COMPLETED: The "I'm here" Check-in ----
   if (!completed) {

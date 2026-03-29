@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { StyleSheet, ActivityIndicator, Pressable, View, Platform } from "react-native";
+import { StyleSheet, ActivityIndicator, Pressable, Platform, Alert } from "react-native";
 import * as Linking from "expo-linking";
-import { Navigation, Info, AlertCircle, Route } from "lucide-react-native";
+import { Navigation, Info, MapPin, X, CheckCircle } from "lucide-react-native"; // Swapped Crosshair for MapPin
 import { BlurView } from "expo-blur";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -13,21 +13,30 @@ import { AppText } from "../ui/AppText";
 import { AppButton } from "../ui/AppButton";
 import { AppIcon } from "../ui/AppIcon";
 import { Pill } from "../ui/Pill";
+import { SignalMeter } from "./SignalMeter";
 
 import { formatDistanceMeters } from "../../lib/formatters";
+import { useTrackingStore } from "../../lib/store";
+import { useCone } from "@/lib/hooks/useCone";
+import { useGPSGate } from "@/lib/hooks/useGPSGate";
+import { LocationObject } from "expo-location";
 
+// --- 2. MAIN OVERLAY COMPONENT ---
 type LocStatus = "unknown" | "granted" | "denied";
 
 interface MapOverlayProps {
+  id: string;
   title: string;
-  distanceMeters: number;
+  distanceMeters: number; 
   onOpen: () => void;
   locStatus: LocStatus;
   hasLoc: boolean;
+  userLocation: LocationObject | null;
   onRefreshGPS: () => void;
   refreshingGPS?: boolean;
   lat: number; 
   lng: number;
+  completed: boolean;
 }
 
 function normalizeLocStatus(v: unknown): LocStatus {
@@ -36,43 +45,71 @@ function normalizeLocStatus(v: unknown): LocStatus {
 }
 
 export function MapOverlayCard({
+  id,
   title,
-  distanceMeters,
   onOpen,
   locStatus,
   hasLoc,
+  distanceMeters,
   onRefreshGPS,
   refreshingGPS = false,
+  userLocation,
   lat,
   lng,
+  completed
 }: MapOverlayProps) {
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheet>(null);
+
+  const { isTracking, targetId, targetName, startTracking, stopTracking } = useTrackingStore();
+  const isTargetingThis = isTracking && targetId === id;
+
+  // Location Gates
+  const { cone } = useCone(id);
+  const gate = useGPSGate(cone, userLocation);
   
-  // Snap Points: 15% (peeking) and 40% (expanded)
-  const snapPoints = useMemo(() => ["15%", "35%"], []);
+  // Strictly using the accurate checkpoint math. Defaults to 0 while GPS is fetching.
+  const effectiveDistance = gate.distanceMeters ?? distanceMeters;
 
-  const handleGetDirections = () => {
-    const url = Platform.select({
-      // Apple Maps: launches directly into routing
-      ios: `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`,
-      // Google Maps: launches directly into turn-by-turn navigation
-      android: `google.navigation:q=${lat},${lng}`,
-    });
+  // Dynamic Snap Points
+  const snapPoints = useMemo(() => isTargetingThis ? ["25%", "45%"] : ["15%", "35%"], [isTargetingThis]);
 
-    if (url) {
-      Linking.openURL(url).catch((err) => 
-        console.error("Couldn't load maps app", err)
-      );
-    }
-  };
-
-  // Animate the sheet up automatically when a new cone is clicked
   useEffect(() => {
     if (title) {
       bottomSheetRef.current?.snapToIndex(1);
     }
   }, [title]);
+
+  const handlePressStart = () => {
+    if (isTracking && targetId === id) return; 
+
+    if (!id) return;
+
+    if (isTracking && targetId !== id) {
+      Alert.alert(
+        "Change Destination?",
+        `You are currently heading to ${targetName}. Want to switch to ${title} instead?`,
+        [
+          { text: "Keep Going", style: "cancel" },
+          { 
+            text: "Switch", 
+            style: "destructive", 
+            onPress: () => startTracking(id, title) 
+          }
+        ]
+      );
+    } else {
+      startTracking(id, title);
+    }
+  };
+
+  const handleGetDirections = () => {
+    const url = Platform.select({
+      ios: `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`,
+      android: `google.navigation:q=${lat},${lng}`,
+    });
+    if (url) Linking.openURL(url).catch((err) => console.error("Couldn't load maps app", err));
+  };
 
   const status = normalizeLocStatus(locStatus);
   const isDenied = status === "denied";
@@ -81,114 +118,104 @@ export function MapOverlayCard({
   const renderInnerContent = () => {
     /* --- GPS DENIED --- */
     if (isDenied) {
-      return (
-        <CardShell status="danger">
-          <Stack gap="md">
-            <Row gap="sm" align="center">
-              <AppIcon icon={AlertCircle} variant="warning" size={20} />
-              <AppText variant="sectionTitle" status="warning">
-                GPS Disabled
-              </AppText>
-            </Row>
-            <AppText variant="label" status="warning">
-              Enable location to track your proximity to the volcanic sites.
-            </AppText>
-            <Row gap="sm">
-              <AppButton
-                variant="danger"
-                size="sm"
-                style={styles.flex1}
-                onPress={() => Linking.openSettings()}
-              >
-                Settings
-              </AppButton>
-              <AppButton
-                variant="ghost"
-                size="sm"
-                style={styles.flex1}
-                onPress={onRefreshGPS}
-                loading={refreshingGPS}
-              >
-                Try Again
-              </AppButton>
-            </Row>
-          </Stack>
-        </CardShell>
-      );
+      return <CardShell status="danger"><AppText>Location Services Disabled</AppText></CardShell>;
     }
 
     /* --- GPS SEARCHING --- */
     if (isRequesting || refreshingGPS) {
       return (
         <CardShell status="basic">
-          <Row gap="md" align="center">
-            <Stack style={styles.flex1}>
-              <Row gap="sm" align="center">
-                <ActivityIndicator color="#66B2A2" size="small" />
-                <AppText variant="sectionTitle">Finding You...</AppText>
-              </Row>
-              <AppText variant="label" status="hint">
-                {refreshingGPS
-                  ? "Refreshing location..."
-                  : "Getting a GPS lock on your position."}
-              </AppText>
-            </Stack>
+          <Row gap="sm" align="center" justify="center">
+            <ActivityIndicator color="#000" />
+            <AppText variant="body" style={{ opacity: 0.6 }}>Finding your location...</AppText>
           </Row>
         </CardShell>
       );
     }
 
-    /* --- READY / SELECTED SITE --- */
-    const distanceLabel = formatDistanceMeters(distanceMeters);
+    const distanceLabel = formatDistanceMeters(effectiveDistance);
 
+    /* --- V2: ACTIVE TRACKING MODE --- */
+    if (isTargetingThis) {
+      return (
+        <BlurView intensity={90} tint="dark" style={styles.blurCard}>
+          <Stack gap="md">
+            <Row justify="space-between" align="flex-start">
+              <Stack gap="xxs">
+                <Row gap="xs" align="center">
+                  <AppIcon icon={MapPin} variant="control" size={16} color="#4CAF50" />
+                  <AppText variant="label" style={{ color: '#4CAF50', fontWeight: 'bold' }}>HEADING TO</AppText>
+                </Row>
+                <AppText variant="sectionTitle" style={styles.whiteBold}>{title}</AppText>
+              </Stack>
+              <Pressable onPress={stopTracking} style={styles.cancelBtn}>
+                <AppIcon icon={X} variant="control" size={20} color="#FFF" />
+              </Pressable>
+            </Row>
+
+            {/* Added align="center" to the wrapper so the meter and text center perfectly */}
+            <Stack align="center" style={{ marginVertical: 8 }}>
+              <SignalMeter 
+                coneId={id}
+                distanceMeters={effectiveDistance}
+                onCheckIn={onOpen}
+                name={title}
+              />
+            </Stack>
+
+            <AppButton variant="primary" size="md" onPress={onOpen} style={styles.actionButton}>
+              <Row gap="xs" align="center">
+                <AppText variant="h3" style={styles.whiteBold}>About {title}</AppText>
+                <AppIcon icon={Info} variant="control" size={14} />
+              </Row>
+            </AppButton>
+          </Stack>
+        </BlurView>
+      );
+    }
+
+    /* --- V2: EXPLORE MODE (STANDARD OVERLAY) --- */
     return (
       <Pressable onPress={onOpen}>
         <BlurView intensity={80} tint="light" style={styles.blurCard}>
           <Stack gap="md">
             <Row justify="space-between" align="flex-start">
               <Stack style={styles.flex1} gap="xxs">
-                <AppText variant="sectionTitle" numberOfLines={1}>
-                  {title}
-                </AppText>
+                <AppText variant="sectionTitle" numberOfLines={1}>{title}</AppText>
               </Stack>
-
-              <Pill status="surf" icon={Navigation}>
-                {distanceLabel}
-              </Pill>
+              <Pill status="surf" icon={Navigation}>{distanceLabel}</Pill>
             </Row>
 
-           <Stack gap="sm" style={{ marginTop: 8 }}>
-              
-              {/* Primary Action: View Details */}
-              <AppButton
-                variant="primary"
-                size="md"
-                onPress={onOpen}
-                style={styles.actionButton}
-              >
-                <Row gap="xs" align="center">
-                  <AppText variant="label" style={styles.whiteBold}>
-                    View Details
-                  </AppText>
-                  <AppIcon icon={Info} variant="control" size={14} />
-                </Row>
-              </AppButton>
+            <Stack gap="sm" style={{ marginTop: 8 }}>
+              <Row gap="xs" align="center" justify="center">
+                  {completed ? (
+                  <>
+                  <CheckCircle size={16} color="#4CAF50" />
+                    <AppText variant="h3" style={{ color: '#4CAF50', fontWeight: 'bold', marginLeft: 4}}>
+                      Visited
+                    </AppText>
+                    </>
+                ) : (
+                  <AppButton 
+                    variant="primary" 
+                    size="md" 
+                    onPress={handlePressStart} 
+                    style={[styles.actionButton]}
+                  >
+                       <AppIcon icon={MapPin} variant="control" size={14} color="#FFF" />
+                      <AppText variant="h3" style={styles.whiteBold}>Head to {title}</AppText>
+                   </AppButton>
+                )}
+              </Row>
 
-              {/* Secondary Action: Directions */}
-              <AppButton
-                variant="primary"
-                size="md"
-                onPress={handleGetDirections}
-                style={[styles.actionButton, { backgroundColor: 'rgba(255, 255, 255, 0.15)' }]} 
-              >
-                <Row gap="xs" align="center">
-                  <AppIcon icon={Route} variant="control" size={14} />
-                  <AppText variant="label" style={styles.whiteBold}>
-                    Get Directions
-                  </AppText>
-                </Row>
-              </AppButton>
-
+              <Row gap="sm">
+                <AppButton variant="secondary" size="md" onPress={onOpen} style={[styles.actionButton, styles.flex1]}>
+                  <AppText variant="label">Details</AppText>
+                </AppButton>
+                <AppButton variant="secondary" size="md" onPress={handleGetDirections} style={[styles.actionButton, styles.flex1]}>
+                  <AppText variant="label">Directions</AppText>
+                </AppButton>
+              </Row>
             </Stack>
           </Stack>
         </BlurView>
@@ -199,32 +226,24 @@ export function MapOverlayCard({
   return (
     <BottomSheet
       ref={bottomSheetRef}
-      index={1} // Start expanded to show the selected cone immediately
+      index={1}
       snapPoints={snapPoints}
       enablePanDownToClose={false}
-      // Transparent background so your custom cards handle the visuals
       backgroundStyle={{ backgroundColor: "transparent" }}
       handleIndicatorStyle={{ backgroundColor: "rgba(255, 255, 255, 0.8)" }}
     >
-      <BottomSheetView 
-        style={{ 
-          paddingHorizontal: 16, 
-          // Adjust bottom padding based on the phone's safe area (for the XR)
-          paddingBottom: Math.max(insets.bottom, 16) 
-        }}
-      >
+      <BottomSheetView style={{ paddingHorizontal: 16, paddingBottom: Math.max(insets.bottom, 16) }}>
         {renderInnerContent()}
       </BottomSheetView>
     </BottomSheet>
   );
 }
 
+// --- 3. STYLES ---
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
   whiteBold: { fontWeight: "800", color: "#FFFFFF" },
-  actionButton: {
-    borderRadius: 12,
-  },
+  actionButton: { borderRadius: 2, overflow: 'hidden' },
   blurCard: {
     padding: 16,
     borderRadius: 16,
@@ -232,4 +251,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.4)",
   },
+  cancelBtn: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    padding: 6,
+    borderRadius: 12,
+  },
+  meterContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 12 },
+  bar: { width: 6, borderRadius: 3 },
+  inactiveBar: { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
+  warmBar: { backgroundColor: '#66B2A2' },
+  hotBar: { backgroundColor: '#4CAF50' },
+  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', marginTop: 4 }
 });
