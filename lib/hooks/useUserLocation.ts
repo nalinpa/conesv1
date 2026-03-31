@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
 
-import { useLocationStore } from "@/lib/store";
+import { useLocationStore } from "@/lib/store/index";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
 
 export type LocationStatus = "unknown" | "granted" | "denied";

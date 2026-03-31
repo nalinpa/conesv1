@@ -19,7 +19,7 @@ import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
-import { useDraftsStore } from "@/lib/store";
+import { useDraftsStore } from "@/lib/store/index";
 import { getDirections } from "@/lib/utils/navigation";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 import { GAMEPLAY } from "@/lib/constants/gameplay";

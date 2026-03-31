@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { doc } from "@react-native-firebase/firestore";
+import { doc, getDoc } from "@react-native-firebase/firestore";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -7,9 +7,9 @@ import type { Cone } from "@/lib/models";
 
 async function fetchCone(coneId: string): Promise<Cone | null> {
   const ref = doc(db, COL.cones, coneId);
-  const docSnap = await ref.get();
+  const docSnap = await getDoc(ref);
 
-  if (!docSnap.exists) {
+  if (!docSnap.exists()) {
     throw new Error("Volcano not found");
   }
 

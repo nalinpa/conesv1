@@ -20,7 +20,7 @@ import { space } from "@/lib/ui/tokens";
 import { RatingStars } from "@/components/ui/RatingStars";
 
 // Import the store to trigger the global success UI
-import { useTrackingStore } from "@/lib/store";
+import { useTrackingStore } from "@/lib/store/index";
 
 interface ActionsCardProps {
   id: string;
@@ -71,7 +71,7 @@ export function ActionsCard({
       startTracking(id, title);
     }
     // Fire the global overlay
-    triggerSuccessUI(title);
+    triggerSuccessUI(title, id);
   };
 
   // ---- 1. NOT COMPLETED: The Redirect Trigger ----

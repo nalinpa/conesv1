@@ -20,6 +20,7 @@ import { useTrackingStore } from "../../lib/store";
 import { useCone } from "@/lib/hooks/useCone";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { LocationObject } from "expo-location";
+import { getDirections } from "@/lib/utils/navigation";
 
 // --- HELPERS ---
 type LocStatus = "unknown" | "granted" | "denied";
@@ -116,16 +117,15 @@ export function MapOverlayCard({
   };
 
   const handleGetDirections = () => {
-    const url = Platform.select({
-      ios: `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`,
-      android: `google.navigation:q=${lat},${lng}`,
-    });
-    if (url) Linking.openURL(url).catch((err) => console.error("Maps error", err));
-  };
+  // Pull lat/lng from your cone object
+  if (cone && cone.lat && cone.lng) {
+    getDirections(cone.lat, cone.lng, cone.name);
+  }
+};
 
   const handleCheckIn = () => {
     // This triggers the global success screen via RootLayout
-    triggerSuccessUI(title);
+    triggerSuccessUI(title, id);
   };
 
   const status = normalizeLocStatus(locStatus);
@@ -155,34 +155,6 @@ export function MapOverlayCard({
       return (
         <BlurView intensity={90} tint="dark" style={styles.blurCard}>
           <Stack gap="md">
-            
-            {/* --- [MOCKING DEV TOOLS] --- */}
-            {__DEV__ && (
-              <Stack gap="xs" style={styles.devContainer}>
-                <Row gap="sm" justify="center">
-                  <AppButton size="sm" variant="ghost" onPress={() => setIsMocking(!isMocking)}>
-                    {isMocking ? "Real GPS" : "Mock GPS"}
-                  </AppButton>
-                  {isMocking && (
-                    <AppButton size="sm" variant="primary" onPress={() => setMockDistance(d => Math.max(0, d - 40))}>
-                      Walk (-40m)
-                    </AppButton>
-                  )}
-                </Row>
-                <AppButton 
-                  size="sm" 
-                  variant="secondary" 
-                  onPress={() => triggerSuccessUI(title)}
-                  style={styles.devBypassBtn}
-                >
-                  <Row gap="xs" align="center">
-                    <Award size={12} color="#22C55E" />
-                    <AppText style={styles.devBypassText}>TEST SUCCESS UI</AppText>
-                  </Row>
-                </AppButton>
-              </Stack>
-            )}
-
             <Row justify="space-between" align="flex-start">
               <Stack gap="xxs">
                 <Row gap="xs" align="center">

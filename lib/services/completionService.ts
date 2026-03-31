@@ -50,7 +50,6 @@ export const completionService = {
 
     if (!uid) return { ok: false, err: "Missing uid" };
     if (!cone?.id) return { ok: false, err: "Missing cone" };
-    if (!loc?.coords) return { ok: false, err: "Missing location" };
     if (!gate?.inRange) return { ok: false, err: "Not in range" };
 
     const completionId = `${uid}_${cone.id}`;

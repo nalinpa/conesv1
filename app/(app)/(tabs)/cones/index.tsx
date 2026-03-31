@@ -12,7 +12,7 @@ import { goCone, goAccountHome } from "@/lib/routes";
 import { useSortedConeRows } from "@/lib/hooks/useSortedConeRows";
 import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
-import { useLocationStore, useFiltersStore } from "@/lib/store";
+import { useLocationStore, useFiltersStore } from "@/lib/store/index";
 import { useAppData } from "@/lib/providers/DataProvider";
 
 import { ConesListView } from "@/components/cone/list/ConesListView";

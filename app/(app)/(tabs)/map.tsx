@@ -23,7 +23,7 @@ import { useAppData } from "@/lib/providers/DataProvider";
 import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 import { space } from "@/lib/ui/tokens";
-import { useMapStore, useTrackingStore } from "@/lib/store";
+import { useMapStore, useTrackingStore } from "@/lib/store/index";
 
 export default function MapScreen() {
   const { session } = useSession();

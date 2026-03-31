@@ -1,28 +1,33 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { completionService } from "@/lib/services/completionService";
+import { useSyncStore } from "@/lib/store"; // Import our new store
 import * as Sentry from "@sentry/react-native";
 
 export function useConeCompletionMutation() {
   const queryClient = useQueryClient();
+  const addToQueue = useSyncStore((state) => state.addToQueue);
+  const processQueue = useSyncStore((state) => state.processQueue);
 
   const mutation = useMutation({
     mutationFn: async (args: Parameters<typeof completionService.completeCone>[0]) => {
-      const res = await completionService.completeCone(args);
-      if (!res.ok) throw new Error(res.err || "Failed to complete cone");
-      return res;
+      // 1. Snapshot the visit into the Persistent Offline Queue immediately
+      addToQueue(args);
+
+      // 2. Trigger the background processor (doesn't matter if it fails/is offline)
+      // We don't await this because we want the UI to feel instant
+      processQueue();
+      
+      return { ok: true };
     },
     onSuccess: (_, args) => {
       const uid = args.uid;
       const coneId = args.cone.id;
 
-      // 1. Instantly invalidate the global completions list
-      // This ensures the Set in useMyCompletions updates across the whole app
+      // 3. OPTIMISTIC INVALIDATION
+      // Even though the sync might be pending, we tell React Query to refetch
+      // or we manually update the cache so the 'Visited' checkmark appears.
       queryClient.invalidateQueries({ queryKey: ["myCompletions", uid] });
-
-      // 2. Invalidate the specific volcano details (to update stats like completion counts)
       queryClient.invalidateQueries({ queryKey: ["cone", coneId] });
-
-      // 3. Invalidate global app data (badges/progress tabs)
       queryClient.invalidateQueries({ queryKey: ["appData"] });
     },
   });
@@ -31,6 +36,7 @@ export function useConeCompletionMutation() {
     args: Parameters<typeof completionService.completeCone>[0],
   ) => {
     try {
+      // This is now effectively "Save to Queue & Notify UI"
       await mutation.mutateAsync(args);
       return { ok: true };
     } catch (error: any) {

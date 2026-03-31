@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useMemo } from "react";
 import { useAuthUser } from "@/lib/hooks/useAuthUser";
-import { useGuestStore } from "@/lib/store";
+import { useGuestStore } from "@/lib/store/index";
 
 export type Session =
   | { status: "loading" }

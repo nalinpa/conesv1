@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import * as Location from "expo-location";
-import { useLocationStore } from "@/lib/store";
+import { useLocationStore } from "@/lib/store/index";
 
 type LocationCtx = {
   location: Location.LocationObject | null;

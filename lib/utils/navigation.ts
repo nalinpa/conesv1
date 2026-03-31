@@ -1,20 +1,32 @@
 import { Linking, Platform } from "react-native";
 
-export const getDirections = (lat: number, lng: number, name: string) => {
+/**
+ * Opens the native Maps app for turn-by-turn directions.
+ * @param lat Destination latitude
+ * @param lng Destination longitude
+ * @param name Destination label (e.g., "Mt Roskill")
+ */
+export const getDirections = (lat: number, lng: number, name?: string) => {
   const destination = `${lat},${lng}`;
+  const label = name ? encodeURIComponent(name) : "";
 
-  // Create OS-specific map URLs
+  // iOS: maps://app?daddr=lat,lng&q=label 
+  // Android: google.navigation:q=lat,lng
   const url = Platform.select({
-    ios: `maps://app?daddr=${destination}&q=${name}`,
+    ios: `maps://app?daddr=${destination}${label ? `&q=${label}` : ""}`,
     android: `google.navigation:q=${destination}`,
+    default: `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
   });
 
   if (url) {
-    Linking.openURL(url).catch(() => {
-      // Fallback to browser if the native maps app fails to open
-      Linking.openURL(
-        `https://www.google.com/maps/dir/?api=1&destination=${destination}`,
-      );
-    });
+    Linking.canOpenURL(url).then((supported) => {
+      if (supported) {
+        Linking.openURL(url);
+      } else {
+        // Correct browser fallback to Google Maps
+        const browserUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+        Linking.openURL(browserUrl);
+      }
+    }).catch((err) => console.error("Navigation Utility Error:", err));
   }
 };

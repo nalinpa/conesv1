@@ -11,7 +11,7 @@ import * as Sentry from "@sentry/react-native";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 
 import { SuccessScreen } from "@/components/ui/SuccessScreen";
-import { useTrackingStore } from "@/lib/store";
+import { useTrackingStore } from "@/lib/store/index";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -32,9 +32,11 @@ function RootLayout() {
   const router = useRouter();
 
   // Subscribe to the Global Tracking Store for the Success Ceremony
-  const showSuccess = useTrackingStore((state) => state.showSuccess);
-  const successTarget = useTrackingStore((state) => state.successTarget);
-  const closeSuccess = useTrackingStore((state) => state.closeSuccess);
+  const { 
+    showSuccess, 
+    successId,
+    closeSuccess 
+  } = useTrackingStore();
 
   useEffect(() => {
     if (ref) {
@@ -43,20 +45,18 @@ function RootLayout() {
   }, [ref]);
 
   const handleShareFromSuccess = () => {
-  // Get the current state before we wipe it
-  const { successTarget, targetId, closeSuccess } = useTrackingStore.getState();
+    const { successTarget, successId, closeSuccess } = useTrackingStore.getState();
+    closeSuccess();
 
-  closeSuccess();
-
-  // This passes the cone data so the Skia frame knows what to render
-  router.push({
-    pathname: "/share-frame",
-    params: { 
-      coneId: targetId, 
-      coneName: successTarget 
-    }
-  });
-};
+    // Navigate with the ID we just validated in the ceremony
+    router.push({
+      pathname: "/share-frame",
+      params: { 
+        coneId: successId, // Use successId, not targetId!
+        coneName: successTarget 
+      }
+    });
+  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -80,7 +80,7 @@ function RootLayout() {
         {showSuccess && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
             <SuccessScreen 
-              coneName={successTarget || "The Summit"} 
+              coneId={successId!}
               onClose={closeSuccess}
               onShare={handleShareFromSuccess}
             />

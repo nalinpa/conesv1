@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { StyleSheet, View, Pressable } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, View, ActivityIndicator } from "react-native";
+import { Share2, Check } from "lucide-react-native";
 import { MotiView } from "moti";
 import LottieView from "lottie-react-native";
 import * as Haptics from "expo-haptics";
@@ -7,79 +8,161 @@ import { Easing } from "react-native-reanimated";
 
 import { AppText } from "../ui/AppText";
 import { Stack } from "../ui/Stack";
-import { Row } from "./Row";
-import { Share2 } from "lucide-react-native";
+import { Row } from "../ui/Row";
+import { AppButton } from "../ui/AppButton";
+
+import { useAuthUser } from "@/lib/hooks/useAuthUser";
+import { useLocationStore } from "@/lib/store/index";
+import { useCone } from "@/lib/hooks/useCone";
+import { useGPSGate } from "@/lib/hooks/useGPSGate";
+import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation";
 
 interface SuccessScreenProps {
-  coneName: string;
+  coneId: string;
   onClose: () => void;
   onShare: () => void;
 }
 
-export function SuccessScreen({ coneName, onClose, onShare }: SuccessScreenProps) {
+export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) {
   const confettiRef = useRef<LottieView>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [hasTriggered, setHasTriggered] = useState(false);
   
+  const { user } = useAuthUser();
+  const location = useLocationStore(s => s.location);
+  
+  // 1. Fetch full cone details
+  const { cone, loading: coneLoading, err: coneError } = useCone(coneId);
+  
+  // 2. Validate GPS Gate status
+  const gate = useGPSGate(cone, location);
+  
+  // 3. Setup the Mutation
+  const { completeCone, loading: saving } = useConeCompletionMutation();
 
   useEffect(() => {
-    // 1. Success Haptic
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    
-    // 2. Play Lottie manually to ensure it hits exactly when the card appears
-    const timer = setTimeout(() => {
-      confettiRef.current?.play();
-    }, 100);
+    // 1. Define the triggering condition
+    const isReadyToTrigger = user && cone && location && gate.inRange;
 
-    return () => clearTimeout(timer);
-  }, []);
+    if (isReadyToTrigger && !hasTriggered) {
+      // 2. Lock the trigger so it only runs ONCE per mount
+      setHasTriggered(true);
+
+      // 3. Sensory Feedback
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      
+      // 4. Fire the Confetti
+      // We use a tiny timeout to let the Moti card animation finish its "pop"
+      const confettiTimer = setTimeout(() => {
+        confettiRef.current?.play();
+      }, 150);
+
+      // 5. Commit the Snapshot to the Offline Sync Queue
+      // This uses your useConeCompletionMutation -> which calls useSyncStore
+      completeCone({
+        uid: user.uid,
+        cone: cone,
+        loc: location,
+        gate: gate,
+      }).then((res) => {
+        if (!res.ok) {
+          console.error("❌ [SuccessScreen] Failed to queue visit:", res.err);
+        }
+      });
+
+      return () => clearTimeout(confettiTimer);
+    } 
+    
+    // Debug log for when conditions aren't quite met yet
+    if (!hasTriggered && cone) {
+      console.log("⏳ [SuccessScreen] Waiting for trigger...", { 
+        hasUser: !!user, 
+        hasLoc: !!location, 
+        inRange: gate.inRange 
+      });
+    }
+  }, [user, cone, location, gate.inRange, hasTriggered]);
+
+  // --- UI RENDERING ---
+
+  if (coneLoading || !cone) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator color="#FFFFFF" size="large" />
+        <AppText style={{ color: 'white', marginTop: 12 }}>PREPARING CEREMONY...</AppText>
+        {coneError && (
+          <AppText style={{ color: '#F87171', marginTop: 8, fontSize: 12 }}>
+            Error: {coneError}
+          </AppText>
+        )}
+        <AppButton 
+          variant="ghost" 
+          onPress={onClose} 
+          style={{ marginTop: 20 }}
+        >
+          <AppText style={{ color: 'white' }}>CANCEL</AppText>
+        </AppButton>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <MotiView
-        from={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        from={{ opacity: 0, scale: 0.9, translateY: 20 }}
+        animate={{ opacity: 1, scale: 1, translateY: 0 }}
         transition={{
           type: 'timing',
-          duration: 400,
-          easing: Easing.out(Easing.quad), // Smooth, no bounce
+          duration: 500,
+          easing: Easing.out(Easing.back(1.5)),
         }}
         style={styles.card}
       >
-        <Stack gap="xl" align="center">
+        <Stack gap="xl" align="center" style={{ width: '100%' }}>
           
-          {/* THE LOTTIE TICK */}
           <View style={styles.lottieContainer}>
             <LottieView
                 ref={confettiRef}
-                autoPlay
                 loop={false}
                 source={require("@/assets/animations/success.confetti.json")}
                 style={styles.lottieAnimation}
                 resizeMode="cover"
-                onAnimationFinish={() => setShowCelebration(false)}
             />
           </View>
           
           <Stack align="center" gap="xs">
-            <AppText variant="h1" style={styles.title}>
-              {coneName}
+            <AppText variant="h3" style={styles.title}>
+              {cone.name}
             </AppText>
             <AppText variant="label" style={styles.subtitle}>
               CONE CONQUERED
             </AppText>
           </Stack>
-        <Pressable 
-            onPress={onShare} 
-            style={[styles.button, { backgroundColor: '#22C55E' }]}
-        >
-            <Row gap="sm" align="center">
-            <Share2 size={20} color="#FFF" />
-            <AppText style={styles.buttonText}>CAPTURE THE VIEW</AppText>
-            </Row>
-        </Pressable>
-          <Pressable onPress={onClose} style={styles.button}>
-            <AppText style={styles.buttonText}>DONE</AppText>
-          </Pressable>
+
+          <Stack gap="md" style={{ width: '100%', marginTop: 8 }}>
+            <AppButton 
+                variant="hero"
+                size="lg"
+                onPress={onShare} 
+                loading={saving}
+                loadingLabel="SAVING VISIT..."
+            >
+              <Row gap="sm" align="center">
+                <Share2 size={20} color="#FFF" strokeWidth={2.5} />
+                <AppText style={styles.heroBtnText}>CAPTURE THE VIEW</AppText>
+              </Row>
+            </AppButton>
+
+            <AppButton 
+              variant="ghost" 
+              onPress={onClose}
+              disabled={saving}
+            >
+              <Row gap="xs" align="center">
+                <Check size={16} color="#64748B" />
+                <AppText style={styles.doneText}>DONE</AppText>
+              </Row>
+            </AppButton>
+          </Stack>
         </Stack>
       </MotiView>
     </View>
@@ -89,7 +172,7 @@ export function SuccessScreen({ coneName, onClose, onShare }: SuccessScreenProps
 const styles = StyleSheet.create({
   container: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(15, 23, 42, 0.92)", 
+    backgroundColor: "rgba(15, 23, 42, 0.94)", 
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -99,29 +182,50 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     width: "100%",
     borderRadius: 32,
-    padding: 40,
+    padding: 32,
+    paddingTop: 10,
     alignItems: "center",
+    maxWidth: 400,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
   },
   lottieContainer: {
-    width: 120,
-    height: 120,
+    width: 160,
+    height: 160,
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: -20,
   },
   lottieAnimation: {
-    width: 200, // Make it slightly larger than the container to bleed
-    height: 200,
+    width: 280,
+    height: 280,
   },
-  title: { fontSize: 36, fontWeight: "900", textAlign: "center", color: "#0F172A" },
-  subtitle: { color: "#22C55E", letterSpacing: 4, fontWeight: "900" },
-  button: {
-    marginTop: 10,
-    backgroundColor: "#0F172A",
-    paddingVertical: 18,
-    paddingHorizontal: 48,
-    borderRadius: 18,
-    width: '100%',
-    alignItems: 'center'
+  title: { 
+    fontSize: 32, 
+    fontWeight: "900", 
+    textAlign: "center", 
+    color: "#0F172A",
+    lineHeight: 38 
   },
-  buttonText: { color: "white", fontWeight: "900", fontSize: 16 }
-}); 
+  subtitle: { 
+    color: "#22C55E", 
+    letterSpacing: 4, 
+    fontWeight: "900",
+    fontSize: 12,
+    marginTop: 4 
+  },
+  heroBtnText: {
+    color: "white",
+    fontWeight: "900",
+    fontSize: 16,
+    letterSpacing: 1
+  },
+  doneText: {
+    color: "#64748B",
+    fontWeight: "700",
+    fontSize: 14
+  }
+});
