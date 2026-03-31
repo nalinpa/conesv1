@@ -5,7 +5,6 @@ import {
   Share2,
   MessageSquarePlus,
   CloudUpload,
-  MapPin,
 } from "lucide-react-native";
 import { MotiView, AnimatePresence } from "moti";
 
@@ -57,15 +56,14 @@ export function ActionsCard({
   shareError = null,
   isOffline = false,
 }: ActionsCardProps) {
-  
   const { triggerSuccessUI, startTracking, isTracking, targetId } = useTrackingStore();
 
   const canCheckIn = hasLoc && distanceMeters <= 50;
-  
+
   // Redirect to the Success Screen Ceremony
   const handleManualCheckIn = () => {
     if (!canCheckIn) return; // Guard clause
-    
+
     // If we aren't tracking this specific one yet, set the context
     if (!isTracking || targetId !== id) {
       startTracking(id, title);
@@ -76,20 +74,16 @@ export function ActionsCard({
 
   // ---- 1. NOT COMPLETED: The Redirect Trigger ----
   if (!completed) {
-    return (      
-          <AppButton 
-            variant="hero"
-            size="lg" 
-            onPress={handleManualCheckIn}
-            disabled={!canCheckIn}
-            style={[
-            styles.heroBtn, 
-            canCheckIn && { backgroundColor: '#22C55E', borderColor: '#22C55E' }
-          ]}
-            
+    return (
+      <AppButton
+        variant="hero"
+        size="lg"
+        onPress={handleManualCheckIn}
+        disabled={!canCheckIn}
+        style={[styles.heroBtn, canCheckIn && styles.heroBtnReady]}
       >
-            {hasLoc ? "I'm here" : "Waiting for GPS..."}
-          </AppButton>
+        {hasLoc ? "I'm here" : "Waiting for GPS..."}
+      </AppButton>
     );
   }
 
@@ -105,7 +99,9 @@ export function ActionsCard({
                 Visit Saved Locally
               </AppText>
             </Row>
-            <Pill status="danger" icon={CloudUpload}>Syncing...</Pill>
+            <Pill status="danger" icon={CloudUpload}>
+              Syncing...
+            </Pill>
           </Row>
           <View style={styles.warningBox}>
             <AppText variant="body" style={styles.warningText}>
@@ -136,7 +132,9 @@ export function ActionsCard({
             <Row justify="space-between" align="center">
               <Row gap="xs" align="center">
                 <AppIcon icon={MessageSquarePlus} variant="surf" size={16} />
-                <AppText variant="label" style={styles.bold}>Your Experience</AppText>
+                <AppText variant="label" style={styles.bold}>
+                  Your Experience
+                </AppText>
               </Row>
               {hasReview && <RatingStars rating={myReviewRating || 0} size={14} />}
             </Row>
@@ -163,7 +161,9 @@ export function ActionsCard({
         <Stack gap="sm">
           <Row gap="xs" align="center">
             <AppIcon icon={Share2} variant="surf" size={16} />
-            <AppText variant="label" style={styles.bold}>Share the view</AppText>
+            <AppText variant="label" style={styles.bold}>
+              Share the view
+            </AppText>
           </Row>
 
           <AppButton
@@ -172,7 +172,13 @@ export function ActionsCard({
             loading={shareLoading}
             onPress={onShareBonus}
           >
-            {isOffline ? "Reconnect to Share" : shareBonus ? "Already Shared" : "Share a Photo"}
+            <AppText variant="h3" style={styles.buttonText}>
+              {isOffline
+                ? "Reconnect to Share"
+                : shareBonus
+                  ? "Already Shared"
+                  : "Share a Photo"}
+            </AppText>
           </AppButton>
 
           <AnimatePresence>
@@ -183,7 +189,9 @@ export function ActionsCard({
                 exit={{ height: 0, opacity: 0 }}
                 style={styles.MotiErrorBox}
               >
-                <AppText variant="label" status="danger">{shareError}</AppText>
+                <AppText variant="label" status="danger">
+                  {shareError}
+                </AppText>
               </MotiView>
             )}
           </AnimatePresence>
@@ -197,13 +205,17 @@ const styles = StyleSheet.create({
   heroBtn: {
     paddingVertical: 20,
     borderRadius: 20,
-    width: '70%',
-    alignSelf: 'center',
+    width: "70%",
+    alignSelf: "center",
     shadowColor: "#22C55E",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 8,
+  },
+  heroBtnReady: {
+    backgroundColor: "#22C55E",
+    borderColor: "#22C55E",
   },
   checkInDisabled: {
     backgroundColor: "#E2E8F0",
@@ -217,6 +229,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F1F5F9",
   },
+  buttonText: { color: "#FFFFFF", },
   MotiErrorBox: { overflow: "hidden" },
   bold: { fontWeight: "900", color: "#0F172A" },
   italic: { fontStyle: "italic", marginTop: 4 },

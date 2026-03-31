@@ -6,37 +6,31 @@ import { CheckCircle2 } from "lucide-react-native";
 
 import { AppText } from "../ui/AppText";
 import { Row } from "../ui/Row";
-import { Stack } from "../ui/Stack"; // Assuming you have a Stack component
+import { Stack } from "../ui/Stack";
 import { AppIcon } from "../ui/AppIcon";
-import { useTheme } from "@ui-kitten/components/theme/theme/theme.service";
 
 interface SignalMeterProps {
   distanceMeters: number;
-  onCheckIn?: () => void; 
+  onCheckIn?: () => void;
   variant?: "dark" | "surf";
-  name?: string;
-  coneId: string;
 }
 
-export function SignalMeter({ 
-    distanceMeters, 
-    onCheckIn, 
-    variant = "dark", 
-    name = "this spot",
-    coneId
- }: SignalMeterProps) {
+export function SignalMeter({
+  distanceMeters,
+  onCheckIn,
+  variant = "dark",
+}: SignalMeterProps) {
   const [history, setHistory] = useState<number[]>([]);
   const [isCalibrating, setIsCalibrating] = useState(true);
   const [prevBars, setPrevBars] = useState(1);
-  const theme = useTheme();
 
   useEffect(() => {
-    setHistory(prev => {
+    setHistory((prev) => {
       const newHistory = [...prev, distanceMeters].slice(-3);
       if (newHistory.length === 3 && isCalibrating) setIsCalibrating(false);
       return newHistory;
     });
-  }, [distanceMeters]);
+  }, [distanceMeters, isCalibrating]);
 
   const smoothedDistance = useMemo(() => {
     if (history.length === 0) return distanceMeters;
@@ -62,13 +56,13 @@ export function SignalMeter({
       }
     }
     setPrevBars(activeBars);
-  }, [activeBars, isCalibrating]);
+  }, [activeBars, isCalibrating, prevBars]);
 
   // Human-Friendly Tone Updates
   const getStatusText = () => {
     if (isCalibrating) return `FINDING YOUR WAY...`;
-    if (isWeakSignal) return "LOOKS LIKE WE'RE OFF TRACK"; 
-    if (isAtLocation) return "YOU'VE ARRIVED!"; 
+    if (isWeakSignal) return "LOOKS LIKE WE'RE OFF TRACK";
+    if (isAtLocation) return "YOU'VE ARRIVED!";
     if (activeBars === 4) return "ALMOST THERE!";
     if (activeBars >= 2) return "ON THE RIGHT PATH";
     return "STILL A BIT OF A WALK";
@@ -76,20 +70,23 @@ export function SignalMeter({
 
   const themeMap = {
     dark: {
-        inactive: "rgba(255, 255, 255, 0.15)",
-        active: "#4CAF50", 
-        hot: "#22C55E", 
-        text: "#FFFFFF"
+      inactive: "rgba(255, 255, 255, 0.15)",
+      active: "#4CAF50",
+      hot: "#22C55E",
+      text: "#FFFFFF",
     },
     surf: {
-        inactive: "rgba(0, 0, 0, 0.1)",
-        active: "#0F172A",
-        hot: "#0F172A",
-        text: "#0F172A",
-    }
+      inactive: "rgba(0, 0, 0, 0.1)",
+      active: "#0F172A",
+      hot: "#0F172A",
+      text: "#0F172A",
+    },
   };
 
   const activeColors = themeMap[variant];
+  const dynamicStatusStyle = {
+    color: isWeakSignal ? "#DC2626" : activeColors.text,
+  };
 
   return (
     <Stack gap="md" align="center" style={styles.container}>
@@ -103,18 +100,20 @@ export function SignalMeter({
               key={bar}
               from={{ opacity: 0.3, scale: 1 }}
               animate={{
-                opacity: isCalibrating ? [0.3, 0.6, 0.3] : (isActive ? 1 : 0.2),
+                opacity: isCalibrating ? [0.3, 0.6, 0.3] : isActive ? 1 : 0.2,
                 scale: isCalibrating ? [1, 1.1, 1] : 1,
-                backgroundColor: isActive 
-                  ? (isHot ? activeColors.hot : activeColors.active) 
+                backgroundColor: isActive
+                  ? isHot
+                    ? activeColors.hot
+                    : activeColors.active
                   : activeColors.inactive,
               }}
-              transition={{ 
-                type: 'timing', 
-                duration: isCalibrating ? 1000 : 400, 
-                loop: isCalibrating 
+              transition={{
+                type: "timing",
+                duration: isCalibrating ? 1000 : 400,
+                loop: isCalibrating,
               }}
-              style={[styles.bar, { height: 8 + (bar * 5) }]}
+              style={[styles.bar, { height: 8 + bar * 5 }]}
             />
           );
         })}
@@ -123,14 +122,19 @@ export function SignalMeter({
       {/* 2. DYNAMIC CENTERED STATUS / BUTTON */}
       <View style={styles.statusContainer}>
         {isAtLocation ? (
-          <MotiView 
-            from={{ scale: 0.8, opacity: 0, translateY: 5 }} 
+          <MotiView
+            from={{ scale: 0.95, opacity: 0, translateY: 4 }}
             animate={{ scale: 1, opacity: 1, translateY: 0 }}
-            transition={{ type: 'spring', damping: 15 }}
-          >
+            transition={{ 
+                type: "spring", 
+                damping: 25,
+                stiffness: 250,
+            }}>
             <Pressable onPress={onCheckIn} style={styles.checkInBtn}>
               <Row gap="sm" align="center" justify="center">
-                <AppText variant="sectionTitle" style={styles.checkInText}>I'M HERE</AppText>
+                <AppText variant="sectionTitle" style={styles.checkInText}>
+                  I'M HERE
+                </AppText>
                 <AppIcon icon={CheckCircle2} size={18} color="#FFF" />
               </Row>
             </Pressable>
@@ -138,18 +142,15 @@ export function SignalMeter({
         ) : (
           <MotiText
             animate={{
-              translateY: isWeakSignal ? [0, -2, 0] : 0,
-              opacity: isWeakSignal ? [0.4, 1, 0.4] : 1,
+              translateY: isWeakSignal ? [0, -1, 0] : 0,
+              opacity: isWeakSignal ? [0.7, 1, 0.7] : 1,
             }}
-            transition={{ 
-              type: 'timing', 
-              duration: isWeakSignal ? 1000 : 500, 
-              loop: isWeakSignal 
+            transition={{
+              type: "timing",
+              duration: isWeakSignal ? 1200 : 500,
+              loop: isWeakSignal,
             }}
-            style={[
-                styles.statusText,
-                { color: isWeakSignal ? "#EF4444" : activeColors.text }
-            ]}
+            style={[styles.statusText, dynamicStatusStyle]}
           >
             {getStatusText()}
           </MotiText>
@@ -160,23 +161,28 @@ export function SignalMeter({
 }
 
 const styles = StyleSheet.create({
-  container: { width: '100%', paddingVertical: 8 },
-  meterRow: { height: 40 }, // Increased height for better visibility
+  container: { width: "100%", paddingVertical: 8 },
+  meterRow: { height: 40 },
   bar: { width: 8, borderRadius: 4 },
-  statusContainer: { minHeight: 44, justifyContent: 'center', alignItems: 'center', width: '100%' },
-  statusText: { 
-    fontSize: 10, 
-    fontWeight: '900', 
-    letterSpacing: 2, 
-    textAlign: 'center',
-    textTransform: 'uppercase'
+  statusContainer: {
+    minHeight: 44,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: "900",
+    letterSpacing: 2,
+    textAlign: "center",
+    textTransform: "uppercase",
   },
   checkInBtn: {
-    backgroundColor: '#22C55E',
+    backgroundColor: "#22C55E",
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 14,
-    overflow: 'hidden', // Clips those black corners
+    overflow: "hidden", // Clips those black corners
     // iOS Shadow for depth
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -184,5 +190,5 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 4,
   },
-  checkInText: { color: '#FFF', fontWeight: '900' },
+  checkInText: { color: "#FFF", fontWeight: "900" },
 });

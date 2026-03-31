@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
+import * as Sentry from "@sentry/react-native";
 import { completionService } from "@/lib/services/completionService";
 
 // --- 1. Guest Store ---
@@ -101,7 +102,7 @@ export const useDraftsStore = create<DraftsState>()(
 interface QueuedVisit {
   args: {
     uid: string;
-    cone: any; 
+    cone: any;
     loc: Location.LocationObject;
     gate: any;
   };
@@ -111,7 +112,7 @@ interface QueuedVisit {
 interface SyncState {
   queue: QueuedVisit[];
   isSyncing: boolean;
-  addToQueue: (args: QueuedVisit['args']) => void;
+  addToQueue: (args: QueuedVisit["args"]) => void;
   processQueue: () => Promise<void>;
 }
 
@@ -139,14 +140,14 @@ export const useSyncStore = create<SyncState>()(
           try {
             // Pass the FULL snapshot (GPS/Gate) to the service
             const result = await completionService.completeCone(item.args);
-            
+
             if (!result.ok) {
-              // If it's a validation error (not range), we might want to drop it, 
+              // If it's a validation error (not range), we might want to drop it,
               // but for now, we keep it for safety.
               remainingQueue.push(item);
             }
           } catch (error) {
-            console.error(`[Sync] Network/Process Error:`, error);
+            Sentry.captureException(error, { extra: { item } });
             remainingQueue.push(item);
           }
         }
@@ -157,8 +158,8 @@ export const useSyncStore = create<SyncState>()(
     {
       name: "cones-sync-storage",
       storage: createJSONStorage(() => AsyncStorage),
-    }
-  )
+    },
+  ),
 );
 
 // --- 8. Tracking Store ---
@@ -166,14 +167,14 @@ interface TrackingState {
   targetId: string | null;
   targetName: string | null;
   isTracking: boolean;
-  
+
   showSuccess: boolean;
   successTarget: string | null;
   successId: string | null;
 
   startTracking: (id: string, name: string) => void;
   stopTracking: () => void;
-  
+
   triggerSuccessUI: (name: string, id: string) => void;
   closeSuccess: () => void;
 }
@@ -184,38 +185,39 @@ export const useTrackingStore = create<TrackingState>()(
       targetId: null,
       targetName: null,
       isTracking: false,
-      
+
       showSuccess: false,
       successTarget: null,
       successId: null,
-      
+
       startTracking: (id, name) => {
         const current = get();
         if (current.isTracking && current.targetId === id) return;
         set({ targetId: id, targetName: name, isTracking: true });
       },
-      
+
       stopTracking: () => set({ targetId: null, targetName: null, isTracking: false }),
 
       triggerSuccessUI: (name: string, id: string) => {
-        set({ 
-          showSuccess: true, 
+        set({
+          showSuccess: true,
           successTarget: name,
           successId: id, // <--- CRITICAL: Make sure this is being set
           isTracking: false,
-          targetId: null 
+          targetId: null,
         });
       },
 
-      closeSuccess: () => set({ showSuccess: false, successTarget: null, successId: null }),
+      closeSuccess: () =>
+        set({ showSuccess: false, successTarget: null, successId: null }),
     }),
     {
       name: "tracking-mission",
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ 
-        targetId: state.targetId, 
-        targetName: state.targetName, 
-        isTracking: state.isTracking 
+      partialize: (state) => ({
+        targetId: state.targetId,
+        targetName: state.targetName,
+        isTracking: state.isTracking,
       }),
     },
   ),

@@ -62,7 +62,9 @@ export const moderationService = {
       const snap = await getDocs(q);
 
       // Return an array of just the string IDs so we can easily filter the UI
-      return snap.docs.map((doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => doc.data().blockedUid);
+      return snap.docs.map(
+        (doc: FirebaseFirestoreTypes.QueryDocumentSnapshot) => doc.data().blockedUid,
+      );
     } catch (error: any) {
       Sentry.captureException(error);
       return []; // Fail gracefully so the app doesn't crash if offline

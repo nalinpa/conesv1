@@ -1,5 +1,5 @@
 import { Linking, Platform } from "react-native";
-
+import * as Sentry from "@sentry/react-native";
 /**
  * Opens the native Maps app for turn-by-turn directions.
  * @param lat Destination latitude
@@ -10,7 +10,7 @@ export const getDirections = (lat: number, lng: number, name?: string) => {
   const destination = `${lat},${lng}`;
   const label = name ? encodeURIComponent(name) : "";
 
-  // iOS: maps://app?daddr=lat,lng&q=label 
+  // iOS: maps://app?daddr=lat,lng&q=label
   // Android: google.navigation:q=lat,lng
   const url = Platform.select({
     ios: `maps://app?daddr=${destination}${label ? `&q=${label}` : ""}`,
@@ -19,14 +19,16 @@ export const getDirections = (lat: number, lng: number, name?: string) => {
   });
 
   if (url) {
-    Linking.canOpenURL(url).then((supported) => {
-      if (supported) {
-        Linking.openURL(url);
-      } else {
-        // Correct browser fallback to Google Maps
-        const browserUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
-        Linking.openURL(browserUrl);
-      }
-    }).catch((err) => console.error("Navigation Utility Error:", err));
+    Linking.canOpenURL(url)
+      .then((supported) => {
+        if (supported) {
+          Linking.openURL(url);
+        } else {
+          // Correct browser fallback to Google Maps
+          const browserUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+          Linking.openURL(browserUrl);
+        }
+      })
+      .catch((err) => Sentry.captureException(err, { extra: { url } }));
   }
 };

@@ -1,7 +1,12 @@
 import "@/lib/polyfills/buffer";
 import React, { useEffect } from "react";
-import { View, StyleSheet, Text, Button } from "react-native"; 
-import { Stack, useNavigationContainerRef, ErrorBoundaryProps, useRouter, router } from "expo-router";
+import { View, StyleSheet, Text, Button } from "react-native";
+import {
+  Stack,
+  useNavigationContainerRef,
+  ErrorBoundaryProps,
+  useRouter,
+} from "expo-router";
 import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -32,11 +37,7 @@ function RootLayout() {
   const router = useRouter();
 
   // Subscribe to the Global Tracking Store for the Success Ceremony
-  const { 
-    showSuccess, 
-    successId,
-    closeSuccess 
-  } = useTrackingStore();
+  const { showSuccess, successId, closeSuccess } = useTrackingStore();
 
   useEffect(() => {
     if (ref) {
@@ -51,18 +52,18 @@ function RootLayout() {
     // Navigate with the ID we just validated in the ceremony
     router.push({
       pathname: "/share-frame",
-      params: { 
+      params: {
         coneId: successId, // Use successId, not targetId!
-        coneName: successTarget 
-      }
+        coneName: successTarget,
+      },
     });
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.flexStyle}>
       <AppProviders>
         <OfflineBanner />
-        
+
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen
             name="share-frame"
@@ -79,7 +80,7 @@ function RootLayout() {
         */}
         {showSuccess && (
           <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            <SuccessScreen 
+            <SuccessScreen
               coneId={successId!}
               onClose={closeSuccess}
               onShare={handleShareFromSuccess}
@@ -99,13 +100,16 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   return (
     <View style={styles.errorBoundaryContainer}>
       <Text style={styles.errorTitle}>App Crashed</Text>
-      <Text style={styles.errorMessage}>{error.message || "An unexpected error occurred."}</Text>
+      <Text style={styles.errorMessage}>
+        {error.message || "An unexpected error occurred."}
+      </Text>
       <Button title="Restart App" color="#2D5A47" onPress={retry} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  flexStyle: { flex: 1 },
   errorBoundaryContainer: {
     flex: 1,
     justifyContent: "center",

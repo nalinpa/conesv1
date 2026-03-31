@@ -10,16 +10,12 @@ export function useNearestCheckpoint(coneId: string) {
   return useMemo(() => {
     // 1. Find the cone object
     const cone = conesData?.cones?.find((c) => c.id === coneId);
-    
+
     // 2. Safety check for location and data
     if (!cone || !loc) return { cone, nearest: null };
 
     // 3. Run your existing calculation
-    const nearest = nearestCheckpoint(
-      cone, 
-      loc.coords.latitude, 
-      loc.coords.longitude
-    );
+    const nearest = nearestCheckpoint(cone, loc.coords.latitude, loc.coords.longitude);
 
     return { cone, nearest };
   }, [conesData?.cones, coneId, loc]);

@@ -16,7 +16,7 @@ export function useConeCompletionMutation() {
       // 2. Trigger the background processor (doesn't matter if it fails/is offline)
       // We don't await this because we want the UI to feel instant
       processQueue();
-      
+
       return { ok: true };
     },
     onSuccess: (_, args) => {

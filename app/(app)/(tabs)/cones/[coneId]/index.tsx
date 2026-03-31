@@ -19,7 +19,7 @@ import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
-import { useDraftsStore } from "@/lib/store/index";
+import { useDraftsStore, useTrackingStore } from "@/lib/store/index";
 import { getDirections } from "@/lib/utils/navigation";
 import { nearestCheckpoint } from "@/lib/checkpoints";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
@@ -56,11 +56,11 @@ export default function ConeDetailRoute() {
   const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
-  const { location: loc, errorMsg: providerErr } = useLocation();
-  const { refresh: refreshLocation, isRefreshing, err: manualErr } = useUserLocation();
+  const { location: userCoords, errorMsg: providerErr } = useLocation();  
+  const { refresh: refreshLocation, err: manualErr } = useUserLocation();
 
   const locErr = providerErr || manualErr;
-  const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
+  const locStatus = locErr ? "denied" : userCoords ? "granted" : "unknown";
 
   const {
     completeCone: triggerComplete,
@@ -69,7 +69,7 @@ export default function ConeDetailRoute() {
     reset: resetMutationErr,
   } = useConeCompletionMutation();
 
-  const gate = useGPSGate(cone, loc, { maxAccuracyMeters: MAX_ACCURACY_METERS });
+  const gate = useGPSGate(cone, userCoords, { maxAccuracyMeters: MAX_ACCURACY_METERS });
 
   const totalCompletions = completedConeIds.size;
   const reviewMilestones = [2, 10, 25];
@@ -88,6 +88,7 @@ export default function ConeDetailRoute() {
   const [reviewOpen, setReviewOpen] = useState(false);
 
   const { drafts, setDraft, clearDraft } = useDraftsStore();
+  const { triggerSuccessUI } = useTrackingStore();
   const currentDraft = drafts[coneId || ""] || { rating: null, text: "" };
 
   const refreshGPS = useCallback(async () => {
@@ -98,13 +99,13 @@ export default function ConeDetailRoute() {
     const sub = AppState.addEventListener("change", (state) => {
       if (
         state === "active" &&
-        (!loc || (gate.accuracyMeters || 0) > MAX_ACCURACY_METERS)
+        (!userCoords || (gate.accuracyMeters || 0) > MAX_ACCURACY_METERS)
       ) {
         refreshGPS();
       }
     });
     return () => sub.remove();
-  }, [loc, gate.accuracyMeters, refreshGPS]);
+  }, [userCoords, gate.accuracyMeters, refreshGPS]);
 
   useEffect(() => {
     if (showCelebration) {
@@ -163,8 +164,8 @@ export default function ConeDetailRoute() {
       return;
     }
 
-    if (loc) {
-      const res = await triggerComplete({ uid, cone, loc, gate });
+    if (userCoords) {
+      const res = await triggerComplete({ uid, cone, loc: userCoords, gate });
       if (res.ok) {
         setShowCelebration(true);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -189,12 +190,12 @@ export default function ConeDetailRoute() {
   const handleGetDirections = () => {
     if (!cone) return;
 
-    if (!loc?.coords) {
+    if (!userCoords?.coords) {
       getDirections(cone.lat, cone.lng, cone.name);
       return;
     }
 
-    const bestRoute = nearestCheckpoint(cone, loc.coords.latitude, loc.coords.longitude);
+    const bestRoute = nearestCheckpoint(cone, userCoords.coords.latitude, userCoords.coords.longitude);
 
     const targetName = `${cone.name} - ${bestRoute.checkpoint.label}`;
 
@@ -255,17 +256,11 @@ export default function ConeDetailRoute() {
           )}
 
           <StatusCard
-            coneId={cone.id}
+            coneId={coneId}
             title={cone.name}
             completed={isCompleted}
-            loc={loc}
-            locStatus={locStatus}
-            accuracyMeters={gate.accuracyMeters}
-            distanceMeters={gate.distanceMeters}
-            inRange={gate.inRange}
-            onRefreshGPS={refreshGPS}
-            refreshingGPS={isRefreshing}
-            onGetDirections={handleGetDirections}
+            loc={userCoords}
+            onCheckIn={() => triggerSuccessUI(cone.name, coneId)} 
           />
 
           <ReviewsSummaryCard
@@ -278,12 +273,13 @@ export default function ConeDetailRoute() {
           />
 
           <ActionsCard
+            id={cone.id}
+            title={cone.name}
+            distanceMeters={gate.distanceMeters ?? 0}
             completed={isCompleted}
-            hasShareBonus={hasShareBonus}
-            saving={completing}
+            shareBonus={hasShareBonus}
             isSyncing={isSyncing}
-            hasLoc={!!loc}
-            onComplete={handleComplete}
+            hasLoc={!!userCoords}
             hasReview={!!myRating}
             myReviewRating={myRating}
             myReviewText={myReviewText}

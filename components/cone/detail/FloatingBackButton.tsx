@@ -6,6 +6,7 @@ import { MotiView } from "moti";
 import { AppButton } from "@/components/ui/AppButton";
 import { AppText } from "@/components/ui/AppText";
 import { goConesHome } from "@/lib/routes";
+import { Row } from "@/components/ui/Row";
 
 export function FloatingBackButton({ visible = true }: { visible?: boolean }) {
   return (
@@ -25,10 +26,12 @@ export function FloatingBackButton({ visible = true }: { visible?: boolean }) {
         style={styles.blurContainer}
       >
         <AppButton variant="ghost" size="sm" onPress={goConesHome} style={styles.backBtn}>
-          <ArrowLeft size={18} color="#ffffff" />
-          <AppText variant="label" style={styles.backText}>
-            Back
-          </AppText>
+          <Row>
+            <ArrowLeft size={18} color="#ffffff" />
+            <AppText variant="label" style={styles.backText}>
+              Back
+            </AppText>
+          </Row>
         </AppButton>
       </BlurView>
     </MotiView>
@@ -42,10 +45,10 @@ const styles = StyleSheet.create({
     right: 16,
     zIndex: 100,
     overflow: "hidden",
-    borderRadius: 24,
+    borderRadius: 21,
   },
   blurContainer: {
-    borderRadius: 24,
+    borderRadius: 21,
   },
   backBtn: {
     flexDirection: "row",

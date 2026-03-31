@@ -23,9 +23,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: false,
     googleServicesFile: process.env.GOOGLE_SERVICES_PLIST ?? "./GoogleService-Info.plist",
     infoPlist: {
-      NSCameraUsageDescription: "Cones needs camera access to capture and share photos of your volcano explorations.",
-      NSPhotoLibraryUsageDescription: "Cones needs access to your photos so you can select and share your favorite shots.",
-      NSLocationWhenInUseUsageDescription: "Cones uses your location to track your progress and verify when you have reached a volcano.",
+      NSCameraUsageDescription:
+        "Cones needs camera access to capture and share photos of your volcano explorations.",
+      NSPhotoLibraryUsageDescription:
+        "Cones needs access to your photos so you can select and share your favorite shots.",
+      NSLocationWhenInUseUsageDescription:
+        "Cones uses your location to track your progress and verify when you have reached a volcano.",
       ITSAppUsesNonExemptEncryption: false,
     },
   },
@@ -43,7 +46,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "READ_EXTERNAL_STORAGE",
       "WRITE_EXTERNAL_STORAGE",
       "ACCESS_FINE_LOCATION",
-      "ACCESS_COARSE_LOCATION"
+      "ACCESS_COARSE_LOCATION",
     ],
     edgeToEdgeEnabled: true,
   },
@@ -62,14 +65,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       "expo-image-picker",
       {
-        photosPermission: "Allow Cones to access your photos to share your volcanic adventures.",
-        cameraPermission: "Allow Cones to use your camera to capture your summit moments."
+        photosPermission:
+          "Allow Cones to access your photos to share your volcanic adventures.",
+        cameraPermission:
+          "Allow Cones to use your camera to capture your summit moments.",
       },
     ],
     [
       "expo-location",
       {
-        locationAlwaysAndWhenInUsePermission: "Cones uses your location to track your distance and verify when you have reached a volcano.",
+        locationAlwaysAndWhenInUsePermission:
+          "Cones uses your location to track your distance and verify when you have reached a volcano.",
       },
     ],
     "@react-native-firebase/app",

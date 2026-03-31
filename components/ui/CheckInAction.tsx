@@ -22,7 +22,7 @@ export function CheckInAction({
   saving,
   hasLoc,
   label = "I’m here",
-  variant = "primary"
+  variant = "primary",
 }: CheckInActionProps) {
   return (
     <Stack gap="sm" style={styles.container}>
@@ -63,7 +63,7 @@ export function CheckInAction({
 }
 
 const styles = StyleSheet.create({
-  container: { width: '100%' },
+  container: { width: "100%" },
   heroButton: {
     height: 64,
     borderRadius: 18,

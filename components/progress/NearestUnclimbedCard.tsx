@@ -68,7 +68,9 @@ export function NearestUnclimbedCard({ cone, distanceMeters, locErr, onOpenCone 
         </Stack>
 
         <AppButton variant="primary" size="sm" onPress={() => onOpenCone(cone.id)}>
-          View Details
+          <AppText variant="h3" style={styles.buttonText}>
+            View Details
+          </AppText>
         </AppButton>
       </Stack>
     </CardShell>
@@ -90,5 +92,9 @@ const styles = StyleSheet.create({
   },
   description: {
     color: "#475569",
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    fontWeight: "800",
   },
 });

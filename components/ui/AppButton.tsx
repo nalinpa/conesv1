@@ -1,5 +1,5 @@
 import React from "react";
-import { StyleSheet, ViewStyle, View, GestureResponderEvent } from "react-native";
+import { StyleSheet, ViewStyle, View } from "react-native";
 import { Button, ButtonProps } from "@ui-kitten/components";
 import * as Haptics from "expo-haptics";
 import Animated, {
@@ -40,16 +40,16 @@ export function AppButton({
   // UI Kitten Mappings
   const appearance: ButtonProps["appearance"] = variant === "ghost" ? "ghost" : "filled";
   const status: ButtonProps["status"] =
-    variant === "danger" ? "danger" : 
-    variant === "secondary" ? "basic" : 
-    variant === "white" ? "control" : 
-    "primary";
+    variant === "danger"
+      ? "danger"
+      : variant === "secondary"
+        ? "basic"
+        : variant === "white"
+          ? "control"
+          : "primary";
 
   // Height mapping: lg = 64px for Hero presence
-  const minHeight = 
-    size === "sm" ? tap.min : 
-    size === "lg" ? 64 : 
-    tap.primary;
+  const minHeight = size === "sm" ? tap.min : size === "lg" ? 64 : tap.primary;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -61,11 +61,12 @@ export function AppButton({
   const handlePressIn = () => {
     if (isEffectivelyDisabled) return;
     scale.value = withSpring(0.96, springConfig);
-    
+
     // Heavy haptic for Hero, Light for standard
-    const hapticStyle = variant === "hero" 
-      ? Haptics.ImpactFeedbackStyle.Heavy 
-      : Haptics.ImpactFeedbackStyle.Light;
+    const hapticStyle =
+      variant === "hero"
+        ? Haptics.ImpactFeedbackStyle.Heavy
+        : Haptics.ImpactFeedbackStyle.Light;
     Haptics.impactAsync(hapticStyle);
   };
 
