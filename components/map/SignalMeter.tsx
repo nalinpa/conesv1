@@ -6,16 +6,9 @@ import { CheckCircle2 } from "lucide-react-native";
 
 import { AppText } from "../ui/AppText";
 import { Row } from "../ui/Row";
+import { Stack } from "../ui/Stack"; // Assuming you have a Stack component
 import { AppIcon } from "../ui/AppIcon";
 import { useTheme } from "@ui-kitten/components/theme/theme/theme.service";
-import { useNearestCheckpoint } from "@/lib/hooks/useNearestCheckpoint";
-
-type ThemeColors = {
-  inactive: string;
-  active: string;
-  hot: string;
-  text: string;
-};
 
 interface SignalMeterProps {
   distanceMeters: number;
@@ -29,14 +22,13 @@ export function SignalMeter({
     distanceMeters, 
     onCheckIn, 
     variant = "dark", 
-    name = "THE VOLCANO",
+    name = "this spot",
     coneId
  }: SignalMeterProps) {
   const [history, setHistory] = useState<number[]>([]);
   const [isCalibrating, setIsCalibrating] = useState(true);
   const [prevBars, setPrevBars] = useState(1);
   const theme = useTheme();
-  const { cone, nearest } = useNearestCheckpoint(coneId);
 
   useEffect(() => {
     setHistory(prev => {
@@ -60,114 +52,137 @@ export function SignalMeter({
   const isAtLocation = activeBars === 5 && !isCalibrating;
   const isWeakSignal = smoothedDistance > 1500 && !isCalibrating;
 
+  // iOS-focused haptics
   useEffect(() => {
     if (!isCalibrating && activeBars > prevBars) {
-      if (activeBars === 5) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      else Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (activeBars === 5) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      }
     }
     setPrevBars(activeBars);
   }, [activeBars, isCalibrating]);
 
+  // Human-Friendly Tone Updates
   const getStatusText = () => {
-    if (isCalibrating) return `HEAD TOWARDS ${name.toUpperCase()}`;
+    if (isCalibrating) return `FINDING YOUR WAY...`;
     if (isWeakSignal) return "LOOKS LIKE WE'RE OFF TRACK"; 
-    if (isAtLocation) return "YOU'VE MADE IT!"; 
-    if (activeBars === 4) return "SO CLOSE NOW!";
-    if (activeBars >= 2) return "ON THE RIGHT PATH...";
-    return "STILL A WAY TO GO...";
+    if (isAtLocation) return "YOU'VE ARRIVED!"; 
+    if (activeBars === 4) return "ALMOST THERE!";
+    if (activeBars >= 2) return "ON THE RIGHT PATH";
+    return "STILL A BIT OF A WALK";
   };
 
-   const themeMap: Record<"dark" | "surf", ThemeColors> = {
+  const themeMap = {
     dark: {
-        inactive: "rgba(255, 255, 255, 0.2)",
-        active: theme["color-primary-400"], 
-        hot: theme["color-success-500"] || "#4CAF50", 
+        inactive: "rgba(255, 255, 255, 0.15)",
+        active: "#4CAF50", 
+        hot: "#22C55E", 
         text: "#FFFFFF"
     },
     surf: {
-        inactive: "rgba(0, 0, 0, 0.95)",
-        active: theme["color-basic-900"],
-        hot: theme["color-basic-900"],
-        text: theme["color-basic-900"],
+        inactive: "rgba(0, 0, 0, 0.1)",
+        active: "#0F172A",
+        hot: "#0F172A",
+        text: "#0F172A",
     }
   };
 
   const activeColors = themeMap[variant];
 
   return (
-    <View style={styles.container}>
-      <Row justify="space-between" align="center" style={styles.fullWidth}>
-        <Row gap="xs" align="flex-end" style={styles.meterRow}>
-          {[1, 2, 3, 4, 5].map((bar) => {
-            const isActive = !isCalibrating && bar <= activeBars;
-            const isHot = isActive && activeBars >= 4;
-            return (
-              <MotiView
-                key={bar}
-                from={{ opacity: 0.3, scale: 1 }}
-                animate={{
-                  opacity: isCalibrating ? [0.3, 0.7, 0.3] : (isActive ? 1 : 0.1),
-                  scale: isCalibrating ? [1, 1.1, 1] : 1,
-                  backgroundColor: isActive ? (isHot ? activeColors.hot : activeColors.active) : activeColors.inactive,
-                }}
-                transition={{ type: 'timing', duration: isCalibrating ? 800 : 300, loop: isCalibrating }}
-                style={[styles.bar, { height: 8 + (bar * 4) }]}
-              />
-            );
-          })}
-        </Row>
+    <Stack gap="md" align="center" style={styles.container}>
+      {/* 1. METER BARS (Centered) */}
+      <Row gap="xs" align="flex-end" justify="center" style={styles.meterRow}>
+        {[1, 2, 3, 4, 5].map((bar) => {
+          const isActive = !isCalibrating && bar <= activeBars;
+          const isHot = isActive && activeBars >= 4;
+          return (
+            <MotiView
+              key={bar}
+              from={{ opacity: 0.3, scale: 1 }}
+              animate={{
+                opacity: isCalibrating ? [0.3, 0.6, 0.3] : (isActive ? 1 : 0.2),
+                scale: isCalibrating ? [1, 1.1, 1] : 1,
+                backgroundColor: isActive 
+                  ? (isHot ? activeColors.hot : activeColors.active) 
+                  : activeColors.inactive,
+              }}
+              transition={{ 
+                type: 'timing', 
+                duration: isCalibrating ? 1000 : 400, 
+                loop: isCalibrating 
+              }}
+              style={[styles.bar, { height: 8 + (bar * 5) }]}
+            />
+          );
+        })}
+      </Row>
 
-        {/* --- DYNAMIC CHECK-IN BUTTON --- */}
+      {/* 2. DYNAMIC CENTERED STATUS / BUTTON */}
+      <View style={styles.statusContainer}>
         {isAtLocation ? (
           <MotiView 
-            from={{ scale: 0.5, opacity: 0 }} 
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: 'spring', damping: 12 }}
+            from={{ scale: 0.8, opacity: 0, translateY: 5 }} 
+            animate={{ scale: 1, opacity: 1, translateY: 0 }}
+            transition={{ type: 'spring', damping: 15 }}
           >
             <Pressable onPress={onCheckIn} style={styles.checkInBtn}>
-              <Row gap="xs" align="center">
-                <AppText variant="label" style={styles.checkInText}>CHECK IN</AppText>
-                <AppIcon icon={CheckCircle2} size={14} color="#FFF" />
+              <Row gap="sm" align="center" justify="center">
+                <AppText variant="sectionTitle" style={styles.checkInText}>I'M HERE</AppText>
+                <AppIcon icon={CheckCircle2} size={18} color="#FFF" />
               </Row>
             </Pressable>
           </MotiView>
         ) : (
           <MotiText
             animate={{
-              translateX: isWeakSignal ? [-2, 2, -1, 1, 0] : 0,
-              opacity: isWeakSignal ? [0.3, 0.8, 0.4, 1] : (activeBars >= 4 ? 1 : 0.6),
+              translateY: isWeakSignal ? [0, -2, 0] : 0,
+              opacity: isWeakSignal ? [0.4, 1, 0.4] : 1,
             }}
-            transition={{ type: 'timing', duration: isWeakSignal ? 150 : 400, loop: isWeakSignal }}
+            transition={{ 
+              type: 'timing', 
+              duration: isWeakSignal ? 1000 : 500, 
+              loop: isWeakSignal 
+            }}
             style={[
                 styles.statusText,
-                { 
-                    color: isWeakSignal 
-                    ? theme["color-danger-500"]
-                    : (activeBars >= 4 ? activeColors.hot : activeColors.text) 
-                }
+                { color: isWeakSignal ? "#EF4444" : activeColors.text }
             ]}
           >
             {getStatusText()}
           </MotiText>
         )}
-      </Row>
-    </View>
+      </View>
+    </Stack>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { marginVertical: 12, width: '100%' },
-  fullWidth: { width: '100%' },
-  meterRow: { height: 32 },
-  bar: { width: 7, borderRadius: 3.5 },
-  statusText: { marginLeft: 12, fontSize: 10, fontWeight: '900', letterSpacing: 1.5 },
-  checkInBtn: {
-    backgroundColor: '#4CAF50',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+  container: { width: '100%', paddingVertical: 8 },
+  meterRow: { height: 40 }, // Increased height for better visibility
+  bar: { width: 8, borderRadius: 4 },
+  statusContainer: { minHeight: 44, justifyContent: 'center', alignItems: 'center', width: '100%' },
+  statusText: { 
+    fontSize: 10, 
+    fontWeight: '900', 
+    letterSpacing: 2, 
+    textAlign: 'center',
+    textTransform: 'uppercase'
   },
-  checkInText: { color: '#FFF', fontWeight: '900', fontSize: 11 },
+  checkInBtn: {
+    backgroundColor: '#22C55E',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 14,
+    overflow: 'hidden', // Clips those black corners
+    // iOS Shadow for depth
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  checkInText: { color: '#FFF', fontWeight: '900' },
 });

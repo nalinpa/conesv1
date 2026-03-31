@@ -110,21 +110,31 @@ interface TrackingState {
   targetId: string | null;
   targetName: string | null;
   isTracking: boolean;
+  
+  // Ceremony State
+  showSuccess: boolean;
+  successTarget: string | null;
+
   startTracking: (id: string, name: string) => void;
   stopTracking: () => void;
+  
+  // Ceremony Actions
+  triggerSuccessUI: (name: string) => void;
+  closeSuccess: () => void;
 }
 
 export const useTrackingStore = create<TrackingState>()(
   persist(
-    (set, get) => ({ // Added 'get' here
+    (set, get) => ({
       targetId: null,
       targetName: null,
       isTracking: false,
       
+      showSuccess: false,
+      successTarget: null,
+      
       startTracking: (id, name) => {
         const current = get();
-        
-        // If we are already tracking this specific cone, just ignore.
         if (current.isTracking && current.targetId === id) return;
 
         set({ 
@@ -139,10 +149,32 @@ export const useTrackingStore = create<TrackingState>()(
         targetName: null, 
         isTracking: false 
       }),
+
+      // --- Success Ceremony Logic ---
+      
+      triggerSuccessUI: (name: string) => set({ 
+        showSuccess: true, 
+        successTarget: name,
+        // Optional: Auto-stop tracking when you succeed
+        isTracking: false,
+        targetId: null 
+      }),
+
+      closeSuccess: () => set({ 
+        showSuccess: false, 
+        successTarget: null 
+      }),
     }),
     {
       name: "tracking-mission",
       storage: createJSONStorage(() => AsyncStorage),
+      // Crucial: The success screen won't pop up again 
+      // if they kill the app and restart it.
+      partialize: (state) => ({ 
+        targetId: state.targetId, 
+        targetName: state.targetName, 
+        isTracking: state.isTracking 
+      }),
     },
   ),
 );

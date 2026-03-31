@@ -1,7 +1,7 @@
-import React, { useEffect, useMemo, useRef } from "react";
-import { StyleSheet, ActivityIndicator, Pressable, Platform, Alert } from "react-native";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { StyleSheet, ActivityIndicator, Pressable, Platform, Alert, View } from "react-native";
 import * as Linking from "expo-linking";
-import { Navigation, Info, MapPin, X, CheckCircle } from "lucide-react-native"; // Swapped Crosshair for MapPin
+import { Navigation, Info, MapPin, X, CheckCircle, Award } from "lucide-react-native"; 
 import { BlurView } from "expo-blur";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,7 +21,7 @@ import { useCone } from "@/lib/hooks/useCone";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { LocationObject } from "expo-location";
 
-// --- 2. MAIN OVERLAY COMPONENT ---
+// --- HELPERS ---
 type LocStatus = "unknown" | "granted" | "denied";
 
 interface MapOverlayProps {
@@ -61,17 +61,30 @@ export function MapOverlayCard({
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheet>(null);
 
-  const { isTracking, targetId, targetName, startTracking, stopTracking } = useTrackingStore();
+  // --- [MOCKING & TESTING STATE] ---
+  // Note: Local showSuccess removed. Success is now managed globally via TrackingStore.
+  const [isMocking, setIsMocking] = useState(false);
+  const [mockDistance, setMockDistance] = useState(600);
+  // ---------------------------------
+
+  const { 
+    isTracking, 
+    targetId, 
+    targetName, 
+    startTracking, 
+    stopTracking,
+    triggerSuccessUI // Use this to fire the global ceremony
+  } = useTrackingStore();
+  
   const isTargetingThis = isTracking && targetId === id;
 
-  // Location Gates
   const { cone } = useCone(id);
   const gate = useGPSGate(cone, userLocation);
   
-  // Strictly using the accurate checkpoint math. Defaults to 0 while GPS is fetching.
-  const effectiveDistance = gate.distanceMeters ?? distanceMeters;
+  // --- [MOCKING LOGIC] ---
+  const effectiveDistance = isMocking ? mockDistance : (gate.distanceMeters ?? distanceMeters);
+  // -----------------------
 
-  // Dynamic Snap Points
   const snapPoints = useMemo(() => isTargetingThis ? ["25%", "45%"] : ["15%", "35%"], [isTargetingThis]);
 
   useEffect(() => {
@@ -82,13 +95,12 @@ export function MapOverlayCard({
 
   const handlePressStart = () => {
     if (isTracking && targetId === id) return; 
-
     if (!id) return;
 
     if (isTracking && targetId !== id) {
       Alert.alert(
         "Change Destination?",
-        `You are currently heading to ${targetName}. Want to switch to ${title} instead?`,
+        `You are currently heading to ${targetName}. Switch to ${title}?`,
         [
           { text: "Keep Going", style: "cancel" },
           { 
@@ -108,7 +120,12 @@ export function MapOverlayCard({
       ios: `http://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`,
       android: `google.navigation:q=${lat},${lng}`,
     });
-    if (url) Linking.openURL(url).catch((err) => console.error("Couldn't load maps app", err));
+    if (url) Linking.openURL(url).catch((err) => console.error("Maps error", err));
+  };
+
+  const handleCheckIn = () => {
+    // This triggers the global success screen via RootLayout
+    triggerSuccessUI(title);
   };
 
   const status = normalizeLocStatus(locStatus);
@@ -116,13 +133,11 @@ export function MapOverlayCard({
   const isRequesting = !isDenied && !hasLoc;
 
   const renderInnerContent = () => {
-    /* --- GPS DENIED --- */
     if (isDenied) {
       return <CardShell status="danger"><AppText>Location Services Disabled</AppText></CardShell>;
     }
 
-    /* --- GPS SEARCHING --- */
-    if (isRequesting || refreshingGPS) {
+    if (!isMocking && (isRequesting || refreshingGPS)) {
       return (
         <CardShell status="basic">
           <Row gap="sm" align="center" justify="center">
@@ -140,6 +155,34 @@ export function MapOverlayCard({
       return (
         <BlurView intensity={90} tint="dark" style={styles.blurCard}>
           <Stack gap="md">
+            
+            {/* --- [MOCKING DEV TOOLS] --- */}
+            {__DEV__ && (
+              <Stack gap="xs" style={styles.devContainer}>
+                <Row gap="sm" justify="center">
+                  <AppButton size="sm" variant="ghost" onPress={() => setIsMocking(!isMocking)}>
+                    {isMocking ? "Real GPS" : "Mock GPS"}
+                  </AppButton>
+                  {isMocking && (
+                    <AppButton size="sm" variant="primary" onPress={() => setMockDistance(d => Math.max(0, d - 40))}>
+                      Walk (-40m)
+                    </AppButton>
+                  )}
+                </Row>
+                <AppButton 
+                  size="sm" 
+                  variant="secondary" 
+                  onPress={() => triggerSuccessUI(title)}
+                  style={styles.devBypassBtn}
+                >
+                  <Row gap="xs" align="center">
+                    <Award size={12} color="#22C55E" />
+                    <AppText style={styles.devBypassText}>TEST SUCCESS UI</AppText>
+                  </Row>
+                </AppButton>
+              </Stack>
+            )}
+
             <Row justify="space-between" align="flex-start">
               <Stack gap="xxs">
                 <Row gap="xs" align="center">
@@ -153,19 +196,18 @@ export function MapOverlayCard({
               </Pressable>
             </Row>
 
-            {/* Added align="center" to the wrapper so the meter and text center perfectly */}
             <Stack align="center" style={{ marginVertical: 8 }}>
               <SignalMeter 
                 coneId={id}
                 distanceMeters={effectiveDistance}
-                onCheckIn={onOpen}
+                onCheckIn={handleCheckIn}
                 name={title}
               />
             </Stack>
 
             <AppButton variant="primary" size="md" onPress={onOpen} style={styles.actionButton}>
-              <Row gap="xs" align="center">
-                <AppText variant="h3" style={styles.whiteBold}>About {title}</AppText>
+              <Row gap="sm" align="center">
+                <AppText variant="h3" style={styles.whiteBold}>ABOUT THIS SPOT</AppText>
                 <AppIcon icon={Info} variant="control" size={14} />
               </Row>
             </AppButton>
@@ -188,23 +230,20 @@ export function MapOverlayCard({
 
             <Stack gap="sm" style={{ marginTop: 8 }}>
               <Row gap="xs" align="center" justify="center">
-                  {completed ? (
-                  <>
-                  <CheckCircle size={16} color="#4CAF50" />
-                    <AppText variant="h3" style={{ color: '#4CAF50', fontWeight: 'bold', marginLeft: 4}}>
-                      Visited
-                    </AppText>
-                    </>
+                {completed ? (
+                  <View style={styles.completedBadge}>
+                    <Row gap="xs" align="center">
+                      <CheckCircle size={16} color="#FFF" />
+                      <AppText variant="h3" style={styles.whiteBold}>Visited</AppText>
+                    </Row>
+                  </View>
                 ) : (
-                  <AppButton 
-                    variant="primary" 
-                    size="md" 
-                    onPress={handlePressStart} 
-                    style={[styles.actionButton]}
-                  >
-                       <AppIcon icon={MapPin} variant="control" size={14} color="#FFF" />
+                  <AppButton variant="primary" size="md" onPress={handlePressStart} style={styles.actionButton}>
+                    <Row gap="xs" align="center">
+                      <AppIcon icon={MapPin} variant="control" size={14} color="#FFF" />
                       <AppText variant="h3" style={styles.whiteBold}>Head to {title}</AppText>
-                   </AppButton>
+                    </Row>
+                  </AppButton>
                 )}
               </Row>
 
@@ -239,11 +278,31 @@ export function MapOverlayCard({
   );
 }
 
-// --- 3. STYLES ---
 const styles = StyleSheet.create({
   flex1: { flex: 1 },
-  whiteBold: { fontWeight: "800", color: "#FFFFFF" },
-  actionButton: { borderRadius: 2, overflow: 'hidden' },
+  whiteBold: { fontWeight: "900", color: "#FFFFFF" },
+  actionButton: { borderRadius: 12, overflow: 'hidden', width: '100%' },
+  completedBadge: { 
+    backgroundColor: '#4CAF50', 
+    paddingVertical: 10, 
+    borderRadius: 12, 
+    width: '100%', 
+    alignItems: 'center',
+    justifyContent: 'center' 
+  },
+  devContainer: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 8,
+    borderRadius: 12,
+    marginBottom: 8,
+  },
+  devBypassBtn: {
+    marginTop: 4,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    borderWidth: 0,
+    height: 32
+  },
+  devBypassText: { color: '#22C55E', fontSize: 10, fontWeight: '900' },
   blurCard: {
     padding: 16,
     borderRadius: 16,
@@ -256,10 +315,4 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 12,
   },
-  meterContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 8, marginBottom: 12 },
-  bar: { width: 6, borderRadius: 3 },
-  inactiveBar: { backgroundColor: 'rgba(255, 255, 255, 0.2)' },
-  warmBar: { backgroundColor: '#66B2A2' },
-  hotBar: { backgroundColor: '#4CAF50' },
-  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5, color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center', marginTop: 4 }
 });

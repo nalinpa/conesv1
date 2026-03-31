@@ -66,7 +66,7 @@ export function StatusCard({
   if (completed) {
     return (
       <CardShell status="success">
-        <Stack gap="sm" align="center" padding="md">
+        <Stack gap="sm" align="center">
           <CheckCircle size={24} color="#FFF" />
           <AppText variant="h3" style={{ color: '#FFF', fontWeight: '800' }}>
             Mission Accomplished

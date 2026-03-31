@@ -1,7 +1,7 @@
 import "@/lib/polyfills/buffer";
 import React, { useEffect } from "react";
 import { View, StyleSheet, Text, Button } from "react-native"; 
-import { Stack, useNavigationContainerRef, ErrorBoundaryProps } from "expo-router";
+import { Stack, useNavigationContainerRef, ErrorBoundaryProps, useRouter, router } from "expo-router";
 import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -9,6 +9,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AppProviders } from "@/lib/providers/AppProviders";
 import * as Sentry from "@sentry/react-native";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+
+import { SuccessScreen } from "@/components/ui/SuccessScreen";
+import { useTrackingStore } from "@/lib/store";
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),
@@ -26,6 +29,12 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayout() {
   const ref = useNavigationContainerRef();
+  const router = useRouter();
+
+  // Subscribe to the Global Tracking Store for the Success Ceremony
+  const showSuccess = useTrackingStore((state) => state.showSuccess);
+  const successTarget = useTrackingStore((state) => state.successTarget);
+  const closeSuccess = useTrackingStore((state) => state.closeSuccess);
 
   useEffect(() => {
     if (ref) {
@@ -33,20 +42,50 @@ function RootLayout() {
     }
   }, [ref]);
 
+  const handleShareFromSuccess = () => {
+  // Get the current state before we wipe it
+  const { successTarget, targetId, closeSuccess } = useTrackingStore.getState();
+
+  closeSuccess();
+
+  // This passes the cone data so the Skia frame knows what to render
+  router.push({
+    pathname: "/share-frame",
+    params: { 
+      coneId: targetId, 
+      coneName: successTarget 
+    }
+  });
+};
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppProviders>
         <OfflineBanner />
+        
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen
             name="share-frame"
             options={{
               presentation: "modal",
               headerShown: true,
-              title: "Share",
+              title: "Share Your View",
             }}
           />
         </Stack>
+
+        {/* GLOBAL SUCCESS CEREMONY 
+            Sitting outside the Stack ensures it covers headers and tabs.
+        */}
+        {showSuccess && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            <SuccessScreen 
+              coneName={successTarget || "The Summit"} 
+              onClose={closeSuccess}
+              onShare={handleShareFromSuccess}
+            />
+          </View>
+        )}
       </AppProviders>
     </GestureHandlerRootView>
   );
