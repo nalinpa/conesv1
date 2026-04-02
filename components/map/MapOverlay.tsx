@@ -158,6 +158,10 @@ export function MapOverlayCard({
 
             <Stack align="center" style={styles.meterContainer}>
               <SignalMeter distanceMeters={effectiveDistance} onCheckIn={handleCheckIn} />
+              
+              <AppText variant="h3" style={styles.distanceValue}>
+                {Math.round(gate.distanceMeters ?? 0)}m away
+              </AppText>
             </Stack>
 
             <AppButton
@@ -301,5 +305,12 @@ const styles = StyleSheet.create({
   },
   sheetContent: {
     paddingHorizontal: 16,
+  },
+    distanceValue: {
+    color: "#fff",
+    fontWeight: "900",
+  },
+  mutedLabel: {
+    color: "rgba(15, 23, 42, 0.6)",
   },
 });
