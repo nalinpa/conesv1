@@ -158,7 +158,7 @@ export function MapOverlayCard({
 
             <Stack align="center" style={styles.meterContainer}>
               <SignalMeter distanceMeters={effectiveDistance} onCheckIn={handleCheckIn} />
-              
+
               <AppText variant="h3" style={styles.distanceValue}>
                 {Math.round(gate.distanceMeters ?? 0)}m away
               </AppText>
@@ -172,7 +172,7 @@ export function MapOverlayCard({
             >
               <Row gap="sm" align="center">
                 <AppText variant="h3" style={styles.whiteBold}>
-                  View Details                
+                  View Details
                 </AppText>
                 <AppIcon icon={Info} variant="control" size={14} />
               </Row>
@@ -274,7 +274,7 @@ const styles = StyleSheet.create({
   mutedText: { opacity: 0.6 },
   greenBoldLabel: { color: "#4CAF50", fontWeight: "bold" },
   meterContainer: { marginVertical: 8 },
-  buttonStack: { marginTop: 8},
+  buttonStack: { marginTop: 8 },
   visited: { paddingVertical: 6 },
   actionButton: { borderRadius: 12, overflow: "hidden", width: "100%" },
   completedBadge: {
@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   sheetContent: {
     paddingHorizontal: 16,
   },
-    distanceValue: {
+  distanceValue: {
     color: "#fff",
     fontWeight: "900",
   },

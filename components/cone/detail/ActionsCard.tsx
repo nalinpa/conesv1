@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F1F5F9",
   },
-  buttonText: { color: "#FFFFFF", },
+  buttonText: { color: "#FFFFFF" },
   MotiErrorBox: { overflow: "hidden" },
   bold: { fontWeight: "900", color: "#0F172A" },
   italic: { fontStyle: "italic", marginTop: 4 },

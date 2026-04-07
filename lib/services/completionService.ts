@@ -1,13 +1,11 @@
 import {
   doc,
   serverTimestamp,
-  runTransaction,
   updateDoc,
   setDoc,
 } from "@react-native-firebase/firestore";
 import type { LocationObject } from "expo-location";
 import * as Sentry from "@sentry/react-native";
-import NetInfo from "@react-native-community/netinfo";
 
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
@@ -55,25 +53,20 @@ export const completionService = {
     const completionId = `${uid}_${cone.id}`;
     const ref = doc(db, COL.coneCompletions, completionId);
 
-    // 1. Define the payload once
     const completionData = {
       coneId: cone.id,
       coneSlug: cone.slug ?? "",
       coneName: cone.name ?? "",
       userId: uid,
-
       completedAt: serverTimestamp(),
       accuracyMeters: loc.coords.accuracy ?? null,
-
       distanceMeters: gate.distanceMeters ?? null,
-
       checkpointId: gate.checkpointId ?? null,
       checkpointLabel: gate.checkpointLabel ?? null,
       checkpointLat: gate.checkpointLat ?? null,
       checkpointLng: gate.checkpointLng ?? null,
       checkpointRadiusMeters: gate.checkpointRadius ?? null,
       checkpointDistanceMeters: gate.distanceMeters ?? null,
-
       shareBonus: false,
       shareConfirmed: false,
       sharedAt: null,
@@ -81,35 +74,21 @@ export const completionService = {
     };
 
     try {
-      // 2. Ask NetInfo if we have a real connection to the outside world
-      const networkState = await NetInfo.fetch();
+      // If Firebase hangs, we force a rejection so the queue unlocks.
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("FIREBASE_TIMEOUT")), 8000);
+      });
 
-      // isInternetReachable can be null on first load, so we explicitly check for false
-      const isOnline =
-        networkState.isConnected && networkState.isInternetReachable !== false;
+      const writePromise = setDoc(ref, completionData, { merge: true });
 
-      if (isOnline) {
-        // ==========================================
-        // PATH A: ONLINE (The Strict Transaction)
-        // ==========================================
-        await runTransaction(db, async (tx) => {
-          const snap = await tx.get(ref);
-
-          if (snap.exists()) return;
-
-          tx.set(ref, completionData);
-        });
-      } else {
-        // ==========================================
-        // PATH B: OFFLINE (The Cache Queue)
-        // ==========================================
-        // Bypasses the transaction. Firebase instantly saves it locally and queues it.
-        await setDoc(ref, completionData, { merge: true });
-      }
+      // Race Firebase against our timeout clock
+      await Promise.race([writePromise, timeoutPromise]);
 
       return { ok: true };
     } catch (e: any) {
-      Sentry.captureException(e);
+      if (e.message !== "FIREBASE_TIMEOUT") {
+        Sentry.captureException(e); // Only log to Sentry if it's a real crash, not a timeout
+      }
       return { ok: false, err: e?.message ?? "Failed to complete cone" };
     }
   },

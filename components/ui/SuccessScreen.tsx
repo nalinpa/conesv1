@@ -26,7 +26,7 @@ interface SuccessScreenProps {
 
 export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) {
   const confettiRef = useRef<LottieView>(null);
-  const [hasTriggered, setHasTriggered] = useState(false);
+  const [triggeredConeId, setTriggeredConeId] = useState<string | null>(null);
 
   const { user } = useAuthUser();
   const location = useLocationStore((s) => s.location);
@@ -36,10 +36,11 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
   const { completeCone, loading: saving } = useConeCompletionMutation();
 
   useEffect(() => {
-    const isReadyToTrigger = user && cone && location && gate.inRange;
+    const isReadyToTrigger = user && cone && location;
 
-    if (isReadyToTrigger && !hasTriggered) {
-      setHasTriggered(true);
+    // Check if we haven't triggered THIS specific cone yet
+    if (isReadyToTrigger && triggeredConeId !== coneId) {
+      setTriggeredConeId(coneId); // Lock it for this cone!
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -60,7 +61,7 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
 
       return () => clearTimeout(confettiTimer);
     }
-  }, [user, cone, location, gate.inRange, hasTriggered, gate, completeCone]);
+  }, [user, cone, location, triggeredConeId, coneId, gate, completeCone]);
 
   if (coneLoading || !cone) {
     return (

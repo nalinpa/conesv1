@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { completionService } from "@/lib/services/completionService";
-import { useSyncStore } from "@/lib/store"; // Import our new store
+import { useSyncStore } from "@/lib/store/useSyncStore"; // Import our new store
 import * as Sentry from "@sentry/react-native";
 
 export function useConeCompletionMutation() {

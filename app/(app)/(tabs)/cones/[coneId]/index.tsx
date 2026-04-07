@@ -1,10 +1,7 @@
-import React, { useCallback, useEffect, useState, useRef } from "react";
-import { AppState, ScrollView, StyleSheet, View, Animated } from "react-native";
+import React, { useCallback, useEffect, useState } from "react";
+import { AppState, ScrollView, StyleSheet } from "react-native";
 import { Stack as ExpoStack, router, useLocalSearchParams } from "expo-router";
 import * as Haptics from "expo-haptics";
-import * as StoreReview from "expo-store-review";
-import * as Sentry from "@sentry/react-native";
-import LottieView from "lottie-react-native";
 
 import { Screen } from "@/components/ui/Screen";
 import { LoadingState } from "@/components/ui/LoadingState";
@@ -15,13 +12,10 @@ import { useSession } from "@/lib/providers/SessionProvider";
 import { useLocation } from "@/lib/providers/LocationProvider";
 import { useUserLocation } from "@/lib/hooks/useUserLocation";
 import { useCone } from "@/lib/hooks/useCone";
-import { useConeCompletionMutation } from "@/lib/hooks/useConeCompletionMutation";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useConeReviewsSummary } from "@/lib/hooks/useConeReviewsSummary";
 import { useMyCompletions } from "@/lib/hooks/useMyCompletions";
 import { useDraftsStore, useTrackingStore } from "@/lib/store/index";
-import { getDirections } from "@/lib/utils/navigation";
-import { nearestCheckpoint } from "@/lib/checkpoints";
 import { GAMEPLAY } from "@/lib/constants/gameplay";
 
 import { ConeHero } from "@/components/cone/detail/ConeHero";
@@ -37,7 +31,6 @@ const MAX_ACCURACY_METERS = GAMEPLAY.MAX_GPS_ACCURACY_METERS;
 export default function ConeDetailRoute() {
   const { coneId } = useLocalSearchParams<{ coneId: string }>();
   const { session } = useSession();
-  const uid = session.status === "authed" ? session.uid : null;
 
   const {
     completedConeIds,
@@ -51,28 +44,15 @@ export default function ConeDetailRoute() {
   const hasShareBonus = !!coneId && sharedConeIds.has(coneId);
 
   const [reviewErr, setReviewErr] = useState<string | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
-  const confettiRef = useRef<LottieView>(null);
-  const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const { cone, loading: coneLoading, err: coneErr } = useCone(coneId);
-  const { location: userCoords, errorMsg: providerErr } = useLocation();  
+  const { location: userCoords, errorMsg: providerErr } = useLocation();
   const { refresh: refreshLocation, err: manualErr } = useUserLocation();
 
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : userCoords ? "granted" : "unknown";
 
-  const {
-    completeCone: triggerComplete,
-    loading: completing,
-    err: mutationErr,
-    reset: resetMutationErr,
-  } = useConeCompletionMutation();
-
   const gate = useGPSGate(cone, userCoords, { maxAccuracyMeters: MAX_ACCURACY_METERS });
-
-  const totalCompletions = completedConeIds.size;
-  const reviewMilestones = [2, 10, 25];
 
   const {
     avgRating,
@@ -108,99 +88,18 @@ export default function ConeDetailRoute() {
   }, [userCoords, gate.accuracyMeters, refreshGPS]);
 
   useEffect(() => {
-    if (showCelebration) {
-      opacityAnim.setValue(1);
-      confettiRef.current?.play();
-
-      const timer = setTimeout(() => {
-        Animated.timing(opacityAnim, {
-          toValue: 0,
-          duration: 500,
-          useNativeDriver: true,
-        }).start(({ finished }) => {
-          if (finished) {
-            setShowCelebration(false);
-          }
-        });
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [showCelebration, opacityAnim]);
-
-  useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
 
-    if (err || mutationErr) {
+    if (err) {
       timeoutId = setTimeout(() => {
-        if (err) setErr("");
-        if (mutationErr) resetMutationErr();
-      }, 10000); // 10 seconds and thhen hide the error
+        setErr("");
+      }, 10000); // 10 seconds and then hide the error
     }
 
-    // Cleanup the timer if the component unmounts or a new error fires
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [err, mutationErr, resetMutationErr]);
-
-  const handleComplete = async () => {
-    if (!cone || isCompleted || completing) return;
-    setErr("");
-    resetMutationErr();
-
-    if (!uid) {
-      setErr("Sign in to save your visit.");
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      return;
-    }
-
-    if (!gate.inRange) {
-      setErr(
-        gate.distanceMeters
-          ? `You're ${Math.round(gate.distanceMeters)}m away.`
-          : "Not in range.",
-      );
-      return;
-    }
-
-    if (userCoords) {
-      const res = await triggerComplete({ uid, cone, loc: userCoords, gate });
-      if (res.ok) {
-        setShowCelebration(true);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        setTimeout(async () => {
-          if (reviewMilestones.includes(totalCompletions)) {
-            try {
-              if (await StoreReview.hasAction()) {
-                await StoreReview.requestReview();
-              }
-            } catch (error) {
-              Sentry.captureException(error);
-            }
-          }
-        }, 1500);
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      }
-    }
-  };
-
-  const handleGetDirections = () => {
-    if (!cone) return;
-
-    if (!userCoords?.coords) {
-      getDirections(cone.lat, cone.lng, cone.name);
-      return;
-    }
-
-    const bestRoute = nearestCheckpoint(cone, userCoords.coords.latitude, userCoords.coords.longitude);
-
-    const targetName = `${cone.name} - ${bestRoute.checkpoint.label}`;
-
-    getDirections(bestRoute.checkpoint.lat, bestRoute.checkpoint.lng, targetName);
-  };
+  }, [err]);
 
   if (coneLoading || compsLoading || session.status === "loading") {
     return (
@@ -238,7 +137,7 @@ export default function ConeDetailRoute() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
-        scrollEventThrottle={16} // This makes the scroll tracking buttery smooth
+        scrollEventThrottle={16}
         onScroll={(event) => {
           const offsetY = event.nativeEvent.contentOffset.y;
           setShowBackButton(offsetY < 50);
@@ -247,11 +146,11 @@ export default function ConeDetailRoute() {
         <ConeHero cone={cone} completed={isCompleted} />
 
         <UIStack gap="md" style={styles.content}>
-          {(err || mutationErr) && (
+          {err && (
             <ErrorCard
               status="warning"
               title="Check-in Issue"
-              message={err || mutationErr || "An unknown error occurred"}
+              message={err || "An unknown error occurred"}
             />
           )}
 
@@ -260,7 +159,7 @@ export default function ConeDetailRoute() {
             title={cone.name}
             completed={isCompleted}
             loc={userCoords}
-            onCheckIn={() => triggerSuccessUI(cone.name, coneId)} 
+            onCheckIn={() => triggerSuccessUI(cone.name, coneId)}
           />
 
           <ReviewsSummaryCard
@@ -331,60 +230,16 @@ export default function ConeDetailRoute() {
           }
         }}
       />
-
-      {showCelebration && (
-        <View style={[styles.confettiOverlay]} pointerEvents="none">
-          <LottieView
-            ref={confettiRef}
-            autoPlay
-            loop={false}
-            source={require("@/assets/animations/success.confetti.json")}
-            style={styles.lottieAnimation}
-            resizeMode="cover"
-            onAnimationFinish={() => setShowCelebration(false)}
-          />
-        </View>
-      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  floatingHeader: {
-    position: "absolute",
-    top: 54,
-    right: 16,
-    zIndex: 100,
-    overflow: "hidden",
-    borderRadius: 24,
-  },
-  blurContainer: {
-    padding: 2,
-    borderRadius: 24,
-  },
-  backBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 6,
-  },
-  backText: {
-    color: "#ffffff",
-    fontWeight: "700",
-    fontSize: 13,
-  },
   scroll: {
     paddingBottom: 40,
   },
   content: {
     paddingHorizontal: 16,
     marginTop: -20,
-  },
-  lottieAnimation: { width: "100%", height: "100%" },
-  confettiOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 9999,
-    elevation: 9999,
   },
 });

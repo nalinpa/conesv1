@@ -26,8 +26,14 @@ export function SignalMeter({
 
   useEffect(() => {
     setHistory((prev) => {
+      // Just keep a running average of the last 3 GPS pings
       const newHistory = [...prev, distanceMeters].slice(-3);
-      if (newHistory.length === 3 && isCalibrating) setIsCalibrating(false);
+
+      // End calibration once we have 3 steady pings
+      if (newHistory.length === 3 && isCalibrating) {
+        setIsCalibrating(false);
+      }
+
       return newHistory;
     });
   }, [distanceMeters, isCalibrating]);
@@ -37,6 +43,7 @@ export function SignalMeter({
     return history.reduce((a, b) => a + b) / history.length;
   }, [history, distanceMeters]);
 
+  // Meter Logic
   let activeBars = 1;
   if (smoothedDistance <= 50) activeBars = 5;
   else if (smoothedDistance <= 250) activeBars = 4;
@@ -46,7 +53,7 @@ export function SignalMeter({
   const isAtLocation = activeBars === 5 && !isCalibrating;
   const isWeakSignal = smoothedDistance > 1500 && !isCalibrating;
 
-  // iOS-focused haptics
+  // Haptics on signal gain
   useEffect(() => {
     if (!isCalibrating && activeBars > prevBars) {
       if (activeBars === 5) {
@@ -58,7 +65,6 @@ export function SignalMeter({
     setPrevBars(activeBars);
   }, [activeBars, isCalibrating, prevBars]);
 
-  // Human-Friendly Tone Updates
   const getStatusText = () => {
     if (isCalibrating) return `FINDING YOUR WAY...`;
     if (isWeakSignal) return "LOOKS LIKE WE'RE OFF TRACK";
@@ -90,7 +96,6 @@ export function SignalMeter({
 
   return (
     <Stack gap="md" align="center" style={styles.container}>
-      {/* 1. METER BARS (Centered) */}
       <Row gap="xs" align="flex-end" justify="center" style={styles.meterRow}>
         {[1, 2, 3, 4, 5].map((bar) => {
           const isActive = !isCalibrating && bar <= activeBars;
@@ -119,17 +124,17 @@ export function SignalMeter({
         })}
       </Row>
 
-      {/* 2. DYNAMIC CENTERED STATUS / BUTTON */}
       <View style={styles.statusContainer}>
         {isAtLocation ? (
           <MotiView
             from={{ scale: 0.95, opacity: 0, translateY: 4 }}
             animate={{ scale: 1, opacity: 1, translateY: 0 }}
-            transition={{ 
-                type: "spring", 
-                damping: 25,
-                stiffness: 250,
-            }}>
+            transition={{
+              type: "spring",
+              damping: 25,
+              stiffness: 250,
+            }}
+          >
             <Pressable onPress={onCheckIn} style={styles.checkInBtn}>
               <Row gap="sm" align="center" justify="center">
                 <AppText variant="sectionTitle" style={styles.checkInText}>
@@ -182,8 +187,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 14,
-    overflow: "hidden", // Clips those black corners
-    // iOS Shadow for depth
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,

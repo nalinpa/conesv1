@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   collection,
@@ -12,6 +12,7 @@ import * as Sentry from "@sentry/react-native";
 import { db } from "@/lib/firebase";
 import { COL } from "@/lib/constants/firestore";
 import { useSession } from "@/lib/providers/SessionProvider";
+import { useSyncStore } from "@/lib/store/useSyncStore"; // 🚀 IMPORT THE ZUSTAND STORE
 
 function toMs(v: any): number {
   if (!v) return 0;
@@ -34,6 +35,9 @@ export function useMyCompletions() {
   const { session } = useSession();
   const uid = session.status === "authed" ? session.uid : null;
   const queryClient = useQueryClient();
+
+  // 🚀 GRAB THE OFFLINE QUEUE FROM ZUSTAND
+  const syncQueue = useSyncStore((state) => state.queue);
 
   useEffect(() => {
     if (!uid) return;
@@ -95,9 +99,29 @@ export function useMyCompletions() {
 
   const state = (data as typeof defaultState) || defaultState;
 
+  const mergedState = useMemo(() => {
+    const finalCompletedIds = new Set(state.completedConeIds);
+    const finalPendingIds = new Set(state.pendingConeIds);
+
+    // Inject everything sitting in the offline queue into the UI's reality
+    syncQueue.forEach((item) => {
+      // 🚀 THE FIX: Remove '.args' and add optional chaining just to be incredibly safe
+      if (item?.cone?.id) {
+        finalCompletedIds.add(item.cone.id);
+        finalPendingIds.add(item.cone.id);
+      }
+    });
+
+    return {
+      ...state,
+      completedConeIds: finalCompletedIds,
+      pendingConeIds: finalPendingIds,
+    };
+  }, [state, syncQueue]);
+
   return {
     loading: session.status === "loading" || isLoading,
     err: error instanceof Error ? error.message : "",
-    ...state,
+    ...mergedState, // 🚀 Return the merged state so the UI sees everything
   };
 }

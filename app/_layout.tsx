@@ -10,9 +10,10 @@ import {
 import { isRunningInExpoGo } from "expo";
 import * as SplashScreen from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Sentry from "@sentry/react-native";
 
 import { AppProviders } from "@/lib/providers/AppProviders";
-import * as Sentry from "@sentry/react-native";
+import { useOfflineSyncManager } from "@/lib/hooks/useOfflineSyncManager";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 
 import { SuccessScreen } from "@/components/ui/SuccessScreen";
@@ -35,6 +36,7 @@ SplashScreen.preventAutoHideAsync();
 function RootLayout() {
   const ref = useNavigationContainerRef();
   const router = useRouter();
+  useOfflineSyncManager();
 
   // Subscribe to the Global Tracking Store for the Success Ceremony
   const { showSuccess, successId, closeSuccess } = useTrackingStore();

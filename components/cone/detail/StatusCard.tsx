@@ -1,6 +1,7 @@
 import React from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { MapPin, X, CheckCircle } from "lucide-react-native";
+import { LocationObject } from "expo-location";
 
 import { CardShell } from "../../ui/CardShell";
 import { Stack } from "../../ui/Stack";
@@ -11,10 +12,8 @@ import { AppIconButton } from "../../ui/AppIconButton";
 import { SignalMeter } from "../../map/SignalMeter";
 
 import { useTrackingStore } from "../../../lib/store";
-import { LocationObject } from "expo-location";
 import { useGPSGate } from "@/lib/hooks/useGPSGate";
 import { useCone } from "@/lib/hooks/useCone";
-import { useTheme } from "@ui-kitten/components/theme";
 
 interface StatusCardProps {
   coneId: string;
@@ -40,7 +39,6 @@ export function StatusCard({
   const isTargetingThis = isTracking && !!targetId && targetId === coneId;
   const isTrackingSomethingElse = isTracking && targetId !== coneId;
 
-  const { theme } = useTheme();
   const { cone } = useCone(coneId);
   const gate = useGPSGate(cone, loc);
 
@@ -156,11 +154,11 @@ export function StatusCard({
 
 const styles = StyleSheet.create({
   successTitle: {
-    color: "theme[text-basic-color]",
+    color: "#0F172A", // Fixed broken string literal
     fontWeight: "800",
   },
   successBody: {
-    color: "theme[text-basic-color]",
+    color: "#0F172A", // Fixed broken string literal
     textAlign: "center",
   },
   darkLabel: {
@@ -182,7 +180,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   centred: {
-    textAlign: "center"
+    textAlign: "center",
   },
   actionButton: {
     borderRadius: 12,

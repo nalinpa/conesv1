@@ -12,14 +12,14 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": "@EXPO_PUBLIC_SENTRY_DSN"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://a04a8bb7e1fbbd4cf5d2ec6dba0455a8@o4510950810451968.ingest.us.sentry.io/4511153323835392"
       }
     },
     "preview": {
       "distribution": "internal",
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": "@EXPO_PUBLIC_SENTRY_DSN"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://a04a8bb7e1fbbd4cf5d2ec6dba0455a8@o4510950810451968.ingest.us.sentry.io/4511153323835392"
       }
     },
     "production": {
@@ -32,7 +32,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_SENTRY_DSN": "@EXPO_PUBLIC_SENTRY_DSN"
+        "EXPO_PUBLIC_SENTRY_DSN": "https://a04a8bb7e1fbbd4cf5d2ec6dba0455a8@o4510950810451968.ingest.us.sentry.io/4511153323835392"
       }
     }
   }

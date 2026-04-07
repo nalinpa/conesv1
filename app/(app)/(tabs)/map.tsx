@@ -22,7 +22,7 @@ import { useAppData } from "@/lib/providers/DataProvider";
 import { ConesMapView, initialRegionFrom } from "@/components/map/ConesMapView";
 import { MapOverlayCard } from "@/components/map/MapOverlay";
 import { space } from "@/lib/ui/tokens";
-import { useMapStore, useTrackingStore } from "@/lib/store/index";
+import { useLocationStore, useMapStore, useTrackingStore } from "@/lib/store/index";
 
 export default function MapScreen() {
   const { session } = useSession();
@@ -32,7 +32,9 @@ export default function MapScreen() {
 
   const { location: loc, errorMsg: providerErr } = useLocation();
 
-  const { refresh: refreshLocation, isRefreshing, err: manualErr } = useUserLocation();
+  // Removed the unused `refresh: refreshLocation`
+  const { isRefreshing, err: manualErr } = useUserLocation();
+  const userLocation = useLocationStore((state) => state.location);
 
   const locErr = providerErr || manualErr;
   const locStatus = locErr ? "denied" : loc ? "granted" : "unknown";
@@ -87,10 +89,6 @@ export default function MapScreen() {
 
     return initialRegionFrom(lat ?? null, lng ?? null, mapCones);
   }, [loading, hasMapCones, lat, lng, mapCones]);
-
-  const refreshGPS = useCallback(async () => {
-    if (locStatus !== "denied") await refreshLocation();
-  }, [locStatus, refreshLocation]);
 
   const handleConePress = useCallback(
     (id: string) => {
@@ -153,7 +151,7 @@ export default function MapScreen() {
             onOpen={() => goCone(activeCone.id)}
             locStatus={locStatus}
             hasLoc={!!loc}
-            userLocation={loc}
+            userLocation={userLocation}
             refreshingGPS={isRefreshing}
             completed={completedIds.has(activeCone.id)}
           />
