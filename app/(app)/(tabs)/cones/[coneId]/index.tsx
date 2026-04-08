@@ -113,7 +113,7 @@ export default function ConeDetailRoute() {
     return (
       <Screen>
         <ErrorCard
-          title="Peak Not Found"
+          title="Volcano Not Found"
           message={coneErr || "Could not find volcano."}
           action={{ label: "Go Back", onPress: goConesHome }}
         />

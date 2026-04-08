@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react"; // Removed useRef
 import { StyleSheet, View, ActivityIndicator } from "react-native";
 import { Share2, Check } from "lucide-react-native";
 import { MotiView } from "moti";
@@ -25,7 +25,6 @@ interface SuccessScreenProps {
 }
 
 export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) {
-  const confettiRef = useRef<LottieView>(null);
   const [triggeredConeId, setTriggeredConeId] = useState<string | null>(null);
 
   const { user } = useAuthUser();
@@ -44,10 +43,6 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-      const confettiTimer = setTimeout(() => {
-        confettiRef.current?.play();
-      }, 150);
-
       completeCone({
         uid: user.uid,
         cone: cone,
@@ -58,8 +53,6 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
           Sentry.captureMessage("Failed to queue cone completion", { level: "error" });
         }
       });
-
-      return () => clearTimeout(confettiTimer);
     }
   }, [user, cone, location, triggeredConeId, coneId, gate, completeCone]);
 
@@ -67,7 +60,7 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
     return (
       <View style={styles.container}>
         <ActivityIndicator color="#FFFFFF" size="large" />
-        <AppText style={styles.loadingText}>PREPARING CEREMONY...</AppText>
+        <AppText style={styles.loadingText}>SAVING YOUR VISIT...</AppText>
         {coneError && <AppText style={styles.errorText}>Error: {coneError}</AppText>}
         <AppButton variant="ghost" onPress={onClose} style={styles.cancelButton}>
           <AppText style={styles.whiteText}>CANCEL</AppText>
@@ -91,7 +84,7 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
         <Stack gap="xl" align="center" style={styles.fullWidth}>
           <View style={styles.lottieContainer}>
             <LottieView
-              ref={confettiRef}
+              autoPlay
               loop={false}
               source={require("@/assets/animations/success.confetti.json")}
               style={styles.lottieAnimation}
@@ -104,7 +97,7 @@ export function SuccessScreen({ coneId, onClose, onShare }: SuccessScreenProps) 
               {cone.name}
             </AppText>
             <AppText variant="label" style={styles.subtitle}>
-              CONE CONQUERED
+              YOU MADE IT!
             </AppText>
           </Stack>
 
@@ -159,15 +152,15 @@ const styles = StyleSheet.create({
     elevation: 10,
   },
   lottieContainer: {
-    width: 160,
-    height: 160,
+    width: 220,
+    height: 220,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: -20,
+    marginBottom: -40, 
   },
   lottieAnimation: {
-    width: 280,
-    height: 280,
+    width: "100%",
+    height: "100%",
   },
   title: {
     fontSize: 32,
