@@ -3,7 +3,6 @@ import * as Location from "expo-location";
 import * as Sentry from "@sentry/react-native";
 
 import { useLocationStore } from "@/lib/store/index";
-import { GAMEPLAY } from "@/lib/constants/gameplay";
 
 export type LocationStatus = "unknown" | "granted" | "denied";
 
@@ -19,10 +18,16 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const aliveRef = useRef(true);
+  const watcherRef = useRef<Location.LocationSubscription | null>(null);
+
   useEffect(() => {
     aliveRef.current = true;
     return () => {
       aliveRef.current = false;
+      // 🚀 Clean up the live stream when the app closes to save battery
+      if (watcherRef.current) {
+        watcherRef.current.remove();
+      }
     };
   }, []);
 
@@ -49,36 +54,6 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     [],
   );
 
-  const inFlightRef = useRef<Promise<{ ok: boolean } | undefined> | null>(null);
-  const lastRunAtRef = useRef<number>(0);
-
-  const runGuarded = useCallback(async (fn: () => Promise<{ ok: boolean }>) => {
-    const now = Date.now();
-
-    if (inFlightRef.current) return inFlightRef.current;
-
-    if (now - lastRunAtRef.current < GAMEPLAY.GPS_REFRESH_THROTTLE_MS) {
-      return { ok: false as const };
-    }
-
-    if (aliveRef.current) setIsRefreshing(true);
-
-    const p = (async () => {
-      try {
-        return await fn();
-      } catch (e) {
-        Sentry.captureException(e);
-      } finally {
-        lastRunAtRef.current = Date.now();
-        inFlightRef.current = null;
-        if (aliveRef.current) setIsRefreshing(false);
-      }
-    })();
-
-    inFlightRef.current = p;
-    return p;
-  }, []);
-
   const request = useCallback(async () => {
     safeSet({ err: "" });
 
@@ -95,11 +70,20 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
 
       safeSet({ status: "granted" });
 
-      const cur = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
+      // 🚀 THE MAGIC FIX: Start the live stream instead of taking a single snapshot
+      if (!watcherRef.current) {
+        watcherRef.current = await Location.watchPositionAsync(
+          {
+            accuracy: Location.Accuracy.High, // Fast, triangulated tracking
+            timeInterval: 1000, // Ping the hardware every 1 second
+            distanceInterval: 1, // Update the UI every time they move 1 meter
+          },
+          (newLocation) => {
+            safeSet({ loc: newLocation }); // Automatically pushes to your map/meter!
+          },
+        );
+      }
 
-      safeSet({ loc: cur, err: "" });
       return { ok: true as const };
     } catch (e: any) {
       Sentry.captureException(e);
@@ -108,36 +92,19 @@ export function useUserLocation({ autoRequest = false }: { autoRequest?: boolean
     }
   }, [safeSet]);
 
-  const refresh = useCallback(() => {
-    return runGuarded(async () => {
-      safeSet({ err: "" });
-
-      try {
-        const perm = await Location.getForegroundPermissionsAsync();
-        if (perm.status !== "granted") {
-          safeSet({
-            status: "denied",
-            loc: null,
-            err: "Location permission denied.",
-          });
-          return { ok: false as const };
-        }
-
-        safeSet({ status: "granted" });
-
-        const cur = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Highest,
-        });
-
-        safeSet({ loc: cur, err: "" });
-        return { ok: true as const };
-      } catch (e: any) {
-        Sentry.captureException(e);
-        safeSet({ err: e?.message ?? "Failed to refresh location." });
-        return { ok: false as const };
-      }
-    });
-  }, [runGuarded, safeSet]);
+  const refresh = useCallback(async () => {
+    // We keep this for manual refresh buttons, but you likely won't need it much anymore
+    setIsRefreshing(true);
+    try {
+      const cur = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Highest,
+      });
+      safeSet({ loc: cur, err: "" });
+    } finally {
+      setIsRefreshing(false);
+    }
+    return { ok: true as const };
+  }, [safeSet]);
 
   useEffect(() => {
     if (!autoRequest) return;

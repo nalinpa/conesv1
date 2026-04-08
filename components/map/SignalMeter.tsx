@@ -24,19 +24,32 @@ export function SignalMeter({
   const [isCalibrating, setIsCalibrating] = useState(true);
   const [prevBars, setPrevBars] = useState(1);
 
+  // 1. The Live Tracker: Only cares about updating the history array
   useEffect(() => {
     setHistory((prev) => {
-      // Just keep a running average of the last 3 GPS pings
+      // Don't push duplicate numbers if standing perfectly still
+      if (prev[prev.length - 1] === distanceMeters) return prev;
+
       const newHistory = [...prev, distanceMeters].slice(-3);
 
-      // End calibration once we have 3 steady pings
-      if (newHistory.length === 3 && isCalibrating) {
+      // If we get 3 solid pings, we can end calibration early!
+      if (newHistory.length === 3) {
         setIsCalibrating(false);
       }
 
       return newHistory;
     });
-  }, [distanceMeters, isCalibrating]);
+  }, [distanceMeters]);
+
+  // 2. The Guaranteed Unlock: Runs exactly ONCE when the screen opens
+  useEffect(() => {
+    // No matter what happens with the GPS, unlock the UI after 1.5 seconds
+    const timer = setTimeout(() => {
+      setIsCalibrating(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const smoothedDistance = useMemo(() => {
     if (history.length === 0) return distanceMeters;
