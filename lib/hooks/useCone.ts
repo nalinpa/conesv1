@@ -31,6 +31,20 @@ export function useCone(coneId: string | null | undefined) {
     queryKey: ["cone", coneId],
     queryFn: () => fetchCone(coneId!),
     enabled: !!coneId,
+
+    // 1. Consider data fresh for 2 weeks (in milliseconds)
+    // If they view the cone, close the app, and open it 2 hours later, 0 reads.
+    // If they open it 25 hours later, 1 read.
+    staleTime: 1000 * 60 * 60 * 24 * 14, 
+    
+    // 2. Keep the inactive data in memory for a week
+    gcTime: 1000 * 60 * 60 * 24 * 7,
+
+    // 3. STOP refetching just because they switched apps
+    refetchOnWindowFocus: false,
+
+    // 4. STOP refetching just because their internet briefly dropped and reconnected
+    refetchOnReconnect: false,
   });
 
   return {

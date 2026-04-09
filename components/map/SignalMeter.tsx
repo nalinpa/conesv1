@@ -29,14 +29,14 @@ export function SignalMeter({
     setHistory((prev) => {
       // Don't push duplicate numbers if standing perfectly still
       if (prev[prev.length - 1] === distanceMeters) return prev;
-
+      
       const newHistory = [...prev, distanceMeters].slice(-3);
-
+      
       // If we get 3 solid pings, we can end calibration early!
       if (newHistory.length === 3) {
         setIsCalibrating(false);
       }
-
+      
       return newHistory;
     });
   }, [distanceMeters]);
@@ -49,7 +49,7 @@ export function SignalMeter({
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, []); 
 
   const smoothedDistance = useMemo(() => {
     if (history.length === 0) return distanceMeters;
